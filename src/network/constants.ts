@@ -1,3 +1,8 @@
+export type KeyOfType<Type, ValueType> = keyof {
+    [Key in keyof Type as Type[Key] extends ValueType ? Key : never]: any;
+};
+
+
 /**
  * Network constants.
  */
@@ -66,8 +71,16 @@ export class Constants {
     }
 
     static fromJson(json: string): Constants {
-        return JSON.parse(json) as Constants
+        let constants = JSON.parse(json) as Constants
+        let dummy = new Constants()
+        for (let t in constants) {
+            if (typeof dummy[t] === "bigint") {
+                constants[t] = BigInt(constants[t])
+            }
+        }
+        return constants
     }
+
 
     /**
      * Default constants for the main Flare network.

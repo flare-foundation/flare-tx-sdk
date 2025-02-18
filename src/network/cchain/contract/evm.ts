@@ -1,16 +1,24 @@
-import { BaseContractMethod, Contract, Interface, InterfaceAbi, Log, Transaction } from "ethers";
+import { BaseContractMethod, Contract, Interface, InterfaceAbi, Transaction } from "ethers";
 import { NetworkCore, NetworkBased } from "../../core";
+
+export type EvmType2TxParams = {
+    type: number,
+    chainId: number,
+    nonce: number,
+    maxFeePerGas: bigint,
+    maxPriorityFeePerGas: bigint
+}
 
 export abstract class Evm extends NetworkBased {
 
-    protected async _getType2TxParams(sender: string, value: bigint): Promise<any> {
+    protected async _getType2TxParams(sender: string): Promise<EvmType2TxParams> {
         let type = 2
         let chainId = this._core.cChainId
         let nonce = await this._core.ethers.getTransactionCount(sender)
         let feeData = await this._core.ethers.getFeeData()
         let maxFeePerGas = feeData.maxFeePerGas ?? this._core.const.evmMaxFeePerGas
         let maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? this._core.const.evmMaxPriorityFeePerGas
-        return { type, chainId, value, nonce, maxFeePerGas, maxPriorityFeePerGas }
+        return { type, chainId, nonce, maxFeePerGas, maxPriorityFeePerGas }
     }
 }
 
@@ -33,10 +41,10 @@ export abstract class EvmContract extends Evm {
         method: BaseContractMethod,
         ...params: any[]
     ): Promise<Transaction> {
-        let args = await this._getType2TxParams(sender, value)
+        let args = await this._getType2TxParams(sender)
         let gasLimit: bigint
         try {
-            gasLimit = await method.estimateGas(...params, { from: sender, ...args })
+            gasLimit = await method.estimateGas(...params, { from: sender, value, ...args })
         } catch (e: any) {
             if (e.reason || e.shortMessage) {
                 throw new Error(`The transaction is expected to fail: ${e.reason ?? e.shortMessage}`)
@@ -44,7 +52,7 @@ export abstract class EvmContract extends Evm {
                 throw e
             }
         }
-        let txData = await method.populateTransaction(...params, { gasLimit, ...args })
+        let txData = await method.populateTransaction(...params, { gasLimit, value, ...args })
         return Transaction.from(txData)
     }
 

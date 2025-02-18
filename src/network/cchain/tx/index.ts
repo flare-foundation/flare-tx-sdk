@@ -6,7 +6,7 @@ import { Signature } from "../../sign";
 import { Utils } from "../../utils";
 import { TxType } from "../../txtype";
 import { Wallet } from "../../../wallet";
-import { ethers, Transaction as EvmTx, Transaction } from "ethers";
+import { ethers, Transaction as EvmTx } from "ethers";
 import { BN } from "@flarenetwork/flarejs";
 import { EcdsaSignature } from "@flarenetwork/flarejs/dist/common";
 import { PublicKeyPrefix, Serialization } from "@flarenetwork/flarejs/dist/utils";
@@ -32,9 +32,15 @@ export class Transactions extends NetworkBased {
     private _import: Import
 
     async transfer(
-        wallet: Wallet, cAddress: string, recipient: string, amount: bigint
+        wallet: Wallet, cAddress: string, recipient: string, amount?: bigint
     ): Promise<void> {
-        let unsignedTx = await this._transfer.getTx(cAddress, recipient, amount)
+        let unsignedTx: EvmTx
+        if (amount) {
+            unsignedTx = await this._transfer.getTx(cAddress, recipient, amount)
+        } else {
+            let balance = await this._core.ethers.getBalance(cAddress)
+            unsignedTx = await this._transfer.getWipeTx(cAddress, recipient, balance)
+        }
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.TRANSFER_NAT)
     }
 
@@ -152,7 +158,7 @@ export class Transactions extends NetworkBased {
             let digest = unsignedTx.unsignedHash
             let signature = await Signature.signEvmTx(wallet, unsignedTxHex, digest, cAddress)
 
-            let tx = Transaction.from({ signature, ...unsignedTx.toJSON() })
+            let tx = EvmTx.from({ signature, ...unsignedTx.toJSON() })
 
             if (this._core.beforeTxSubmission) {
                 let signedTxHex = tx.serialized

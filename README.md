@@ -94,11 +94,11 @@ In general, for transaction generation, the wallet should implement the function
 ```
 getPublicKey(): Promise<string>
 ```
-that returns the public key of the wallet in the hexadecimal notation. This function is required for P-chain related operations. For generating C-chain transaction only, it is sufficient that the wallet implements the function
+that returns the public key of the wallet in the hexadecimal encoding. This function is required for P-chain related operations. For generating C-chain transaction only, it is sufficient that the wallet implements the function
 ```
 getCAddress(): Promise<string>
 ```
-that returns the C-chain address in the hexadecimal notation. This function is not required if the function `getPublicKey` is available.
+that returns the C-chain address in the hexadecimal encoding. This function is not required if the function `getPublicKey` is available.
 
 Moreover, in order to execute transactions, the wallet should implement one or more functions for signing. The documentation of each SDK function that receives the `Wallet` object provides information which of the following functions are suitable to execute the actions.
 
@@ -174,7 +174,7 @@ network.setBeforeTxSignatureCallback(async (data: BeforeTxSignature) => { return
 ```
 The object of type `BeforeTxSignature` contains the properties:
 - `txType` the [code](src/network/txtype.ts) of the transaction type;
-- `unsignedTxHex` the unsigned transaction in the hexadecimal notation.
+- `unsignedTxHex` the unsigned transaction in the hexadecimal encoding.
 
 The property `unsignedTxHex` can be used for transaction verification (see e.g. [Flare: Transaction verification library](https://github.com/flare-foundation/flare-tx-verifier-lib)).
 
@@ -188,8 +188,8 @@ network.setBeforeTxSubmissionCallback(async (data: BeforeTxSubmission) => { retu
 ```
 The object of type `BeforeTxSubmission` contains the properties:
 - `txType` the [code](src/network/txtype.ts) of the transaction type;
-- `signedTxHex` the signed transaction in the hexadecimal notation;
-- `txId` the id of the signed transaction in the hexadecimal notation.
+- `signedTxHex` the signed transaction in the hexadecimal encoding;
+- `txId` the id of the signed transaction in the hexadecimal encoding.
 
 Normally, the callback should return `true`, which grants the permission to submit the transaction to the network. If it returns `false`, the transaction is not submitted.
 
@@ -203,7 +203,7 @@ network.setAfterTxSubmissionCallback(async (data: AfterTxSubmission) => { return
 ```
 The object of type `AfterTxSubmission` contains the properties:
 - `txType` the [code](src/network/txtype.ts) of the transaction type;
-- `txId` the id of the sumitted transaction in the hexadecimal notation.
+- `txId` the id of the sumitted transaction in the hexadecimal encoding.
 
 Normally, the callback should return `true`, which signals that the confirmation of the transaction on the network is to be awaited before proceeding. If it returns `false`, the confirmation is not awaited.
 
@@ -215,7 +215,7 @@ network.setAfterTxConfirmationCallback(async (data: AfterTxConfirmation) => { //
 ```
 The object of type `AfterTxConfirmation` contains the properties:
 - `txType` the [code](src/network/txtype.ts) of the transaction type;
-- `txId` the id of the sumitted transaction in the hexadecimal notation;
+- `txId` the id of the sumitted transaction in the hexadecimal encoding;
 - `txStatus` the status of the transaction: true if accepted and false if rejected.
 
 ## Background
@@ -270,6 +270,10 @@ await network.getBalanceStakedOnP(publicKey)
 The native coin of the C-chain can be transferred using
 ```
 await network.transferNative(wallet, amount)
+```
+To transfer the entire native coin balance, use
+```
+await network.transferAllNative(wallet)
 ```
 
 The native coin on the C-chain can be wrapped to an ERC20 token WNat, which represents the wrapped native token. The exchange is in ratio 1:1 and can be performed by

@@ -187,6 +187,20 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Attempts to transfer all wallet funds to a given recipient on the C-chain.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param recipient A C-chain address of the transfer recipient.
+     * @remark As fees on the C-chain are subjected to change, a certain amount of dust may be left on
+     * the account after the transaction is executed.
+     */
+    async transferAllNative(wallet: Wallet, recipient: string): Promise<void> {
+        let cAddress = await this._getCAddress(wallet)
+        await this._cchain.tx.transfer(wallet, cAddress, recipient)
+    }
+
+    /**
      * Wraps wallet funds on the C-chain.
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getCAddress` or `getPublicKey`, and
