@@ -269,11 +269,11 @@ await network.getBalanceStakedOnP(publicKey)
 
 The native coin of the C-chain can be transferred using
 ```
-await network.transferNative(wallet, amount)
+await network.transferNative(wallet, recipient, amount)
 ```
-To transfer the entire native coin balance, use
+to the C-chain address specified by `recipient`. To transfer the entire native coin balance, use
 ```
-await network.transferAllNative(wallet)
+await network.transferAllNative(wallet, recipient)
 ```
 
 The native coin on the C-chain can be wrapped to an ERC20 token WNat, which represents the wrapped native token. The exchange is in ratio 1:1 and can be performed by
