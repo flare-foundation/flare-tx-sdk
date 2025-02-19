@@ -1,6 +1,6 @@
 # Flare: Transaction SDK
 
-This is the official Node.js Software Development Kit (SDK) for performing common actions on the Flare networks:
+This is the official Node.js Software Development Kit (SDK) for performing common actions on Flare's networks:
 
 - [Retrieving account and balance information](#account-and-balance-1)
 - [Transferring native and wrapped coins](#coin-transfers-1)
@@ -8,13 +8,13 @@ This is the official Node.js Software Development Kit (SDK) for performing commo
 - [Interacting with the C-chain contracts](#c-chain-contracts-1)
 - [Staking on the P-chain](#staking-1)
 
-The SDK is designed to simplify blockchain interactions and offer future-proof support for the above described actions, making it easier to develop apps on the [Flare networks](#network-object). It can be integrated with both [standard and custom wallets](#wallet-implementation) for transaction signing, and provides detailed, step-by-step [transaction tracking](#transaction-tracking).
+The SDK is designed to simplify blockchain interactions and offer future-proof support for the above described actions, making it easier to develop apps on [Flare's networks](#network-object). It can be integrated with both [standard and custom wallets](#wallet-implementation) for transaction signing, and provides detailed, step-by-step [transaction tracking](#transaction-tracking).
 
 ## Quick start
 
 To install the library in a Node.js project, run
 ```
-npm install @flarenetworks/flare-tx-sdk
+npm install @flarenetwork/flare-tx-sdk
 ```
 
 The following is a brief overview of the available actions. Suppose
@@ -322,7 +322,7 @@ await network.undelegateFromFtso(wallet)
 
 ### C-chain contracts
 
-The C-chain is a standard EVM blockchain populated by the official Flare networks contracts, as well as other contracts deployed by the community. To interact with any of these contracts, it is sufficient to know the contract `address` and its application binary interface `abi`.
+The C-chain is a standard EVM blockchain populated by the official Flare contracts, as well as other contracts deployed by the community. To interact with any of these contracts, it is sufficient to know the contract `address` and its application binary interface `abi`.
 
 To call a contract method with the name `method` with the purpose of obtaining information from the contract, use
 ```
@@ -336,7 +336,7 @@ await network.invokeContractMethodOnC(wallet, address, abi, method, value, param
 ```
 where `value` is the amount of native tokens to send in transaction when the calling method is marked as `payable`.
 
-For the official Flare networks contracts, the input `address` can be replaced by the contract's name. The list of these contracts is returned by
+For the official Flare contracts, the input `address` can be replaced by the contract's name. The list of these contracts is returned by
 ```
 await network.getFlareContracts()
 ```
