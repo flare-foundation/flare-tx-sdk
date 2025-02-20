@@ -16,9 +16,20 @@ export abstract class Evm extends NetworkBased {
         let chainId = this._core.cChainId
         let nonce = await this._core.ethers.getTransactionCount(sender)
         let feeData = await this._core.ethers.getFeeData()
-        let maxFeePerGas = feeData.maxFeePerGas ?? this._core.const.evmMaxFeePerGas
-        let maxPriorityFeePerGas = feeData.maxPriorityFeePerGas ?? this._core.const.evmMaxPriorityFeePerGas
+        let maxFeePerGas = this._core.const.evmMaxFeePerGas
+        if (feeData.maxFeePerGas) {
+            maxFeePerGas = this._roundToGwei(feeData.maxFeePerGas)
+        }
+        let maxPriorityFeePerGas = this._core.const.evmMaxPriorityFeePerGas
+        if (feeData.maxPriorityFeePerGas) {
+            maxPriorityFeePerGas = this._roundToGwei(feeData.maxPriorityFeePerGas)
+        }
         return { type, chainId, nonce, maxFeePerGas, maxPriorityFeePerGas }
+    }
+
+    private _roundToGwei(weiAmount: bigint): bigint {
+        let factor = BigInt(1e9)
+        return (weiAmount / factor) * factor
     }
 }
 
@@ -42,9 +53,9 @@ export abstract class EvmContract extends Evm {
         ...params: any[]
     ): Promise<Transaction> {
         let args = await this._getType2TxParams(sender)
-        let gasLimit: bigint
+        let estimatedGasLimit: bigint
         try {
-            gasLimit = await method.estimateGas(...params, { from: sender, value, ...args })
+            estimatedGasLimit = await method.estimateGas(...params, { from: sender, value, ...args })            
         } catch (e: any) {
             if (e.reason || e.shortMessage) {
                 throw new Error(`The transaction is expected to fail: ${e.reason ?? e.shortMessage}`)
@@ -52,6 +63,10 @@ export abstract class EvmContract extends Evm {
                 throw e
             }
         }
+        let gasLimitExtraFactor = 1 + this._core.const.evmGasLimitExtra
+        let gasLimitExtra = Math.ceil(Number(estimatedGasLimit) * gasLimitExtraFactor)
+        let gasLimitRoundFactor = 1e3
+        let gasLimit = BigInt(Math.ceil(gasLimitExtra / gasLimitRoundFactor) * gasLimitRoundFactor)
         let txData = await method.populateTransaction(...params, { gasLimit, value, ...args })
         return Transaction.from(txData)
     }
