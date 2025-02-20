@@ -6,9 +6,7 @@
   "files": [
     "/dist"
   ],
-  "exports": {
-    "import": "./dist/index.js"
-  },
+  "exports": "./dist/index.js",
   "types": "dist/index.d.ts",
   "homepage": "https://github.com/flare-foundation/flare-tx-sdk",
   "repository": {
