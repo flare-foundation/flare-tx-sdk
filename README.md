@@ -1,6 +1,6 @@
-# flare-tx-sdk
+# Flare: Transaction SDK
 
-This is the official Node.js Software Development Kit (SDK) for performing common actions on the Flare networks:
+This is the official Node.js Software Development Kit (SDK) for performing common actions on Flare's networks:
 
 - [Retrieving account and balance information](#account-and-balance-1)
 - [Transferring native and wrapped coins](#coin-transfers-1)
@@ -8,16 +8,16 @@ This is the official Node.js Software Development Kit (SDK) for performing commo
 - [Interacting with the C-chain contracts](#c-chain-contracts-1)
 - [Staking on the P-chain](#staking-1)
 
-The SDK is designed to simplify blockchain interactions and offer future-proof support for the above described actions, making it easier to develop apps on the [Flare networks](#network-object). It can be integrated with both [standard and custom wallets](#wallet-implementation) for transaction signing, and provides detailed, step-by-step [transaction tracking](#transaction-tracking).
+The SDK is designed to simplify blockchain interactions and offer future-proof support for the above described actions, making it easier to develop apps on [Flare's networks](#network-object). It can be integrated with both [standard and custom wallets](#wallet-implementation) for transaction signing, and provides detailed, step-by-step [transaction tracking](#transaction-tracking).
 
 ## Quick start
 
 To install the library in a Node.js project, run
 ```
-npm install @flarenetworks/flare-tx-sdk
+npm install @flarenetwork/flare-tx-sdk
 ```
 
-The following is a short overview of the available actions. Suppose
+The following is a brief overview of the available actions. Suppose
 - `network` is an object of class [`Network`](src/network/network.ts), e.g. `Network.FLARE`
 - `wallet` is an object of a suitable class that [implements](#wallet-implementation) the interface [`Wallet`](src/wallet/index.ts)
 
@@ -164,7 +164,7 @@ The queries and actions on the network are executed using the [`Network`](src/ne
 
 To track the process of signing and submitting of transactions to the network, the following [callbacks](src/network/callback.ts) can be registered with a `Network` object.
 
-The first three callbacks return a `boolean` and can be used to stop the transaction execution, e.g. if the tool is used only for transaction generation for offline signing. Note, however, that certain processes consist of several consecutive transactions that may depend on each other, and stopping a transaction may result in the failure of subsequent actions.
+The first three callbacks return a `Boolean` and can be used to stop the transaction execution, e.g. if the tool is used only for transaction generation for offline signing. Note, however, that certain processes consist of several consecutive transactions that may depend on each other, and stopping a transaction may result in the failure of subsequent actions.
 
 ### Before transaction signature
 
@@ -178,7 +178,7 @@ The object of type `BeforeTxSignature` contains the properties:
 
 The property `unsignedTxHex` can be used for transaction verification (see e.g. [Flare: Transaction verification library](https://github.com/flare-foundation/flare-tx-verifier-lib)).
 
-Normally, the callback should return `true`, which grants the permission to invoke the signature request on the wallet object. If it returns `false`, the transaction is not signed and submitted to the network.
+Normally, the callback should return `true`, which grants permission to invoke the signature request on the wallet object. If it returns `false`, the transaction is not signed and submitted to the network.
 
 ### Before transaction submission
 
@@ -203,7 +203,7 @@ network.setAfterTxSubmissionCallback(async (data: AfterTxSubmission) => { return
 ```
 The object of type `AfterTxSubmission` contains the properties:
 - `txType` the [code](src/network/txtype.ts) of the transaction type;
-- `txId` the id of the sumitted transaction in the hexadecimal encoding.
+- `txId` the id of the submitted transaction in the hexadecimal encoding.
 
 Normally, the callback should return `true`, which signals that the confirmation of the transaction on the network is to be awaited before proceeding. If it returns `false`, the confirmation is not awaited.
 
@@ -215,7 +215,7 @@ network.setAfterTxConfirmationCallback(async (data: AfterTxConfirmation) => { //
 ```
 The object of type `AfterTxConfirmation` contains the properties:
 - `txType` the [code](src/network/txtype.ts) of the transaction type;
-- `txId` the id of the sumitted transaction in the hexadecimal encoding;
+- `txId` the id of the submitted transaction in the hexadecimal encoding;
 - `txStatus` the status of the transaction: true if accepted and false if rejected.
 
 ## Background
@@ -243,7 +243,7 @@ The resulting object `balance` is of type [`Balance`](src/network/balance.ts) an
 - `notImportedToC` The balance exported from the P-chain but not imported to the C-chain;
 - `notImportedToP` The balance exported from the C-chain but not imported to the P-chain.
 
-Here and herafter, all monetary amounts are considered in the wei units and represented as `bigint`.
+Here and hereafter, all monetary amounts are considered in the Wei units and represented as `BigInt`.
 
 Separately, the balance information can be obtained by
 ```
@@ -281,7 +281,7 @@ The native coin on the C-chain can be wrapped to an ERC20 token WNat, which repr
 await network.wrapNative(wallet, amount)
 ```
 
-The wrapped coin can be ecxhanged back to the native coin by
+The wrapped coin can be exchanged back to the native coin by calling
 ```
 await network.unwrapToNative(wallet, amount)
 ```
@@ -322,7 +322,7 @@ await network.undelegateFromFtso(wallet)
 
 ### C-chain contracts
 
-The C-chain is a standard EVM blockchain populated by the official Flare networks contracts, as well as other contracts deployed by community. To interect with any of these contracts, it is sufficient to know the contract `address` and its application binary interface `abi`.
+The C-chain is a standard EVM blockchain populated by the official Flare contracts, as well as other contracts deployed by the community. To interact with any of these contracts, it is sufficient to know the contract `address` and its application binary interface `abi`.
 
 To call a contract method with the name `method` with the purpose of obtaining information from the contract, use
 ```
@@ -336,7 +336,7 @@ await network.invokeContractMethodOnC(wallet, address, abi, method, value, param
 ```
 where `value` is the amount of native tokens to send in transaction when the calling method is marked as `payable`.
 
-For the official Flare networks contracts, the input `address` can be replaced by the contract's name. The list of these contracts is returned by
+For the official Flare contracts, the input `address` can be replaced by the contract's name. The list of these contracts is returned by
 ```
 await network.getFlareContracts()
 ```
