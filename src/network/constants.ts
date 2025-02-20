@@ -40,6 +40,12 @@ export class Constants {
     evmTransferGasLimit: bigint
 
     /**
+     * The percentage of estimated gas limit to specify as extra in C-chain transactions
+     * (does not apply to EVM transfers)
+     */
+    evmGasLimitExtra: number
+
+    /**
      * The default base fee in weis used as fallback for C-chain transactions
      */
     evmBaseFee: bigint
@@ -150,6 +156,7 @@ export class Constants {
         this.txConfirmationTimeout = 60000
         this.txConfirmationCheckout = 2000
         this.evmTransferGasLimit = BigInt(21000)
+        this.evmGasLimitExtra = 0.05
         this.evmBaseFee = BigInt(25 * 1e9)
         this.evmMaxFeePerGas = BigInt(50 * 1e9)
         this.evmMaxPriorityFeePerGas = BigInt(0)
