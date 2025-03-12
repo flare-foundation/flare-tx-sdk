@@ -1,0 +1,56 @@
+variables:
+  PATTERN_FULL: '^v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?:[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+  PATTERN_SEMI: '^v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$'
+  AUTH_TOKEN: $NPM_AUTH_TOKEN
+
+.check-tag_template:
+  script:
+    - output=$(echo $CI_COMMIT_TAG | grep -P "$PATTERN_FULL")
+    - echo "output=$output" >> deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+
+.compare-versions_template:
+  script:
+    - apt-get update
+    - apt-get install jq -y
+    - pver=$(echo "v$(jq .version package.json)" | tr -d '"')
+    - if [ $pver != $output ]; then exit 1; fi;
+    - echo "output=$output" >> deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+
+.publish-npm_template:
+  image: node:20
+  script:
+    - echo "//registry.npmjs.org/:_authToken=$AUTH_TOKEN" > .npmrc
+    - result=$(echo "$output" | grep -Pc "$PATTERN_SEMI") || true
+    - npm ci
+    - if [ $result -eq 1 ]; then npm publish; else npm publish --tag beta; fi;
+
+stages:
+  - publish
+
+check-tag:
+  stage: publish
+  extends: .check-tag_template
+  rules:
+    - if: '$CI_COMMIT_TAG'
+
+compare-versions:
+  stage: publish
+  extends: .compare-versions_template
+  needs:
+    - job: check-tag
+  rules:
+    - if: '$CI_COMMIT_TAG'
+  
+publish-npm:
+  stage: publish
+  extends: .publish-npm_template
+  needs:
+    - job: compare-versions
+  rules:
+    - if: '$CI_COMMIT_TAG'
