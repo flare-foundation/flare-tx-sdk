@@ -15,7 +15,7 @@ variables:
   script:
     - apt-get update
     - apt-get install jq -y
-    - pver=$(echo "v$(jq .version package.json)" | tr -d '"')
+    - pver=$(echo "v$(jq -r .version package.json)")
     - if [ $pver != $output ]; then exit 1; fi;
     - echo "output=$output" >> deploy.env
   artifacts:
@@ -25,7 +25,10 @@ variables:
 .publish-npm_template:
   image: node:20
   script:
-    - echo "//registry.npmjs.org/:_authToken=$AUTH_TOKEN" > .npmrc
+    - apt-get update
+    - apt-get install -y gettext
+    - echo "//registry.npmjs.org/:_authToken=\$AUTH_TOKEN" > .npmrc
+    - echo "$(envsubst < .npmrc)" > .npmrc
     - result=$(echo "$output" | grep -Pc "$PATTERN_SEMI") || true
     - npm ci
     - if [ $result -eq 1 ]; then npm publish; else npm publish --tag beta; fi;
