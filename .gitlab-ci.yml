@@ -31,6 +31,8 @@ variables:
     - echo "$(envsubst < .npmrc)" > .npmrc
     - result=$(echo "$output" | grep -Pc "$PATTERN_SEMI") || true
     - npm ci
+    - npm install typescript
+    - npm run build
     - if [ $result -eq 1 ]; then npm publish; else npm publish --tag beta; fi;
 
 stages:
