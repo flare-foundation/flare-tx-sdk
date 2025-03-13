@@ -1,6 +1,6 @@
 {
   "name": "@flarenetwork/flare-tx-sdk",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "Official SDK for generating and executing transactions on Flare Networks.",
   "main": "dist/index.js",
   "files": [
@@ -25,7 +25,7 @@
     "ethers": "^6.13.4"
   },
   "devDependencies": {
-    "typescript": "^5.7.3",
-    "vite-plugin-node-polyfills": "^0.23.0"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
   }
 }
