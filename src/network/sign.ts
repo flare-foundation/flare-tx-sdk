@@ -19,6 +19,7 @@ export class Signature {
         } else {
             throw new Error("The wallet implements no suitable method to sign a C-chain transaction")
         }
+        signature = Utils.addHexPrefix(signature)
         recoveredCAddress = this._recoverCAddress(digest, signature)
         if (recoveredCAddress != cAddressToRecover) {
             throw new Error("The C-chain address cannot be recovered from the signature")
@@ -36,13 +37,16 @@ export class Signature {
         let recoveredPublicKey: string
         if (wallet.signPTransaction) {
             signature = await wallet.signPTransaction(tx)
+            signature = Utils.addHexPrefix(signature)
             recoveredPublicKey = this._recoverPublicKey(digest, signature)
         } else if (wallet.signDigest) {
             signature = await wallet.signDigest(digest)
+            signature = Utils.addHexPrefix(signature)
             recoveredPublicKey = this._recoverPublicKey(digest, signature)
         } else if (wallet.signEthMessage) {
             let utf8String = Utils.removeHexPrefix(digest)
             signature = await wallet.signEthMessage(utf8String)
+            signature = Utils.addHexPrefix(signature)
             recoveredPublicKey = this._recoverPublicKeyFromEthMessage(utf8String, signature)
         } else {
             throw new Error("The wallet implements no suitable method to sign a P-chain transaction")
