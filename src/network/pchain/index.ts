@@ -14,8 +14,12 @@ export class PChain extends NetworkBased {
     tx: Transactions
     
     async getBalance(pAddress: string): Promise<bigint> {
-        let response = await this._core.avalanche.PChain().getBalance(`P-${pAddress}`)
-        return Utils.toBigint(response.balance) * BigInt(1e9)
+        // let response = await this._core.avalanche.PChain().getBalance(`P-${pAddress}`)
+        let pAssetId = this._core.pAssetId
+        let pAddressHex = Utils.removeHexPrefix(Account.pAddressToHex(pAddress))
+        let utxoSet = await this._core.avalanche.PChain().getUTXOs([`P-${pAddress}`])
+        let balance = utxoSet.utxos.getBalance([Buffer.from(pAddressHex, "hex") as any], pAssetId)
+        return Utils.toBigint(balance) * BigInt(1e9)
     }
     
     async getBalanceNotImportedToP(pAddress: string): Promise<bigint> {

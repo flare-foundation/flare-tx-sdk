@@ -20,10 +20,10 @@ export function runTransferCTests(env: TestEnvironment): void {
                         await network.transferNative(wallet, env.address1, testAmount)
                         let senderBalanceAfter = await network.getBalanceOnC(publicKey)
                         let recipientBalanceAfter = await network.getBalanceOnC(env.address1)
-                        assert.strictEqual(senderBalanceBefore - testAmount > senderBalanceAfter, true, "incorrect sender balance")
-                        assert.strictEqual(recipientBalanceBefore + testAmount, recipientBalanceAfter, "incorrect recipient balance")
+                        assert.strictEqual(true, senderBalanceBefore - testAmount > senderBalanceAfter, "incorrect sender balance")
+                        assert.strictEqual(recipientBalanceAfter, recipientBalanceBefore + testAmount, "incorrect recipient balance")
                     })
-    
+                    
                     it("transfer wrapped", async () => {
                         let publicKey = await wallet.getPublicKey()
                         await network.wrapNative(wallet, testAmount)
@@ -32,8 +32,8 @@ export function runTransferCTests(env: TestEnvironment): void {
                         await network.transferWrapped(wallet, env.address1, testAmount)
                         let senderBalanceAfter = await network.getBalanceWrappedOnC(publicKey)
                         let recipientBalanceAfter = await network.getBalanceWrappedOnC(env.address1)
-                        assert.strictEqual(senderBalanceBefore - testAmount, senderBalanceAfter, "incorrect sender balance")
-                        assert.strictEqual(recipientBalanceBefore + testAmount, recipientBalanceAfter, "incorrect recipient balance")
+                        assert.strictEqual(senderBalanceAfter, senderBalanceBefore - testAmount, "incorrect sender balance")
+                        assert.strictEqual(recipientBalanceAfter, recipientBalanceBefore + testAmount, "incorrect recipient balance")
                     })
                 })
             }

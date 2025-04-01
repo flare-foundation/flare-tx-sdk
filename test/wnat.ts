@@ -18,7 +18,7 @@ export function runWNatTests(env: TestEnvironment): void {
                     let startBalance = await network.getBalanceWrappedOnC(publicKey)
                     await network.wrapNative(wallet, testAmount)
                     let balance = await network.getBalanceWrappedOnC(publicKey)
-                    assert.strictEqual(startBalance + testAmount, balance)
+                    assert.strictEqual(balance, startBalance + testAmount)
                 })
 
                 it("unwrap to native", async () => {
@@ -26,7 +26,7 @@ export function runWNatTests(env: TestEnvironment): void {
                     let startBalance = await network.getBalanceWrappedOnC(publicKey)
                     await network.unwrapToNative(wallet, testAmount)
                     let balance = await network.getBalanceWrappedOnC(publicKey)
-                    assert.strictEqual(startBalance - testAmount, balance)
+                    assert.strictEqual(balance, startBalance - testAmount)
                 })
             })
         }

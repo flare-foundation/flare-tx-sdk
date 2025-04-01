@@ -15,7 +15,7 @@ export function runDelegationPTests(env: TestEnvironment): void {
                     let publicKey = await wallet.getPublicKey()
                     let balance = await network.getBalance(publicKey)
                     let toStake = Amount.nats(5e4)
-                    let toKeep = Amount.nats(10)
+                    let toKeep = Amount.gweis(1e6)
                     if (balance.availableOnC + balance.notImportedToP + balance.availableOnP < toStake + toKeep) {
                         t.skip("Insufficient balance for delegation test")
                         return

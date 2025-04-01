@@ -18,28 +18,28 @@ export function runTransferCPTests(env: TestEnvironment): void {
                     let startBalanceOnP = await network.getBalanceOnP(publicKey)
                     await network.transferToP(wallet, testAmount)
                     let balanceOnP = await network.getBalanceOnP(publicKey)
-                    assert.strictEqual(startBalanceOnP + testAmount, balanceOnP)
+                    assert.strictEqual(balanceOnP, startBalanceOnP + testAmount)
                 })
 
                 it("transfer to C", async () => {
                     await network.transferToC(wallet)
                     let publicKey = await wallet.getPublicKey()
                     let balanceOnP = await network.getBalanceOnP(publicKey)
-                    assert.strictEqual(balanceOnP, BigInt(0))
+                    assert.strictEqual(BigInt(0), balanceOnP)
                 })
 
                 it("export from C", async function () {
                     await network.exportFromC(wallet, testAmount)
                     let publicKey = await wallet.getPublicKey()
                     let balanceNotImportedToP = await network.getBalanceNotImportedToP(publicKey)
-                    assert.strictEqual(balanceNotImportedToP > BigInt(0), true)
+                    assert.strictEqual(true, balanceNotImportedToP > BigInt(0))
                 })
 
                 it("import to P", async function () {
                     await network.importToP(wallet)
                     let publicKey = await wallet.getPublicKey()
                     let balanceNotImportedToP = await network.getBalanceNotImportedToP(publicKey)
-                    assert.strictEqual(balanceNotImportedToP, BigInt(0))
+                    assert.strictEqual(BigInt(0), balanceNotImportedToP)
                 })
 
                 it("export from P", async function () {
@@ -48,14 +48,14 @@ export function runTransferCPTests(env: TestEnvironment): void {
                     let txFeeOnP = network.getDefaultTxFeeOnP()
                     await network.exportFromP(wallet, startBalanceOnP - txFeeOnP)
                     let balanceNotImportedToC = await network.getBalanceNotImportedToC(publicKey)
-                    assert.strictEqual(balanceNotImportedToC > BigInt(0), true)
+                    assert.strictEqual(true, balanceNotImportedToC > BigInt(0))
                 })
 
                 it("import to C", async function () {
                     await network.importToC(wallet)
                     let publicKey = await wallet.getPublicKey()
                     let balanceNotImportedToC = await network.getBalanceNotImportedToC(publicKey)
-                    assert.strictEqual(balanceNotImportedToC, BigInt(0))
+                    assert.strictEqual(BigInt(0), balanceNotImportedToC)
                 })
             })
         }

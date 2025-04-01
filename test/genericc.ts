@@ -29,7 +29,7 @@ export function runGenericContractTests(env: TestEnvironment): void {
                     let startBalance = await network.getBalanceWrappedOnC(publicKey)
                     await network.invokeContractMethodOnC(wallet, "WNat", abi, "deposit", testAmount)
                     let currentBalance = await network.getBalanceWrappedOnC(publicKey)
-                    assert.strictEqual(startBalance + testAmount, currentBalance, "unmatching wrapped balance")
+                    assert.strictEqual(currentBalance, startBalance + testAmount, "unmatching wrapped balance")
                     await network.unwrapToNative(wallet, testAmount)
                 })
 
