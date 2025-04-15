@@ -1,6 +1,6 @@
 import { ethers, Wallet as EthersWallet, JsonRpcProvider, Transaction } from "ethers"
-import { Constants, Network } from "../src/network";
-import { Wallet } from "../src/wallet";
+import { Constants, Network } from "../../src/network";
+import { Wallet } from "../../src/wallet";
 import { UnsignedTx as UnsignedCTx } from "@flarenetwork/flarejs/dist/apis/evm";
 import { UnsignedTx as UnsignedPTx } from "@flarenetwork/flarejs/dist/apis/platformvm";
 

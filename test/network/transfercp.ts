@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "assert";
 import { TestEnvironment } from "./env";
-import { Amount } from "../src";
+import { Amount } from "../../src";
 
 export function runTransferCPTests(env: TestEnvironment): void {
     describe("C/P chain transfer tests", function () {

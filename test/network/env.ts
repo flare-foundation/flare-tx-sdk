@@ -1,4 +1,4 @@
-import { Network } from "../src"
+import { Network } from "../../src"
 import { TestAvaxTransactionWallet, TestDigestWallet, TestEthMessageWallet, TestEvmSubmitTransactionWallet, TestEvmTransactionWallet, TestWallet } from "./wallet"
 
 export class TestEnvironment {

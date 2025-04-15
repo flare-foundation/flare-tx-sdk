@@ -15,7 +15,8 @@
   },
   "scripts": {
     "build": "rm -rf dist/ && npx tsc -b && cp -r ./build/src ./dist && rm -rf build",
-    "test": "npx ts-node test"
+    "test": "npx ts-node test/network",
+    "test_eip1193": "npx ts-node test/wallet/eip1193"
   },
   "author": "Flare Network",
   "license": "MIT",
@@ -26,6 +27,6 @@
   },
   "devDependencies": {
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }

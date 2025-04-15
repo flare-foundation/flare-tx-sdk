@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "assert";
 import { TestEnvironment } from "./env";
-import { Amount } from "../src";
+import { Amount } from "../../src";
 
 export function runDelegationPTests(env: TestEnvironment): void {
     describe("P chain delegation tests", function () {
