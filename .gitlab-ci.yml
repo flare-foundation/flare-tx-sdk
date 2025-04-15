@@ -5,32 +5,25 @@ variables:
 
 .check-tag_template:
   script:
-    - output=$(echo $CI_COMMIT_TAG | grep -P "$PATTERN_FULL")
-    - echo "output=$output" >> deploy.env
-  artifacts:
-    reports:
-      dotenv: deploy.env
+    - result=$(grep -Pc "$PATTERN_FULL" <<< $CI_COMMIT_TAG) || true
+    - if [ $result -eq 0 ]; then echo "Tag has wrong format"; exit 1; fi #TODO: link to spec
 
 .compare-versions_template:
   script:
     - apt-get update
     - apt-get install jq -y
     - pver=$(echo "v$(jq -r .version package.json)")
-    - if [ $pver != $output ]; then exit 1; fi;
-    - echo "output=$output" >> deploy.env
-  artifacts:
-    reports:
-      dotenv: deploy.env
+    - if [ $pver != $CI_COMMIT_TAG ]; then echo "Tag and package.json versions do not match"; exit 1; fi;
 
 .publish-npm_template:
   image: node:20
   script:
     - apt-get update
     - apt-get install -y gettext
-    - echo "//registry.npmjs.org/:_authToken=\$AUTH_TOKEN" > .npmrc
-    - echo "$(envsubst < .npmrc)" > .npmrc
-    - result=$(echo "$output" | grep -Pc "$PATTERN_SEMI") || true
+    - envsubst <<< '//registry.npmjs.org/:_authToken=$AUTH_TOKEN' > .npmrc
+    - result=$(grep -Pc "$PATTERN_SEMI" <<< "$CI_COMMIT_TAG") || true
     - npm ci
+    - npm run build
     - if [ $result -eq 1 ]; then npm publish; else npm publish --tag beta; fi;
 
 stages:
