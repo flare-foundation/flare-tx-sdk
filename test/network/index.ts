@@ -11,7 +11,7 @@ import { runTransferCPTests } from "./transfercp";
 import { runDelegationPTests } from "./delegationp";
 
 function execute() {
-    const TEST_KEY_FILE = path.join("test", "network", "keys", "key.txt")
+    const TEST_KEY_FILE = path.join("test", "keys", "key.txt")
     let privateKey: string
     if (process.argv.length > 2) {
         privateKey = process.argv[2]

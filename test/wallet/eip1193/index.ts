@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "assert"
 import { EIP1193WalletController, EIP1193Wallet } from "../../../src"
 import { TestProvider } from "./provider"
-import accounts from "./accounts.json"
+import accounts from "../../keys/eip1193_accounts.json"
 import { Transaction } from "ethers";
 
 async function execute() {
