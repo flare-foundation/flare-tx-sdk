@@ -451,7 +451,7 @@ controller.onWalletChange((wallet: EIP1193Wallet) => { // react })
 The class [`EIP1193Wallet`](./src/wallet/eip1193/wallet.ts) implements the following functions that enable generating and signing of all types of C-chain and P-chain transactions.
 
 - `getCAddress`
-- `getPublicKey` (when called for the first time, the function initiates a request for signing a message, which is used to determine the public key of the account by recovering it from the message signature)
+- `getPublicKey`
 - `signEthMessage`
 - `signAndSubmitCTransaction`
 
