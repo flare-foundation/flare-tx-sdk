@@ -491,7 +491,7 @@ An instance of `EthLedgerWallet` connects to the Ethereum app and implements the
 
 For signing on a Trezor device, an SDK-compatible wallet can be obtained by using the official Trezor libraries [Trezor Connect SDKs](https://connect.trezor.io/9/).
 
-To obtain SDK-compatible wallets, initialize `TrezorConnect` object and use it to create an object of class `TrezorWalletController`:
+To obtain SDK-compatible wallets, initialize `TrezorConnect` object and use it to create an object of class [`TrezorWalletController`](./src/wallet/trezor/controller.ts):
 ```
 let controller = new TrezorWalletController(TrezorConnect)
 ```
