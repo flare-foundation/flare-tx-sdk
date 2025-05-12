@@ -2,6 +2,9 @@ import { Wallet } from "../";
 import { TrezorConnector } from "./connector";
 import { ethers, Transaction } from "ethers";
 
+/**
+ * The class that implements {@link Wallet} and represents a Trezor account.
+ */
 export class TrezorWallet implements Wallet {
 
     constructor(connector: TrezorConnector, bip44Path: string) {
@@ -14,6 +17,10 @@ export class TrezorWallet implements Wallet {
     protected _address: string
     protected _publicKey: string
 
+    /**
+     * Returns the public key of the wallet.
+     * @returns The public key in the hexadecimal encoding.
+     */
     async getPublicKey(): Promise<string> {
         if (!this._publicKey) {
             let response = await this._connector.ethereumGetPublicKey(
@@ -28,6 +35,10 @@ export class TrezorWallet implements Wallet {
         return this._publicKey
     }
 
+    /**
+     * Returns the C-chain address of the wallet.
+     * @returns The C-chain address in the hexadecimal encoding.
+     */
     async getCAddress(): Promise<string> {
         if (!this._address) {
             let publicKey = await this.getPublicKey()
@@ -36,6 +47,11 @@ export class TrezorWallet implements Wallet {
         return this._address
     }
 
+    /**
+     * Signs a message with ETH prefix.
+     * @param message UTF8 encoded message.
+     * @returns The signature in hexadecimal encoding.
+     */
     async signEthMessage(message: string): Promise<string> {
         let response = await this._connector.ethereumSignMessage(
             { path: this._path, message: message, hex: false }
@@ -47,6 +63,11 @@ export class TrezorWallet implements Wallet {
         return this._prefixedHex(payload.signature)
     }
     
+    /**
+     * Signs a C-chain (Ethereum Virtual Machine) transaction.
+     * @param tx Unsigned C-chain (EVM) transaction in hexadecimal encoding.
+     * @returns The signature in hexadecimal encoding.
+     */
     async signCTransaction(tx: string): Promise<string> {
         let txObj = Transaction.from(tx)
         let to = txObj.to

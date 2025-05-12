@@ -3,6 +3,9 @@ import { ethers } from "ethers";
 import { EthApp, FlrApp } from "./signer";
 import { LedgerCore } from "./core";
 
+/**
+ * The class that implements {@link Wallet} and represents a Ledger account.
+ */
 export abstract class LedgerWallet implements Wallet {
 
     constructor(transport: any, derivationPath: string) {
@@ -15,8 +18,16 @@ export abstract class LedgerWallet implements Wallet {
     protected _address: string
     protected _publicKey: string
 
+    /**
+     * Returns the public key of the wallet.
+     * @returns The public key in the hexadecimal encoding.
+     */
     abstract getPublicKey(): Promise<string>
 
+    /**
+     * Returns the C-chain address of the wallet.
+     * @returns The C-chain address in the hexadecimal encoding.
+     */
     async getCAddress(): Promise<string> {
         if (!this._address) {
             let publicKey = await this.getPublicKey()
@@ -92,6 +103,9 @@ export abstract class LedgerWallet implements Wallet {
     }
 }
 
+/**
+ * The class that implements {@link Wallet} and represents a Ledger account managed by the Flare app.
+ */
 export class FlrLedgerWallet extends LedgerWallet {
 
     constructor(app: FlrApp, derivationPath: string) {
@@ -101,6 +115,10 @@ export class FlrLedgerWallet extends LedgerWallet {
 
     protected readonly _app: FlrApp
 
+    /**
+     * Returns the public key of the wallet.
+     * @returns The public key in the hexadecimal encoding.
+     */
     async getPublicKey(): Promise<string> {
         if (this._publicKey) {
             return this._publicKey
@@ -114,10 +132,20 @@ export class FlrLedgerWallet extends LedgerWallet {
         return "0x" + response.compressed_pk.toString("hex")
     }
 
+    /**
+     * Signs a message with ETH prefix.
+     * @param message UTF8 encoded message.
+     * @returns The signature in hexadecimal encoding.
+     */
     async signEthMessage(message: string): Promise<string> {
         return this._signEthMessage(this._app, LedgerCore.FLR, message)
     }
 
+    /**
+     * Signs a C-chain (Ethereum Virtual Machine) transaction.
+     * @param tx Unsigned C-chain (EVM) transaction in hexadecimal encoding.
+     * @returns The signature in hexadecimal encoding.
+     */
     async signCTransaction(transaction: string): Promise<string> {
         await this._core.requireApp(LedgerCore.FLR)
         let response = await this._app.signEVMTransaction(this._derivationPath, transaction.slice(2), this._getTxResolution(transaction))
@@ -125,6 +153,11 @@ export class FlrLedgerWallet extends LedgerWallet {
         return this._extractSignature(payload)
     }
 
+    /**
+     * Signs and submits a C-chain (Ethereum Virtual Machine) transaction.
+     * @param tx Unsigned C-chain (EVM) transaction in hexadecimal encoding.
+     * @returns The transaction id in hexadecimal encoding.
+     */
     async signPTransaction(transaction: string): Promise<string> {
         await this._core.requireApp(LedgerCore.FLR)
         let response = await this._app.sign(this._derivationPath, Buffer.from(transaction.slice(2), "hex"))
@@ -134,6 +167,9 @@ export class FlrLedgerWallet extends LedgerWallet {
 
 }
 
+/**
+ * The class that implements {@link Wallet} and represents a Ledger account managed by the Ethereum app.
+ */
 export class EthLedgerWallet extends LedgerWallet {
 
     constructor(app: EthApp, derivationPath: string) {
@@ -143,6 +179,10 @@ export class EthLedgerWallet extends LedgerWallet {
 
     protected readonly _app: EthApp
 
+    /**
+     * Returns the public key of the wallet.
+     * @returns The public key in hexadecimal encoding.
+     */
     async getPublicKey(): Promise<string> {
         if (this._publicKey) {
             return this._publicKey
@@ -156,10 +196,20 @@ export class EthLedgerWallet extends LedgerWallet {
         return this._prefixedHex(response.publicKey)
     }
 
+    /**
+     * Signs a message with ETH prefix.
+     * @param message UTF8 encoded message.
+     * @returns The signature in hexadecimal encoding.
+     */
     async signEthMessage(message: string): Promise<string> {
         return this._signEthMessage(this._app, LedgerCore.ETH, message)
     }
 
+    /**
+     * Signs a C-chain (Ethereum Virtual Machine) transaction.
+     * @param tx Unsigned C-chain (EVM) transaction in hexadecimal encoding.
+     * @returns The signature in hexadecimal encoding.
+     */
     async signCTransaction(transaction: string): Promise<string> {
         await this._core.requireApp(LedgerCore.ETH)
         let response = await this._app.signTransaction(this._derivationPath, transaction.slice(2), this._getTxResolution(transaction))

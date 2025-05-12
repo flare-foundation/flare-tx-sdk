@@ -2,6 +2,9 @@ import { Wallet } from "../";
 import { ethers, SigningKey, Transaction } from "ethers";
 import { EIP1193Based, EIP1193Core } from "./core";
 
+/**
+ * The class that implements {@link Wallet} and represents an EIP-1193 account.
+ */
 export class EIP1193Wallet extends EIP1193Based implements Wallet {
 
     constructor(core: EIP1193Core, address: string) {
@@ -12,10 +15,20 @@ export class EIP1193Wallet extends EIP1193Based implements Wallet {
     protected _address: string
     protected _publicKey: string
 
+    /**
+     * Returns the C-chain address of the wallet.
+     * @returns The C-chain address in the hexadecimal encoding.
+     */
     async getCAddress(): Promise<string> {
         return this._address
     }
 
+    /**
+     * Returns the public key of the wallet.
+     * @returns The public key in the hexadecimal encoding.
+     * @remark When called for the first time, the function requests a message signature,
+     * from which the public key is recovered.
+     */
     async getPublicKey(): Promise<string> {
         if (!this._publicKey) {
             let msg = "Please sign this message in order to obtain the public key associated with your account.";
@@ -25,6 +38,11 @@ export class EIP1193Wallet extends EIP1193Based implements Wallet {
         return this._publicKey;
     }
 
+    /**
+     * Signs a message with ETH prefix.
+     * @param message UTF8 encoded message.
+     * @returns The signature in hexadecimal encoding.
+     */
     async signEthMessage(message: string): Promise<string> {
         let request = {
             method: "personal_sign",
@@ -34,6 +52,11 @@ export class EIP1193Wallet extends EIP1193Based implements Wallet {
         return String(signature)
     }
 
+    /**
+     * Signs and submits a C-chain (Ethereum Virtual Machine) transaction.
+     * @param tx Unsigned C-chain (EVM) transaction in hexadecimal encoding.
+     * @returns The transaction id in hexadecimal encoding.
+     */
     async signAndSubmitCTransaction(tx: string): Promise<string> {
         let txObj = Transaction.from(tx)
         let to = txObj.to

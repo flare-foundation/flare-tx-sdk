@@ -90,6 +90,8 @@ await network.transferToC(wallet)
 
 In order to generate and sign transactions on the C-chain and P-chain, a suitable implementation of the interface [`Wallet`](src/wallet/index.ts) must be provided. Each object implementing the interface should be associated with a unique signing key.
 
+The SDK provides proxies to facilitate the integration of standard wallets, such as Web3 based wallets (EIP-1193 standard), Ledger, and Trezor. Details are specified in [Standard wallets](#standard-wallets).
+
 In general, for transaction generation, the wallet should implement the function
 ```
 getPublicKey(): Promise<string>
@@ -419,3 +421,87 @@ To import all exported funds from the P-chain to the C-chain, use
 await network.importToP(wallet, baseTxFeeOnC)
 ```
 The parameter `baseFeeTxOnC` is optional and can be used to override the automatically acquired base transaction fee from the C-chain.
+
+
+## Standard wallets
+
+As explained in [Wallet implementation](#wallet-implementation), for generating and signing transactions using this SDK, an implementation of the interface [`Wallet`](src/wallet/index.ts) is required. The following describes SDK-compatible wallet implementations that are available in SDK and can be used in combination with standard wallet frameworks and libraries.
+
+### EIP-1193 based wallets
+
+The [EIP-1193 standard](https://eips.ethereum.org/EIPS/eip-1193) specifies an API for signing and submitting EVM transactions. This standard is followed by common Web3 wallets such as MetaMask, WalletConnect, Coinbase Wallet, etc. The crucial ingredient of these wallets is the EIP-1193 provider object.
+
+To setup SDK-compatible wallets that communicate with the EIP-1193 provider, first extract `provider` object from the Web3 wallet framework, and then use
+```
+let controller = new EIP1193WalletController(provider)
+```
+to instantiate [`EIP1193WalletController`](./src/wallet/eip1193/controller.ts) for managing SDK-compatible wallets. In particular, use
+```
+let wallet = await controller.getActiveWallet()
+```
+to obtain the SDK-compatible wallet associated with the currently active account in the Web3 wallet framework, and
+```
+let wallets = await controller.getWallets()
+```
+to obtain a list of the SDK-compatible wallets that correspond to all available accounts. In a Web3 wallet framework, a user can dynamically change the active account. To be notified of this, assign a listener to `controller`:
+```
+controller.onWalletChange((wallet: EIP1193Wallet) => { // react })
+```
+
+The class [`EIP1193Wallet`](./src/wallet/eip1193/wallet.ts) implements the following functions that enable generating and signing of all types of C-chain and P-chain transactions.
+
+- `getCAddress`
+- `getPublicKey` (when called for the first time, the function initiates a request for signing a message, which is used to determine the public key of the account by recovering it from the message signature)
+- `signEthMessage`
+- `signAndSubmitCTransaction`
+
+### Ledger wallet
+
+For signing on a Ledger device, an SDK-compatible wallet can be obtained by using [@zondax/ledger-flare](https://www.npmjs.com/package/@zondax/ledger-flare), the official Zondax Ledger client library for the Flare's networks, or [@ledgerhq/hw-app-eth](https://www.npmjs.com/package/@ledgerhq/hw-app-eth), the standard Ledger client library for the Ethereum network.
+
+First, setup `flrApp` (an instance of [`FlareApp`](https://github.com/Zondax/ledger-flare-js/blob/main/src/index.ts) to be used for signing with Flare app on Ledger device or `null`) and `ethApp` (an instance of [`Eth`](https://github.com/LedgerHQ/ledger-live/blob/develop/libs/ledgerjs/packages/hw-app-eth/src/Eth.ts) to be used for signing with Ethereum app on Ledger device or `null`). Then, instantiate [`LedgerWalletController`](./src/wallet/ledger/controller.ts):
+```
+let controller = new LedgerWalletController(flrApp, ethApp)
+```
+To obtain a SDK-compatible wallet, provide a [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) path of the account (e.g., `let bip44Path = m/44'/60'/0'/0/0`) and use
+```
+let wallet = await controller.getWallet(bip44Path)
+```
+The controller detects the currently active app on the Ledger device and provides a suitable wallet. Alternatively, provide a second input argument (`"Flare Network"` or `"Ethereum"`) to explicitly specify the wallet type. Currently active app can be obtained by using
+```
+let app = await controller.getActiveApp()
+```
+
+The abstract wallet class that implements the interface [`Wallet`](./src/wallet/wallet.ts) is [`LedgerWalletClass`](./src/wallet/ledger/wallet.ts) and is a base class for the classes `FlareLedgerWallet` and `EthLedgerWallet`. Instances of both classes enable generating and signing of all types of C-chain and P-chain transactions.
+
+An instance of `FlareLedgerWallet` connects to the Flare app and implements the following functions:
+- `getPublicKey`
+- `getCAddress`
+- `signEthMessage`
+- `signCTransaction`
+- `signPTransaction`
+
+An instance of `EthLedgerWallet` connects to the Ethereum app and implements the following functions:
+- `getPublicKey`
+- `getCAddress`
+- `signEthMessage`
+- `signCTransaction`
+
+### Trezor wallet
+
+For signing on a Trezor device, an SDK-compatible wallet can be obtained by using the official Trezor libraries [Trezor Connect SDKs](https://connect.trezor.io/9/).
+
+To obtain SDK-compatible wallets, initialize `TrezorConnect` object and use it to create an object of class `TrezorWalletController`:
+```
+let controller = new TrezorWalletController(TrezorConnect)
+```
+Then, provide a [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) path of the account (e.g., `let bip44Path = m/44'/60'/0'/0/0`) and use
+```
+let wallet = await controller.getWallet(bip44Path)
+```
+
+The SDK-compatible `wallet` is of class [`TrezorWallet`](./src/wallet/trezor/wallet.ts). It implements the following functions that enable generating and signing of all types of C-chain and P-chain transactions.
+- `getPublicKey`
+- `getCAddress`
+- `signEthMessage`
+- `signCTransaction`
