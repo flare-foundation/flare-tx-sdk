@@ -445,7 +445,7 @@ let wallets = await controller.getWallets()
 ```
 to obtain a list of the SDK-compatible wallets that correspond to all available accounts. In a Web3 wallet framework, a user can dynamically change the active account. To be notified of this, assign a listener to `controller`:
 ```
-controller.onWalletChange((wallet: EIP1193Wallet) => { // react })
+controller.onWalletChange((wallet: EIP1193Wallet) => { // use changed wallet })
 ```
 
 The class [`EIP1193Wallet`](./src/wallet/eip1193/wallet.ts) implements the following functions that enable generating and signing of all types of C-chain and P-chain transactions.
