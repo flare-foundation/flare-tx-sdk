@@ -474,7 +474,7 @@ let app = await controller.getActiveApp()
 
 The abstract wallet class that implements the interface [`Wallet`](./src/wallet/wallet.ts) is [`LedgerWalletClass`](./src/wallet/ledger/wallet.ts) and is a base class for the classes `FlrLedgerWallet` and `EthLedgerWallet`. Instances of both classes enable generating and signing of all types of C-chain and P-chain transactions.
 
-An instance of `FlareLedgerWallet` connects to the Flare app and implements the following functions:
+An instance of `FlrLedgerWallet` connects to the Flare app and implements the following functions:
 - `getPublicKey`
 - `getCAddress`
 - `signEthMessage`
