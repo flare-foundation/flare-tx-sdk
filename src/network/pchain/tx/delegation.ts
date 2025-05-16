@@ -14,8 +14,8 @@ export class Delegation extends NetworkBased {
         endTime: bigint
     ): Promise<UnsignedTx> {
         let pChainAddressForP = `P-${pAddress}`
-        let utxosData = await this._core.avalanche.PChain().getUTXOs(pChainAddressForP)
-        return this._core.avalanche.PChain().buildAddDelegatorTx(
+        let utxosData = await this._core.flarejs.PChain().getUTXOs(pChainAddressForP)
+        return this._core.flarejs.PChain().buildAddDelegatorTx(
             utxosData.utxos,
             [pChainAddressForP],
             [pChainAddressForP],

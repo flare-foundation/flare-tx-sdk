@@ -26,8 +26,8 @@ export class Import extends NetworkBased {
     ): Promise<UnsignedTx> {
         let sourceChain = this._core.pBlockchainId
         let pAddressForC = `C-${pAddress}`
-        let utxosData = await this._core.avalanche.CChain().getUTXOs(pAddressForC, sourceChain)
-        return await this._core.avalanche.CChain().buildImportTx(
+        let utxosData = await this._core.flarejs.CChain().getUTXOs(pAddressForC, sourceChain)
+        return await this._core.flarejs.CChain().buildImportTx(
             utxosData.utxos,
             cAddress,
             [pAddressForC],

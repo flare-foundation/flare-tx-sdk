@@ -1,8 +1,8 @@
-import Avalanche from "@flarenetwork/flarejs"
 import { JsonRpcProvider } from "ethers";
 import { AfterTxConfirmationCallback, AfterTxSubmissionCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
 import { Defaults, HRPToNetworkID } from "@flarenetwork/flarejs/dist/utils"
 import { Constants } from "./constants";
+import { Flarejs } from "./flarejs";
 
 export class NetworkCore {
 
@@ -10,11 +10,9 @@ export class NetworkCore {
         this.const = constants.copy()
         this.pChainId = HRPToNetworkID[constants.hrp as keyof object]
         this.cChainId = Defaults.network[this.pChainId].C.chainID!
-        this.cBlockchainId = this._getCBlockchainId()
-        this.pBlockchainId = this._getPBlockchainId()
         this.cAssetId = this._getCAssetId()
         this.pAssetId = this._getPAssetId()
-        this.avalanche = this._getAvalanche(constants.rpc)
+        this.flarejs = this._getFlarejs(constants.rpc)
         this.ethers = this._getEthers(constants.rpc)
         this.beforeTxSignature = null
         this.beforeTxSubmission = null
@@ -28,7 +26,7 @@ export class NetworkCore {
     pBlockchainId: string
     cAssetId: string
     pAssetId: string
-    avalanche: Avalanche
+    flarejs: Flarejs
     ethers: JsonRpcProvider
     beforeTxSignature: BeforeTxSignatureCallback
     beforeTxSubmission: BeforeTxSubmissionCallback
@@ -45,31 +43,16 @@ export class NetworkCore {
 
     set rpc(rpc: string) {
         this.const.rpc = rpc
-        this.avalanche = this._getAvalanche(rpc)
-        this.ethers = this._getEthers(rpc)
+        this.flarejs = this._getFlarejs(rpc)
+        this.ethers = this._getEthers(this.const.rpc)
     }
 
-    private _getAvalanche(rpc: string): Avalanche {
-        let url = new URL(rpc)
-        let avalanche = new Avalanche(
-            url.hostname,
-            url.port ? parseInt(url.port) : undefined,
-            url.protocol,
-            this.pChainId
-        )
-        return avalanche
+    private _getFlarejs(rpc: string): Flarejs {        
+        return new Flarejs(rpc)
     }
 
     private _getEthers(rpc: string): JsonRpcProvider {
         return new JsonRpcProvider(rpc)
-    }
-
-    private _getCBlockchainId(): string {
-        return Defaults.network[this.pChainId].C.blockchainID
-    }
-
-    private _getPBlockchainId(): string {
-        return Defaults.network[this.pChainId].P.blockchainID
     }
 
     private _getCAssetId(): string {

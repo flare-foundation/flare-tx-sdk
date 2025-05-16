@@ -49,11 +49,11 @@ export class Transactions extends NetworkBased {
     }
 
     getDefaultTxFee(): bigint {
-        return Utils.toBigint(this._core.avalanche.PChain().getDefaultTxFee()) * BigInt(1e9)
+        return Utils.toBigint(this._core.flarejs.PChain().getDefaultTxFee()) * BigInt(1e9)
     }
 
     async getStakeTx(txId: string): Promise<AddDelegatorTx | AddValidatorTx> {
-        let txHex = await this._core.avalanche.PChain().getTx(txId, "hex") as string
+        let txHex = await this._core.flarejs.PChain().getTx(txId, "hex") as string
         let tx = new Tx()
         tx.fromBuffer(Buffer.from(Utils.removeHexPrefix(txHex), "hex") as any)
         let btx = tx.getUnsignedTx().getTransaction()
@@ -89,7 +89,7 @@ export class Transactions extends NetworkBased {
 
         let signatures = Array(unsignedHashes.length).fill(this._getEcdsaSignature(signature))
         let prefixedPublicKey = `${PublicKeyPrefix}${Utils.removeHexPrefix(account.publicKey)}`
-        let kc = this._core.avalanche.PChain().keyChain()
+        let kc = this._core.flarejs.PChain().keyChain()
         kc.importKey(prefixedPublicKey)
         let tx = unsignedTx.signWithRawSignatures(signatures, kc)
 
@@ -103,7 +103,7 @@ export class Transactions extends NetworkBased {
             }
         }
 
-        let txId = await this._core.avalanche.PChain().issueTx(tx)
+        let txId = await this._core.flarejs.PChain().issueTx(tx)
 
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
@@ -115,7 +115,7 @@ export class Transactions extends NetworkBased {
         let status = "Unknown"
         let start = Date.now()
         while (Date.now() - start < this._core.const.txConfirmationTimeout) {
-            status = (await this._core.avalanche.PChain().getTxStatus(txId) as GetTxStatusResponse).status
+            status = (await this._core.flarejs.PChain().getTxStatus(txId) as GetTxStatusResponse).status
             await Utils.sleep(this._core.const.txConfirmationCheckout)
             if (status === "Committed" || status === "Rejected") {
                 if (this._core.afterTxConfirmation) {

@@ -14,7 +14,7 @@ export class PChain extends NetworkBased {
     tx: Transactions
     
     async getBalance(pAddress: string): Promise<bigint> {
-        let response = await this._core.avalanche.PChain().getBalance(`P-${pAddress}`)
+        let response = await this._core.flarejs.PChain().getBalance(`P-${pAddress}`)
         // let pAssetId = this._core.pAssetId
         // let pAddressHex = Utils.removeHexPrefix(Account.pAddressToHex(pAddress))
         // let utxoSet = await this._core.avalanche.PChain().getUTXOs([`P-${pAddress}`])
@@ -27,13 +27,13 @@ export class PChain extends NetworkBased {
         let pAssetId = this._core.pAssetId
         let pAddressForP = `P-${pAddress}`
         let pAddressHex = Utils.removeHexPrefix(Account.pAddressToHex(pAddress))
-        let response = await this._core.avalanche.PChain().getUTXOs(pAddressForP, cBlockchainId)
+        let response = await this._core.flarejs.PChain().getUTXOs(pAddressForP, cBlockchainId)
         let balance = response.utxos.getBalance([Buffer.from(pAddressHex, "hex") as any], pAssetId)
         return Utils.toBigint(balance) * BigInt(1e9)
     }
     
     async getStakedBalance(pAddress: string): Promise<bigint> {
-        let response = await this._core.avalanche.PChain().getStake([`P-${pAddress}`])
+        let response = await this._core.flarejs.PChain().getStake([`P-${pAddress}`])
         return Utils.toBigint(response.staked) * BigInt(1e9)
     }
 
@@ -51,7 +51,7 @@ export class PChain extends NetworkBased {
     
     private async _getCurrentStakes(): Promise<Array<Stake>> {
         let stakes = Array<Stake>()
-        let data = await this._core.avalanche.PChain().getCurrentValidators()
+        let data = await this._core.flarejs.PChain().getCurrentValidators()
         let validators = (data as any).validators as Array<any>    
         for (let validator of validators) {
             stakes.push(await this._parseStake(validator, "validator"))
@@ -67,7 +67,7 @@ export class PChain extends NetworkBased {
     
     private async _getPendingStakes(): Promise<Array<Stake>> {
         let stakes = Array<Stake>()
-        let data = await this._core.avalanche.PChain().getPendingValidators() as any
+        let data = await this._core.flarejs.PChain().getPendingValidators() as any
         let validators = data.validators as Array<any>
         for (let validator of validators) {
             stakes.push(await this._parseStake(validator, "validator"))

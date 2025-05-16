@@ -26,7 +26,7 @@ export class Export extends NetworkBased {
         let pAddressForC = `C-${pAddress}`
         let pAddressForP = `P-${pAddress}`
         let nonce = await this._core.ethers.getTransactionCount(cAddress)
-        return await this._core.avalanche.CChain().buildExportTx(
+        return await this._core.flarejs.CChain().buildExportTx(
             Utils.toBn(amount),
             this._core.pAssetId,
             this._core.pBlockchainId,

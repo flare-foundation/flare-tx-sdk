@@ -10,8 +10,8 @@ export class Export extends NetworkBased {
         let destinationChain = this._core.cBlockchainId
         let pChainAddressForC = `C-${pAddress}`
         let pChainAddressForP = `P-${pAddress}`
-        let utxosData = await this._core.avalanche.PChain().getUTXOs(pChainAddressForP)
-        return this._core.avalanche.PChain().buildExportTx(
+        let utxosData = await this._core.flarejs.PChain().getUTXOs(pChainAddressForP)
+        return this._core.flarejs.PChain().buildExportTx(
             utxosData.utxos,
             Utils.toBn(amount / BigInt(1e9)),
             destinationChain,

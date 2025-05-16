@@ -34,7 +34,7 @@ export class CChain extends NetworkBased {
         let pAssetId = this._core.pAssetId
         let pAddressForC = `C-${pAddress}`
         let pAddressHex = Utils.removeHexPrefix(Account.pAddressToHex(pAddress))
-        let response = await this._core.avalanche.CChain().getUTXOs(pAddressForC, pBlockchainId)
+        let response = await this._core.flarejs.CChain().getUTXOs(pAddressForC, pBlockchainId)
         let balance = response.utxos.getBalance([Buffer.from(pAddressHex, "hex")], pAssetId)
         return Utils.toBigint(balance) * BigInt(1e9)
     }

@@ -215,7 +215,7 @@ export class Transactions extends NetworkBased {
 
         let signatures = Array(unsignedHashes.length).fill(this._getEcdsaSignature(signature))
         let prefixedPublicKey = `${PublicKeyPrefix}${Utils.removeHexPrefix(account.publicKey)}`
-        let kc = this._core.avalanche.CChain().keyChain()
+        let kc = this._core.flarejs.CChain().keyChain()
         kc.importKey(prefixedPublicKey)
         let tx = unsignedTx.signWithRawSignatures(signatures, kc)
 
@@ -229,7 +229,7 @@ export class Transactions extends NetworkBased {
             }
         }
 
-        let txId = await this._core.avalanche.CChain().issueTx(tx)
+        let txId = await this._core.flarejs.CChain().issueTx(tx)
 
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
@@ -241,7 +241,7 @@ export class Transactions extends NetworkBased {
         let status = "Unknown"
         let start = Date.now()
         while (Date.now() - start < this._core.const.txConfirmationTimeout) {
-            status = await this._core.avalanche.CChain().getAtomicTxStatus(txId)
+            status = await this._core.flarejs.CChain().getAtomicTxStatus(txId)
             await Utils.sleep(this._core.const.txConfirmationCheckout)
             if (status === "Accepted" || status === "Rejected") {
                 if (this._core.afterTxConfirmation) {
