@@ -1,6 +1,6 @@
 import { FtsoDelegate as FtsoDelegate } from "src/network/balance";
 import { EvmContract } from "./evm";
-import { checkResultErrors, Transaction } from "ethers";
+import { Transaction } from "ethers";
 
 export class WNat extends EvmContract {
 

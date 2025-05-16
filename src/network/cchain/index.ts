@@ -39,6 +39,18 @@ export class CChain extends NetworkBased {
         return Utils.toBigint(balance) * BigInt(1e9)
     }
 
+    async getClaimableFlareDrop(address: string): Promise<bigint> {
+        let flaredrop = await this._registry.getFlareDropDistribution()
+        let start = await flaredrop.nextClaimableMonth(address)
+        let currentMonth = await flaredrop.getCurrentMonth()
+        let end = BigInt(Math.min(36, Number(currentMonth)))
+        let amount = BigInt(0)
+        for (let month = start; month < end; month++) {
+            amount += await flaredrop.getClaimableAmountOf(address, month)
+        }
+        return amount
+    }
+
     async getFtsoDelegatesOf(cAddress: string): Promise<Array<FtsoDelegate>> {
         let wnat = await this._registry.getWNat()
         return wnat.delegatesOf(cAddress)
@@ -84,7 +96,7 @@ export class CChain extends NetworkBased {
         return generic.call(abi, method, ...params)
     }
 
-    async getFlareContracts() : Promise<Array<FlareContract>> {
+    async getFlareContracts(): Promise<Array<FlareContract>> {
         return this._registry.getAllContracts()
     }
 

@@ -3,6 +3,7 @@ import { EvmContract } from "./evm";
 import { PChainStakeMirrorVerifier } from "./stake_verifier";
 import { WNat } from "./wnat";
 import { Utils } from "../../utils";
+import { DistributionToDelegators } from "./flaredrop";
 
 export class ContractRegistry extends EvmContract {
 
@@ -28,6 +29,11 @@ export class ContractRegistry extends EvmContract {
     async getWNat(): Promise<WNat> {
         let address = await this.getAddress("WNat")
         return new WNat(this._core, address)
+    }
+
+    async getFlareDropDistribution(): Promise<DistributionToDelegators> {
+        let address = await this.getAddress("DistributionToDelegators")
+        return new DistributionToDelegators(this._core, address)
     }
 
     async getStakeVerifier(): Promise<PChainStakeMirrorVerifier> {

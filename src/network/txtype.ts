@@ -5,6 +5,7 @@ export class TxType {
     static readonly IMPORT_C = "import_c"
     static readonly WRAP_NAT = "wrap_nat"
     static readonly UNWRAP_NAT = "unwrap_nat"
+    static readonly CLAIM_FLAREDROP = "claim_flaredrop"
     static readonly DELEGATE_FTSO = "delegate_ftso"
     static readonly UNDELEGATE_FTSO = "undelegate_ftso"
     static readonly CUSTOM_CONTRACT_C = "custom_contract_c"
@@ -32,6 +33,9 @@ export class TxType {
             }
             case this.UNWRAP_NAT: {
                 return "Unwrapping to native coin"
+            }
+            case this.CLAIM_FLAREDROP: {
+                return "Claim of Flare drop"
             }
             case this.DELEGATE_FTSO: {
                 return "Delegate to FTSO providers"

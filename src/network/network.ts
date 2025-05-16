@@ -161,6 +161,17 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Returns the claimable amount from Flare drop.
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The balance in wei corresponding to the public key or address.
+     */
+    async getClaimableFlareDrop(publicKeyOrAddress: string): Promise<bigint> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getClaimableFlareDrop(cAddress)
+    }
+
+    /**
      * Returns FTSO delegates on the C-chain.
      * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
      * @returns The array of objects of type {@link FtsoDelegate} that contains information
@@ -237,6 +248,21 @@ export class Network extends NetworkBased {
     async transferWrapped(wallet: Wallet, recipient: string, amount: bigint): Promise<void> {
         let cAddress = await this._getCAddress(wallet)
         await this._cchain.tx.transferWrapped(wallet, cAddress, recipient, amount)
+    }
+
+    /**
+     * Claims or wraps all available Flare drops of a reward owner
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param rewardOwner A C-chain address of the reward owner (optional, equal to the wallet's C-chain address by default)
+     * @param recipient A C-chain address of the reward recipient (optional, equal to the wallet's C-chain address by default)
+     * @param wrap A boolean indicating if the claimable amount is to be wrapped (optional, false by default)
+     * @remarks If the wallet's C-chain address is different from the `rewardOwner`, it must be approved by the reward owner.
+     */
+    async claimFlareDrop(wallet: Wallet, rewardOwner?: string, recipient?: string, wrap?: boolean): Promise<void> {
+        let cAddress = await this._getCAddress(wallet)
+        await this._cchain.tx.claimFlareDrop(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap ?? false)
     }
 
     /**

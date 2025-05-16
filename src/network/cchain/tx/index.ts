@@ -64,6 +64,16 @@ export class Transactions extends NetworkBased {
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.TRANSFER_NAT)
     }
 
+    async claimFlareDrop(
+        wallet: Wallet, cAddress: string, rewardOwner: string, recipient: string, wrap: boolean
+    ): Promise<void> {
+        let flareDrop = await this._registry.getFlareDropDistribution()
+        let currentMonth = await flareDrop.getCurrentMonth()
+        let lastMonth = BigInt(Math.min(36, Number(currentMonth)) - 1)
+        let unsignedTx = await flareDrop.claim(cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, lastMonth, wrap ?? false)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_FLAREDROP)
+    }
+
     async delegateToFtso(
         wallet: Wallet, cAddress: string, delegates: Array<string>, sharesBP: Array<bigint>
     ): Promise<void> {
