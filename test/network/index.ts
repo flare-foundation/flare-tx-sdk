@@ -9,6 +9,9 @@ import { runFtsoDelegationTests } from "./delegateFtso";
 import { runGenericContractTests } from "./genericc";
 import { runTransferCPTests } from "./transfercp";
 import { runDelegationPTests } from "./delegationp";
+import { runFlareDropClaimTests } from "./claimFlaredrop";
+import { runStakingClaimTests } from "./claimStaking";
+import { runFtsoClaimTests } from "./claimFtso";
 
 function execute() {
     const TEST_KEY_FILE = path.join("test", "keys", "key.txt")
@@ -39,6 +42,9 @@ function execute() {
     runBalanceTests(env)
     runWNatTests(env)
     runTransferCTests(env)
+    runFlareDropClaimTests(env)
+    runStakingClaimTests(env)
+    runFtsoClaimTests(env)
     runFtsoDelegationTests(env)
     runGenericContractTests(env)
     runTransferCPTests(env)

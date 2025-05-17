@@ -1,5 +1,5 @@
 import { Account } from "../account"
-import { FtsoDelegate } from "../balance"
+import { FtsoDelegate, FtsoRewardState } from "../iotype"
 import { FlareContract } from "../contract"
 import { NetworkCore, NetworkBased } from "../core"
 import { Utils } from "../utils"
@@ -39,16 +39,47 @@ export class CChain extends NetworkBased {
         return Utils.toBigint(balance) * BigInt(1e9)
     }
 
-    async getClaimableFlareDrop(address: string): Promise<bigint> {
+    async getClaimableFlareDropReward(address: string): Promise<bigint> {
         let flaredrop = await this._registry.getFlareDropDistribution()
         let start = await flaredrop.nextClaimableMonth(address)
-        let currentMonth = await flaredrop.getCurrentMonth()
-        let end = BigInt(Math.min(36, Number(currentMonth)))
+        // let currentMonth = await flaredrop.getCurrentMonth()
+        // let end = currentMonth // BigInt(Math.min(36, Number(currentMonth)))
+        let startEndMonths = await flaredrop.getClaimableMonths()
+        let end = startEndMonths[1]
         let amount = BigInt(0)
-        for (let month = start; month < end; month++) {
+        for (let month = start; month <= end; month++) {
             amount += await flaredrop.getClaimableAmountOf(address, month)
         }
         return amount
+    }
+
+    async getClaimableStakingReward(address: string): Promise<bigint> {
+        let manager = await this._registry.getValidatorRewardManager()
+        let state = await manager.getStateOfRewards(address)
+        return state[0] - state[1]
+    }
+
+    async getClaimableFtsoReward(address: string): Promise<bigint> {
+        let states = await this.getStateOfFtsoRewards(address)
+        console.log(states)
+        let rewardEpochId = BigInt(-1)
+        let rewardAmount = BigInt(0)
+        for (let epochStates of states) {
+            if (epochStates.length == 0) {
+                continue
+            }
+            if (epochStates.some(s => !s.initialised)) {
+                break
+            }
+            rewardEpochId = epochStates[0].rewardEpochId
+            rewardAmount += epochStates.reduce((v, s) => { return v + s.amount }, BigInt(0))
+        }
+        return rewardAmount
+    }
+
+    async getStateOfFtsoRewards(address: string): Promise<Array<Array<FtsoRewardState>>> {
+        let manager = await this._registry.getRewardManager()
+        return manager.getStateOfRewards(address)
     }
 
     async getFtsoDelegatesOf(cAddress: string): Promise<Array<FtsoDelegate>> {

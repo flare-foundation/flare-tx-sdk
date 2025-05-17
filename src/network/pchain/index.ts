@@ -1,5 +1,5 @@
 import { Account } from "../account";
-import { Stake } from "../balance";
+import { Stake } from "../iotype";
 import { NetworkCore, NetworkBased } from "../core";
 import { Utils } from "../utils";
 import { Transactions } from "./tx";

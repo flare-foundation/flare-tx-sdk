@@ -1,4 +1,4 @@
-import { FtsoDelegate as FtsoDelegate } from "src/network/balance";
+import { FtsoDelegate as FtsoDelegate } from "src/network/iotype";
 import { EvmContract } from "./evm";
 import { Transaction } from "ethers";
 

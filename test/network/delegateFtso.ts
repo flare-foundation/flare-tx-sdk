@@ -8,7 +8,6 @@ export function runFtsoDelegationTests(env: TestEnvironment): void {
         let network = env.network
         let wallets = env.getEvmWallets()
 
-        let testAmount = Amount.nats(1)
         let testShareBP = Amount.percentages(10)
 
         for (let wallet of wallets) {

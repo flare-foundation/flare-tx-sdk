@@ -5,7 +5,7 @@ import { NetworkCore, NetworkBased } from "./core"
 import { PChain } from "./pchain"
 import { AfterTxSubmissionCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
 import { Constants } from "./constants"
-import { Balance, FtsoDelegate as FtsoDelegate, Stake } from "./balance"
+import { Balance, FtsoDelegate as FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, Stake } from "./iotype"
 import { FlareContract } from "./contract"
 
 /**
@@ -161,14 +161,48 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns the claimable amount from Flare drop.
+     * Returns the amount of claimable reward from Flare Drop.
      * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
-     * @returns The balance in wei corresponding to the public key or address.
+     * @returns The reward in wei corresponding to the public key or address.
      */
-    async getClaimableFlareDrop(publicKeyOrAddress: string): Promise<bigint> {
+    async getClaimableFlareDropReward(publicKeyOrAddress: string): Promise<bigint> {
         let cAddress = Account.isCAddress(publicKeyOrAddress) ?
             publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
-        return this._cchain.getClaimableFlareDrop(cAddress)
+        return this._cchain.getClaimableFlareDropReward(cAddress)
+    }
+
+    /**
+     * Returns the amount of claimable reward from staking.
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The reward in wei corresponding to the public key or address.
+     */
+    async getClaimableStakingReward(publicKeyOrAddress: string): Promise<bigint> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getClaimableStakingReward(cAddress)
+    }
+
+    /**
+     * Returns the amount of claimable reward from FTSO delegation.
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The reward in wei corresponding to the public key or address.
+     */
+    async getClaimableFtsoReward(publicKeyOrAddress: string): Promise<bigint> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getClaimableFtsoReward(cAddress)
+    }
+
+    /**
+     * Returns the state of rewards from FTSO delegation.
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The array of reward states for all unclaimed reward epochs with claimable rewards
+     * corresponding to the public key or address.
+     */
+    async getStateOfFtsoRewards(publicKeyOrAddress: string): Promise<Array<Array<FtsoRewardState>>> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getStateOfFtsoRewards(cAddress)
     }
 
     /**
@@ -251,18 +285,55 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Claims or wraps all available Flare drops of a reward owner
+     * Claims or wraps entire claimable reward from Flare Drop.
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getCAddress` or `getPublicKey`, and
      * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
-     * @param rewardOwner A C-chain address of the reward owner (optional, equal to the wallet's C-chain address by default)
-     * @param recipient A C-chain address of the reward recipient (optional, equal to the wallet's C-chain address by default)
-     * @param wrap A boolean indicating if the claimable amount is to be wrapped (optional, false by default)
+     * @param rewardOwner A C-chain address of the reward owner (optional, equal to the wallet's C-chain address by default).
+     * @param recipient A C-chain address of the reward recipient (optional, equal to the wallet's C-chain address by default).
+     * @param wrap A boolean indicating if the claimable amount is to be wrapped (optional, false by default).
      * @remarks If the wallet's C-chain address is different from the `rewardOwner`, it must be approved by the reward owner.
      */
-    async claimFlareDrop(wallet: Wallet, rewardOwner?: string, recipient?: string, wrap?: boolean): Promise<void> {
+    async claimFlareDropReward(wallet: Wallet, rewardOwner?: string, recipient?: string, wrap?: boolean): Promise<void> {
         let cAddress = await this._getCAddress(wallet)
-        await this._cchain.tx.claimFlareDrop(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap ?? false)
+        await this._cchain.tx.claimFlareDropReward(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap ?? false)
+    }
+
+    /**
+     * Claims or wraps entire claimable reward from staking.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param rewardOwner A C-chain address of the reward owner (optional, equal to the wallet's C-chain address by default).
+     * @param recipient A C-chain address of the reward recipient (optional, equal to the wallet's C-chain address by default).
+     * @param wrap A boolean indicating if the claimable amount is to be wrapped (optional, false by default).
+     * @remarks If the wallet's C-chain address is different from the `rewardOwner`, it must be approved by the reward owner.
+     */
+    async claimStakingReward(wallet: Wallet, rewardOwner?: string, recipient?: string, wrap?: boolean): Promise<void> {
+        let cAddress = await this._getCAddress(wallet)
+        await this._cchain.tx.claimStakingReward(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap ?? false)
+    }
+
+    /**
+     * Claims or wraps entire claimable reward from FTSO delegation.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param rewardOwner A C-chain address of the reward owner (optional, equal to the wallet's C-chain address by default).
+     * @param recipient A C-chain address of the reward recipient (optional, equal to the wallet's C-chain address by default).
+     * @param wrap A boolean indicating if the claimable amount is to be wrapped (optional, false by default).
+     * @param proofs An array of objects of type {@link FtsoRewardClaimWithProof} specifying the claims with Merkle proofs (optional).
+     * @remarks If the wallet's C-chain address is different from the `rewardOwner`, it must be approved by the reward owner.
+     */
+    async claimFtsoReward(
+        wallet: Wallet,
+        rewardOwner?: string,
+        recipient?: string,
+        wrap?: boolean,
+        proofs?: Array<FtsoRewardClaimWithProof>
+    ): Promise<void> {
+        let cAddress = await this._getCAddress(wallet)
+        await this._cchain.tx.claimFtsoReward(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap ?? false, proofs ?? [])
     }
 
     /**

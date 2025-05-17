@@ -8,6 +8,11 @@ export class DistributionToDelegators extends EvmContract {
         return distribution.getCurrentMonth()
     }
 
+    async getClaimableMonths(): Promise<Array<bigint>> {
+        let distribution = this._getContract(["function getClaimableMonths() external view returns(uint256 _startMonth, uint256 _endMonth)"])
+        return distribution.getClaimableMonths()
+    }
+
     async nextClaimableMonth(address: string): Promise<bigint> {
         let distribution = this._getContract(["function nextClaimableMonth(address _rewardOwner) external view returns (uint256)"])
         return distribution.nextClaimableMonth(address)
