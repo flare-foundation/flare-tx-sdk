@@ -62,7 +62,6 @@ export class CChain extends NetworkBased {
     async getClaimableFtsoReward(address: string): Promise<bigint> {
         let states = await this.getStateOfFtsoRewards(address)
         console.log(states)
-        let rewardEpochId = BigInt(-1)
         let rewardAmount = BigInt(0)
         for (let epochStates of states) {
             if (epochStates.length == 0) {
@@ -71,7 +70,6 @@ export class CChain extends NetworkBased {
             if (epochStates.some(s => !s.initialised)) {
                 break
             }
-            rewardEpochId = epochStates[0].rewardEpochId
             rewardAmount += epochStates.reduce((v, s) => { return v + s.amount }, BigInt(0))
         }
         return rewardAmount

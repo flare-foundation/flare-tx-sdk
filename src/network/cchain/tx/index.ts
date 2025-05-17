@@ -99,13 +99,21 @@ export class Transactions extends NetworkBased {
         let rewardEpochId: bigint
         if (proofs.length == 0) {
             let states = await manager.getStateOfRewards(rewardOwner)
-            let lastInitialised = states.filter(s => s.length > 0).reverse().find(s => s.every(x => x.initialised))
-            if (!lastInitialised) {
+            let rewardEpochId = BigInt(-1)
+            for (let epochStates of states) {
+                if (epochStates.length == 0) {
+                    continue
+                }
+                if (epochStates.some(s => !s.initialised)) {
+                    break
+                }
+                rewardEpochId = epochStates[0].rewardEpochId
+            }
+            if (rewardEpochId < BigInt(0)) {
                 throw new Error("No unclaimed reward epoch with initialised all rewards for the specified reward owner")
             }
-            rewardEpochId = lastInitialised[0].rewardEpochId
         } else {
-            rewardEpochId = proofs.reduce((v,p) => { let id = p.body.rewardEpochId; return id > v ? id : v}, BigInt(0))
+            rewardEpochId = proofs.reduce((v, p) => { let id = p.body.rewardEpochId; return id > v ? id : v }, BigInt(0))
         }
         let unsignedTx = await manager.claim(cAddress, rewardOwner, recipient, rewardEpochId, wrap, proofs)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_REWARD_FTSO)
