@@ -3,7 +3,7 @@ import assert from "assert";
 import { TestEnvironment } from "./env";
 
 export function runFlareDropClaimTests(env: TestEnvironment): void {
-    describe("Flare Drop claim tests", function () {
+    describe("FlareDrop claim tests", function () {
         let network = env.network
         let wallets = env.getEvmWallets()
 

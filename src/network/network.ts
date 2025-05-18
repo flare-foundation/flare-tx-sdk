@@ -161,7 +161,7 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns the amount of claimable reward from Flare Drop.
+     * Returns the amount of claimable reward from FlareDrop.
      * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
      * @returns The reward in wei corresponding to the public key or address.
      */
@@ -285,7 +285,7 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Claims or wraps entire claimable reward from Flare Drop.
+     * Claims or wraps entire claimable reward from FlareDrop.
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getCAddress` or `getPublicKey`, and
      * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
