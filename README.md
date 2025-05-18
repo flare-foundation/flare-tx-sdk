@@ -356,7 +356,7 @@ let amount = await network.getClaimableFTSOReward(publicKeyOrAddress)
 ```
 To claim all claimable weight based reward (i.e. reward resulting in delegation to FTSO providers and staking), use
 ```
-await network.claimFTSOReward(wallet, rewardOwner, recipient, wrap)
+await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap)
 ```
 The only required input parameter is `wallet`. The parameter `rewardOwner` is the C-chain address of the reward owner and can be omitted if it is equal to the wallet's C-chain address. Similarly, `recipient` can be omitted if the reward is to be transferred to the wallet's C-chain address. The parameter `wrap` indicates if the reward is to be transferred to `recipient` as native coin (default) or as wrapped coin.
 
@@ -373,7 +373,7 @@ The resulting object `states` is an array of array states. An array state is an 
 
 The rewards that are not initialised can be claimed using Merkle proofs available in [Flare System Protocol Reward Distribution repository](https://github.com/flare-foundation/fsp-rewards/) by
 ```
-await network.claimFTSOReward(wallet, rewardOwner, recipient, wrap, proofs)
+await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap, proofs)
 ```
 where `proofs` is an array of objects of type [`FtsoRewardClaimWithProof`](src/network/iotype.ts)with properties:
 - `merkleProof`: a Merkle proof in hexadecimal encoding
