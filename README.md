@@ -365,19 +365,19 @@ To get a more detailed overview of the reward state, use
 let states = await network.getStateOfFtsoRewards(publicKeyOrAddress)
 ```
 The resulting object `states` is an array of array states. An array state is an array of claimable rewards for a specific reward epoch. It can be empty or it consists of objects of type [`FtsoRewardState`](src/network/iotype.ts) with properties:
-- `rewardEpochId`: reward epoch id;
-- `beneficiary`: reward owner (C-chain address or node id if `claimType` is `MIRROR`);
-- `amount`: reward amount in weis;
-- `claimType`: type of claim;
-- `initialised`: a flag indicating if the reward can be claimed without providing proofs.
+- `rewardEpochId` The reward epoch id;
+- `beneficiary` The reward owner (C-chain address or node id if `claimType` is `MIRROR`);
+- `amount` The reward amount in weis;
+- `claimType` The type of claim;
+- `initialised` The flag indicating if the reward can be claimed without providing proofs.
 
 The rewards that are not initialised can be claimed using Merkle proofs available in [Flare System Protocol Reward Distribution repository](https://github.com/flare-foundation/fsp-rewards/) by
 ```
 await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap, proofs)
 ```
 where `proofs` is an array of objects of type [`FtsoRewardClaimWithProof`](src/network/iotype.ts) with properties:
-- `merkleProof`: array of strings in hexadecimal encoding;
-- `body`: an object of type [`FtsoRewardClaim`](src/network/iotype.ts) with the same properties as `FtsoRewardState` described above (except `initialised`).
+- `merkleProof` The Merkle proof represented by an array of strings in hexadecimal encoding;
+- `body` The reward claim represented as an object of type [`FtsoRewardClaim`](src/network/iotype.ts) with the same properties as `FtsoRewardState` described above (except `initialised`).
 
 ### Delegation to FTSO providers
 
