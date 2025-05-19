@@ -12,6 +12,40 @@ export type Balance = {
 }
 
 /**
+ * FTSO reward claim types
+ */
+export enum ClaimType { DIRECT, FEE, WNAT, MIRROR, CCHAIN }
+
+/**
+ * The type used for returning FTSO reward state information
+ */
+export type FtsoRewardState = {
+    rewardEpochId: bigint
+    beneficiary: string // C-chain address or node id (if claimType is MIRROR)
+    amount: bigint // in weis
+    claimType: ClaimType
+    initialised: boolean
+}
+
+/**
+ * The type used for specifying FTSO reward claims
+ */
+export type FtsoRewardClaim = {
+    rewardEpochId: bigint
+    beneficiary: string // C-chain address or node id (if claimType is MIRROR)
+    amount: bigint // in weis
+    claimType: ClaimType
+}
+
+/**
+ * The type used for specifying FTSO reward claims with Merkle proofs
+ */
+export type FtsoRewardClaimWithProof = {
+    merkleProof: string[]
+    body: FtsoRewardClaim
+}
+
+/**
  * The type used for returning FTSO delegate information
  */
 export type FtsoDelegate = {

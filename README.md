@@ -4,6 +4,7 @@ This is the official Node.js Software Development Kit (SDK) for performing commo
 
 - [Retrieving account and balance information](#account-and-balance-1)
 - [Transferring native and wrapped coins](#coin-transfers-1)
+- [Claiming rewards from FlareDrop, staking, and FTSO delegation](#reward-claims-1)
 - [Delegating to FTSO providers](#delegation-to-ftso-providers-1)
 - [Interacting with the C-chain contracts](#c-chain-contracts-1)
 - [Staking on the P-chain](#staking-1)
@@ -47,6 +48,26 @@ Wrapping and unwrapping:
 ```
 await network.wrapNative(wallet, Amount.nats(1))
 await network.unwrapToNative(wallet, Amount.wnats(1))
+```
+
+### Reward claims
+
+Claiming reward from FlareDrop:
+```
+let amount = await network.getClaimableFlareDropReward(cAddress)
+await network.claimFlareDropReward(wallet)
+```
+
+Claiming reward from staking:
+```
+let amount = await network.getClaimableStakingReward(cAddress)
+await network.claimStakingReward(wallet)
+```
+
+Claiming reward from FTSO delegation:
+```
+let amount = await network.getClaimableFtsoReward(cAddress)
+await network.claimFtsoReward(wallet)
 ```
 
 ### Delegation to FTSO providers
@@ -237,7 +258,7 @@ The information on wallet balance can be obtained by
 ```
 let balance = await network.getBalance(publicKey)
 ```
-The resulting object `balance` is of type [`Balance`](src/network/balance.ts) and has the following properties:
+The resulting object `balance` is of type [`Balance`](src/network/iotype.ts) and has the following properties:
 - `availableOnC` The balance available on the C-chain;
 - `availableOnP` The balance available on the P-chain;
 - `wrappedOnC` The balance wrapped on the C-chain
@@ -293,6 +314,71 @@ The wrapped coin can be transferred by the ERC20 standard using
 await network.transferWrapped(wallet, amount)
 ```
 
+### Reward claims
+
+There are different types of rewards that can be claimed in the Flare's network.
+
+#### FlareDrop rewards
+
+FlareDrop is a distribution method for the remaining unreleased FLR tokens after the original airdrop. It is distributed monthly to those that wrap their FLR tokens.
+
+The amount of claimable reward for a given public key or C-chain address `publicKeyOrAddress` can be obtained by
+```
+let amount = await network.getClaimableFlareDropReward(publicKeyOrAddress)
+```
+To claim all claimable reward, use
+```
+await network.claimFlareDropReward(wallet, rewardOwner, recipient, wrap)
+```
+The only required input parameter is `wallet`. The parameter `rewardOwner` is the C-chain address of the reward owner and can be omitted if it is equal to the wallet's C-chain address. Similarly, `recipient` can be omitted if the reward is to be transferred to the wallet's C-chain address. The parameter `wrap` indicates if the reward is to be transferred to `recipient` as native coin (default) or as wrapped coin.
+
+#### Staking rewards
+
+[Staking on the P-chain](#staking-1) yields staking rewards on the C-chain.
+
+The amount of claimable reward for a given public key or C-chain address `publicKeyOrAddress` can be obtained by
+```
+let amount = await network.getClaimableStakingReward(publicKeyOrAddress)
+```
+To claim all claimable reward, use
+```
+await network.claimStakingReward(wallet, rewardOwner, recipient, wrap)
+```
+The only required input parameter is `wallet`. The parameter `rewardOwner` is the C-chain address of the reward owner and can be omitted if it is equal to the wallet's C-chain address. Similarly, `recipient` can be omitted if the reward is to be transferred to the wallet's C-chain address. The parameter `wrap` indicates if the reward is to be transferred to `recipient` as native coin (default) or as wrapped coin.
+
+#### FTSO delegation rewards
+
+Running an FTSO provider, [delegation to FTSO providers](#delegation-to-ftso-providers-1), or even just staking yields FTSO rewards.
+
+The amount of claimable reward for a given public key or C-chain address `publicKeyOrAddress` can be obtained by
+```
+let amount = await network.getClaimableFTSOReward(publicKeyOrAddress)
+```
+To claim all claimable weight based reward (i.e. reward resulting in delegation to FTSO providers and staking), use
+```
+await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap)
+```
+The only required input parameter is `wallet`. The parameter `rewardOwner` is the C-chain address of the reward owner and can be omitted if it is equal to the wallet's C-chain address. Similarly, `recipient` can be omitted if the reward is to be transferred to the wallet's C-chain address. The parameter `wrap` indicates if the reward is to be transferred to `recipient` as native coin (default) or as wrapped coin.
+
+To get a more detailed overview of the reward state, use
+```
+let states = await network.getStateOfFtsoRewards(publicKeyOrAddress)
+```
+The resulting object `states` is an array of array states. An array state is an array of claimable rewards for a specific reward epoch. It can be empty or it consists of objects of type [`FtsoRewardState`](src/network/iotype.ts) with properties:
+- `rewardEpochId` The reward epoch id;
+- `beneficiary` The reward owner (C-chain address or node id if `claimType` is `MIRROR`);
+- `amount` The reward amount in weis;
+- `claimType` The type of claim;
+- `initialised` The flag indicating if the reward can be claimed without providing proofs.
+
+The rewards that are not initialised can be claimed using Merkle proofs available in [Flare System Protocol Reward Distribution repository](https://github.com/flare-foundation/fsp-rewards/) by
+```
+await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap, proofs)
+```
+where `proofs` is an array of objects of type [`FtsoRewardClaimWithProof`](src/network/iotype.ts) with properties:
+- `merkleProof` The Merkle proof represented by an array of strings in hexadecimal encoding;
+- `body` The reward claim represented as an object of type [`FtsoRewardClaim`](src/network/iotype.ts) with the same properties as `FtsoRewardState` described above (except `initialised`).
+
 ### Delegation to FTSO providers
 
 The account's vote power corresponding to the balance of the wrapped tokens can be delegated to one or two FTSO providers to earn delegation reward. The amount of delegated vote power is specified in percentages. The vote power can be delegated to one or two FTSO providers.
@@ -301,7 +387,7 @@ The status of current delegations can be obtained by
 ```
 let delegations = await network.getFtsoDelegatesOf(publicKey)
 ```
-The result is an array of objects of type [`FtsoDelegate`](src/network/balance.ts) with properties:
+The result is an array of objects of type [`FtsoDelegate`](src/network/iotype.ts) with properties:
 - `address` The C-chain address of the delegate;
 - `shareBP` The delegation share in base points.
 

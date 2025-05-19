@@ -3,6 +3,9 @@ import { EvmContract } from "./evm";
 import { PChainStakeMirrorVerifier } from "./stake_verifier";
 import { WNat } from "./wnat";
 import { Utils } from "../../utils";
+import { DistributionToDelegators } from "./flaredrop";
+import { GenericRewardManager } from "./generic_reward_manager";
+import { RewardManager } from "./reward_manager";
 
 export class ContractRegistry extends EvmContract {
 
@@ -28,6 +31,21 @@ export class ContractRegistry extends EvmContract {
     async getWNat(): Promise<WNat> {
         let address = await this.getAddress("WNat")
         return new WNat(this._core, address)
+    }
+
+    async getFlareDropDistribution(): Promise<DistributionToDelegators> {
+        let address = await this.getAddress("DistributionToDelegators")
+        return new DistributionToDelegators(this._core, address)
+    }
+
+    async getValidatorRewardManager(): Promise<GenericRewardManager> {
+        let address = await this.getAddress("ValidatorRewardManager")
+        return new GenericRewardManager(this._core, address)
+    }
+
+    async getRewardManager(): Promise<RewardManager> {
+        let address = await this.getAddress("RewardManager")
+        return new RewardManager(this._core, address)
     }
 
     async getStakeVerifier(): Promise<PChainStakeMirrorVerifier> {

@@ -15,6 +15,7 @@ import { Transfer } from "./transfer";
 import { ContractRegistry } from "../contract/registry";
 import { GenericContract } from "../contract/generic";
 import { Constants } from "../../constants";
+import { FtsoRewardClaimWithProof } from "src/network/iotype";
 
 export class Transactions extends NetworkBased {
 
@@ -62,6 +63,60 @@ export class Transactions extends NetworkBased {
         let wnat = await this._registry.getWNat()
         let unsignedTx = await wnat.getTransferTx(cAddress, recipient, amount)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.TRANSFER_NAT)
+    }
+
+    async claimFlareDropReward(
+        wallet: Wallet, cAddress: string, rewardOwner: string, recipient: string, wrap: boolean
+    ): Promise<void> {
+        let flareDrop = await this._registry.getFlareDropDistribution()
+        // let currentMonth = await flareDrop.getCurrentMonth()
+        // let lastMonth = currentMonth - BigInt(1) // BigInt(Math.min(36, Number(currentMonth)) - 1)
+        let claimableMonths = await flareDrop.getClaimableMonths()
+        let lastClaimableMonth = claimableMonths[1]
+        let unsignedTx = await flareDrop.claim(cAddress, rewardOwner, recipient, lastClaimableMonth, wrap)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_REWARD_FLAREDROP)
+    }
+
+    async claimStakingReward(
+        wallet: Wallet, cAddress: string, rewardOwner: string, recipient: string, wrap: boolean
+    ): Promise<void> {
+        let manager = await this._registry.getValidatorRewardManager()
+        let state = await manager.getStateOfRewards(rewardOwner)
+        let rewardAmount = state[0] - state[1]
+        let unsignedTx = await manager.claim(cAddress, rewardOwner, recipient, rewardAmount, wrap)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_REWARD_STAKING)
+    }
+
+    async claimFtsoReward(
+        wallet: Wallet,
+        cAddress: string,
+        rewardOwner: string,
+        recipient: string,
+        wrap: boolean,
+        proofs: Array<FtsoRewardClaimWithProof>
+    ): Promise<void> {
+        let manager = await this._registry.getRewardManager()
+        let rewardEpochId: bigint
+        if (proofs.length == 0) {
+            let states = await manager.getStateOfRewards(rewardOwner)
+            rewardEpochId = BigInt(-1)
+            for (let epochStates of states) {
+                if (epochStates.length == 0) {
+                    continue
+                }
+                if (epochStates.some(s => !s.initialised)) {
+                    break
+                }
+                rewardEpochId = epochStates[0].rewardEpochId
+            }
+            if (rewardEpochId < BigInt(0)) {
+                throw new Error("The reward owner has no claimable rewards in initialised reward epochs")
+            }
+        } else {
+            rewardEpochId = proofs.reduce((v, p) => { let id = p.body.rewardEpochId; return id > v ? id : v }, BigInt(0))
+        }
+        let unsignedTx = await manager.claim(cAddress, rewardOwner, recipient, rewardEpochId, wrap, proofs)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_REWARD_FTSO)
     }
 
     async delegateToFtso(
