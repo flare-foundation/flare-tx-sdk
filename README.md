@@ -375,8 +375,8 @@ The rewards that are not initialised can be claimed using Merkle proofs availabl
 ```
 await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap, proofs)
 ```
-where `proofs` is an array of objects of type [`FtsoRewardClaimWithProof`](src/network/iotype.ts)with properties:
-- `merkleProof`: a Merkle proof in hexadecimal encoding
+where `proofs` is an array of objects of type [`FtsoRewardClaimWithProof`](src/network/iotype.ts) with properties:
+- `merkleProof`: array of strings in hexadecimal encoding;
 - `body`: an object of type [`FtsoRewardClaim`](src/network/iotype.ts) with the same properties as `FtsoRewardState` described above (except `initialised`).
 
 ### Delegation to FTSO providers
