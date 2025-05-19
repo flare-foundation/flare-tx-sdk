@@ -61,7 +61,6 @@ export class CChain extends NetworkBased {
 
     async getClaimableFtsoReward(address: string): Promise<bigint> {
         let states = await this.getStateOfFtsoRewards(address)
-        console.log(states)
         let rewardAmount = BigInt(0)
         for (let epochStates of states) {
             if (epochStates.length == 0) {

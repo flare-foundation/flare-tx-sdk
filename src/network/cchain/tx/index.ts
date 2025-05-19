@@ -99,7 +99,7 @@ export class Transactions extends NetworkBased {
         let rewardEpochId: bigint
         if (proofs.length == 0) {
             let states = await manager.getStateOfRewards(rewardOwner)
-            let rewardEpochId = BigInt(-1)
+            rewardEpochId = BigInt(-1)
             for (let epochStates of states) {
                 if (epochStates.length == 0) {
                     continue
@@ -110,7 +110,7 @@ export class Transactions extends NetworkBased {
                 rewardEpochId = epochStates[0].rewardEpochId
             }
             if (rewardEpochId < BigInt(0)) {
-                throw new Error("No unclaimed reward epoch with initialised all rewards for the specified reward owner")
+                throw new Error("The reward owner has no claimable rewards in initialised reward epochs")
             }
         } else {
             rewardEpochId = proofs.reduce((v, p) => { let id = p.body.rewardEpochId; return id > v ? id : v }, BigInt(0))

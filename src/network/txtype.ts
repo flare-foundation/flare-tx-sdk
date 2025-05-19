@@ -37,7 +37,7 @@ export class TxType {
                 return "Unwrapping to native coin"
             }
             case this.CLAIM_REWARD_FLAREDROP: {
-                return "Flare Drop reward claim"
+                return "FlareDrop reward claim"
             }
             case this.CLAIM_REWARD_STAKING: {
                 return "Staking reward claim"

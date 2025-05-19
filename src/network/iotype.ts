@@ -41,7 +41,7 @@ export type FtsoRewardClaim = {
  * The type used for specifying FTSO reward claims with Merkle proofs
  */
 export type FtsoRewardClaimWithProof = {
-    merkleProof: string
+    merkleProof: string[]
     body: FtsoRewardClaim
 }
 
