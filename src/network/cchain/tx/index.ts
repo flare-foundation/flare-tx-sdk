@@ -7,15 +7,13 @@ import { Utils } from "../../utils";
 import { TxType } from "../../txtype";
 import { Wallet } from "../../../wallet";
 import { ethers, Transaction as EvmTx } from "ethers";
-import { BN } from "@flarenetwork/flarejs";
-import { EcdsaSignature } from "@flarenetwork/flarejs/dist/common";
-import { PublicKeyPrefix, Serialization } from "@flarenetwork/flarejs/dist/utils";
-import { UnsignedTx as AvaxTx } from "@flarenetwork/flarejs/dist/apis/evm";
+import { EVMUnsignedTx as AvaxTx, messageHashFromUnsignedTx, utils as futils, EcdsaSignature } from "@flarenetwork/flarejs"
 import { Transfer } from "./transfer";
 import { ContractRegistry } from "../contract/registry";
 import { GenericContract } from "../contract/generic";
 import { Constants } from "../../constants";
 import { FtsoRewardClaimWithProof } from "src/network/iotype";
+import { base58 } from "@scure/base";
 
 export class Transactions extends NetworkBased {
 
@@ -255,7 +253,7 @@ export class Transactions extends NetworkBased {
         unsignedTx: AvaxTx,
         txType: string
     ): Promise<void> {
-        let unsignedTxHex = Utils.addHexPrefix(unsignedTx.toBuffer().toString("hex"))
+        let unsignedTxHex = ethers.hexlify(unsignedTx.toBytes())
 
         if (this._core.beforeTxSignature) {
             let proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex })
@@ -264,27 +262,32 @@ export class Transactions extends NetworkBased {
             }
         }
 
-        let unsignedHashes = unsignedTx.prepareUnsignedHashes(undefined as any)
-        let digest = Utils.addHexPrefix(unsignedHashes[0].message)
+        let digest = ethers.hexlify(messageHashFromUnsignedTx(unsignedTx))
         let signature = await Signature.signAvaxTx(wallet, unsignedTxHex, digest, account.publicKey)
 
-        let signatures = Array(unsignedHashes.length).fill(this._getEcdsaSignature(signature))
-        let prefixedPublicKey = `${PublicKeyPrefix}${Utils.removeHexPrefix(account.publicKey)}`
-        let kc = this._core.flarejs.CChain().keyChain()
-        kc.importKey(prefixedPublicKey)
-        let tx = unsignedTx.signWithRawSignatures(signatures, kc)
+        let compressedPublicKey = Account.getPublicKey(account.publicKey, true)
+        // let ecdsaSignature = this._getEcdsaSignature(signature)
+        let coordinates = unsignedTx.getSigIndicesForPubKey(ethers.getBytes(compressedPublicKey))
+        if (coordinates) {
+            let sig = ethers.getBytes(ethers.Signature.from(signature).serialized)
+            coordinates.forEach(([index, subIndex]) => {
+                unsignedTx.addSignatureAt(sig, index, subIndex)
+            })
+        }
+        let tx = unsignedTx.getSignedTx().toBytes()
 
         if (this._core.beforeTxSubmission) {
-            let signedTxHex = `0x${tx.toBuffer().toString("hex")}`
-            let txHash = ethers.sha256(signedTxHex).slice(2)
-            let txId = Serialization.getInstance().bufferToType(Buffer.from(txHash, "hex") as any, "cb58")
+            let signedTxHex = ethers.hexlify(tx)
+            // let txHash = ethers.sha256(signedTxHex).slice(2)
+            let txId = base58.encode(futils.addChecksum(tx))
             let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId })
             if (!proceed) {
                 return
             }
         }
 
-        let txId = await this._core.flarejs.CChain().issueTx(tx)
+        let txIssueResponse = await this._core.flarejs.evmApi.issueTx({ tx: ethers.hexlify(futils.addChecksum(tx)) })
+        let txId = txIssueResponse.txID
 
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
@@ -296,8 +299,9 @@ export class Transactions extends NetworkBased {
         let status = "Unknown"
         let start = Date.now()
         while (Date.now() - start < this._core.const.txConfirmationTimeout) {
-            status = await this._core.flarejs.CChain().getAtomicTxStatus(txId)
-            await Utils.sleep(this._core.const.txConfirmationCheckout)
+            let statusResponse = await this._core.flarejs.evmApi.getAtomicTxStatus(txId)
+            status = statusResponse.status
+            await Utils.sleep(this._core.const.txConfirmationCheckout)            
             if (status === "Accepted" || status === "Rejected") {
                 if (this._core.afterTxConfirmation) {
                     let txStatus = status === "Accepted" ? true : false
@@ -313,8 +317,8 @@ export class Transactions extends NetworkBased {
 
     private _getEcdsaSignature(signature: string): EcdsaSignature {
         let sig = ethers.Signature.from(signature)
-        let r = new BN(Utils.removeHexPrefix(sig.r), "hex")
-        let s = new BN(Utils.removeHexPrefix(sig.s), "hex")
+        let r = BigInt(sig.r)
+        let s = BigInt(sig.s)
         let recoveryParam = sig.yParity
         return { r, s, recoveryParam }
     }

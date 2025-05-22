@@ -1,6 +1,5 @@
 import { JsonRpcProvider } from "ethers";
 import { AfterTxConfirmationCallback, AfterTxSubmissionCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
-import { Defaults, HRPToNetworkID } from "@flarenetwork/flarejs/dist/utils"
 import { Constants } from "./constants";
 import { Flarejs } from "./flarejs";
 
@@ -8,10 +7,10 @@ export class NetworkCore {
 
     constructor(constants: Constants) {
         this.const = constants.copy()
-        this.pChainId = HRPToNetworkID[constants.hrp as keyof object]
-        this.cChainId = Defaults.network[this.pChainId].C.chainID!
-        this.cAssetId = this._getCAssetId()
-        this.pAssetId = this._getPAssetId()
+        // this.pChainId = HRPToNetworkID[constants.hrp as keyof object]
+        // this.cChainId = Defaults.network[this.pChainId].C.chainID!
+        // this.cAssetId = this._getCAssetId()
+        // this.pAssetId = this._getPAssetId()
         this.flarejs = this._getFlarejs(constants.rpc)
         this.ethers = this._getEthers(constants.rpc)
         this.beforeTxSignature = null
@@ -19,11 +18,9 @@ export class NetworkCore {
         this.afterTxSubmission = null
     }
 
+    private _cChainId: bigint
+
     const: Constants
-    cChainId: number
-    pChainId: number
-    cBlockchainId: string
-    pBlockchainId: string
     cAssetId: string
     pAssetId: string
     flarejs: Flarejs
@@ -48,13 +45,25 @@ export class NetworkCore {
     }
 
     private _getFlarejs(rpc: string): Flarejs {        
-        return new Flarejs(rpc)
+        return new Flarejs(rpc, this.const.hrp)
     }
 
     private _getEthers(rpc: string): JsonRpcProvider {
         return new JsonRpcProvider(rpc)
     }
 
+    async getCChainId(): Promise<bigint> {
+        if (!this._cChainId) {
+            this._cChainId = (await this.ethers.getNetwork()).chainId
+        }
+        return this._cChainId        
+    }
+
+    async getPChainId(): Promise<number> {
+        return this.flarejs.getPChainId()
+    }
+
+    /*
     private _getCAssetId(): string {
         return Defaults.network[this.pChainId].C.avaxAssetID!
     }
@@ -62,6 +71,7 @@ export class NetworkCore {
     private _getPAssetId(): string {
         return Defaults.network[this.pChainId].P.avaxAssetID!
     }
+    */
 }
 
 export abstract class NetworkBased {

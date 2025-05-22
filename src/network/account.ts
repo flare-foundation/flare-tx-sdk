@@ -5,7 +5,7 @@ import { Utils } from "./utils"
 export class Account {
 
     constructor(publicKey: string, hrp: string) {
-        this.publicKey = Account.getUncompressedPublicKey(publicKey)
+        this.publicKey = Account.getPublicKey(publicKey, false)
         this.cAddress = Account.getCAddress(publicKey)
         this.pAddress = Account.getPAddress(publicKey, hrp)
         this.pAddressHex = Account.pAddressToHex(this.pAddress)
@@ -16,8 +16,8 @@ export class Account {
     pAddress: string
     pAddressHex: string
     
-    static getUncompressedPublicKey(publicKey: string) : string {
-        return SigningKey.computePublicKey(publicKey, false)
+    static getPublicKey(publicKey: string, compressed: boolean) : string {
+        return SigningKey.computePublicKey(publicKey, compressed)
     }
 
     static getCAddress(publicKey: string): string {
