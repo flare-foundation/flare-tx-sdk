@@ -20,7 +20,7 @@ npm install @flarenetwork/flare-tx-sdk
 
 The following is a brief overview of the available actions. Suppose
 - `network` is an object of class [`Network`](src/network/network.ts), e.g. `Network.FLARE`
-- `wallet` is an object of a suitable class that [implements](#wallet-implementation) the interface [`Wallet`](src/wallet/index.ts)
+- `wallet` is an object of a suitable class that [implements](#wallet-implementation) the interface [`Wallet`](src/wallet/wallet.ts)
 
 ### Account and balance
 
@@ -109,7 +109,7 @@ await network.transferToC(wallet)
 
 ## Wallet implementation
 
-In order to generate and sign transactions on the C-chain and P-chain, a suitable implementation of the interface [`Wallet`](src/wallet/index.ts) must be provided. Each object implementing the interface should be associated with a unique signing key.
+In order to generate and sign transactions on the C-chain and P-chain, a suitable implementation of the interface [`Wallet`](src/wallet/wallet.ts) must be provided. Each object implementing the interface should be associated with a unique signing key.
 
 The SDK provides proxies to facilitate the integration of standard wallets, such as Web3 based wallets (EIP-1193 standard), Ledger, and Trezor. Details are specified in [Standard wallets](#standard-wallets).
 
@@ -511,7 +511,7 @@ The parameter `baseFeeTxOnC` is optional and can be used to override the automat
 
 ## Standard wallets
 
-As explained in [Wallet implementation](#wallet-implementation), for generating and signing transactions using this SDK, an implementation of the interface [`Wallet`](src/wallet/index.ts) is required. The following describes SDK-compatible wallet implementations that are available in SDK and can be used in combination with standard wallet frameworks and libraries.
+As explained in [Wallet implementation](#wallet-implementation), for generating and signing transactions using this SDK, an implementation of the interface [`Wallet`](src/wallet/wallet.ts) is required. The following describes SDK-compatible wallet implementations that are available in SDK and can be used in combination with standard wallet frameworks and libraries.
 
 ### EIP-1193 based wallets
 
