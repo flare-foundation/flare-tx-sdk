@@ -69,8 +69,6 @@ export class Transactions extends NetworkBased {
         wallet: Wallet, cAddress: string, rewardOwner: string, recipient: string, wrap: boolean
     ): Promise<void> {
         let flareDrop = await this._registry.getFlareDropDistribution()
-        // let currentMonth = await flareDrop.getCurrentMonth()
-        // let lastMonth = currentMonth - BigInt(1) // BigInt(Math.min(36, Number(currentMonth)) - 1)
         let claimableMonths = await flareDrop.getClaimableMonths()
         let lastClaimableMonth = claimableMonths[1]
         let unsignedTx = await flareDrop.claim(cAddress, rewardOwner, recipient, lastClaimableMonth, wrap)

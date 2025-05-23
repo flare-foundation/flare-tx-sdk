@@ -42,8 +42,6 @@ export class CChain extends NetworkBased {
     async getClaimableFlareDropReward(address: string): Promise<bigint> {
         let flaredrop = await this._registry.getFlareDropDistribution()
         let start = await flaredrop.nextClaimableMonth(address)
-        // let currentMonth = await flaredrop.getCurrentMonth()
-        // let end = currentMonth // BigInt(Math.min(36, Number(currentMonth)))
         let startEndMonths = await flaredrop.getClaimableMonths()
         let end = startEndMonths[1]
         let amount = BigInt(0)
