@@ -1,8 +1,9 @@
 import { ethers, Wallet as EthersWallet, JsonRpcProvider, Transaction } from "ethers"
 import { Constants, Network } from "../../src/network";
 import { Wallet } from "../../src/wallet";
-import { UnsignedTx as UnsignedCTx } from "@flarenetwork/flarejs/dist/apis/evm";
-import { UnsignedTx as UnsignedPTx } from "@flarenetwork/flarejs/dist/apis/platformvm";
+import { UnsignedTx as UnsignedPTx } from "@flarenetwork/flarejs";
+import { unpackWithManager } from "@flarenetwork/flarejs/dist/utils";
+import { Transaction as FTransaction } from "@flarenetwork/flarejs/dist/vms/common";
 
 export abstract class TestWallet implements Wallet {
 
@@ -106,21 +107,18 @@ export class TestAvaxTransactionWallet extends TestWallet {
         return this.ethersWallet.signingKey.sign(digest).serialized
     }
 
-    _getCTx(tx: string): UnsignedCTx | null {
+    _getCTx(tx: string): FTransaction | null {
         try {
-            let ctx = new UnsignedCTx()
-            ctx.fromBuffer(Buffer.from(tx, "hex") as any)
-            return ctx
+            let ftx = unpackWithManager("EVM", ethers.getBytes(tx))
+            return unpackWithManager("EVM", ethers.getBytes(tx))
         } catch {
             return null
         }
     }
 
-    _getPTx(tx: string): UnsignedPTx | null {
+    _getPTx(tx: string): FTransaction | null {
         try {
-            let ptx = new UnsignedPTx()
-            ptx.fromBuffer(Buffer.from(tx, "hex") as any)
-            return ptx
+            return unpackWithManager("PVM", ethers.getBytes(tx))
         } catch {
             return null
         }

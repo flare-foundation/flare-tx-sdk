@@ -1,8 +1,5 @@
-import { UnixNow } from "@flarenetwork/flarejs/dist/utils"
+import { UnsignedTx, utils as futils, networkIDs } from "@flarenetwork/flarejs"
 import { NetworkBased } from "../../core"
-import { Utils } from "../../utils"
-import { UnsignedTx } from "@flarenetwork/flarejs/dist/apis/platformvm"
-import { BN } from "@flarenetwork/flarejs"
 
 export class Delegation extends NetworkBased {
 
@@ -13,22 +10,20 @@ export class Delegation extends NetworkBased {
         startTime: bigint,
         endTime: bigint
     ): Promise<UnsignedTx> {
-        let pChainAddressForP = `P-${pAddress}`
-        let utxosData = await this._core.flarejs.PChain().getUTXOs(pChainAddressForP)
-        return this._core.flarejs.PChain().buildAddDelegatorTx(
+        let pAddressForP = `P-${pAddress}`
+        let pAddressBytes = futils.bech32ToBytes(pAddressForP)
+        let utxosData = await this._core.flarejs.pvmApi.getUTXOs({ addresses: [pAddressForP] })
+        return this._core.flarejs.pvm.newAddPermissionlessDelegatorTx(
+            this._core.flarejs.context,
             utxosData.utxos,
-            [pChainAddressForP],
-            [pChainAddressForP],
-            [pChainAddressForP],
+            [pAddressBytes],
             nodeId,
-            Utils.toBn(startTime),
-            Utils.toBn(endTime),
-            Utils.toBn(amount / BigInt(1e9)),
-            [pChainAddressForP],
-            new BN(0),
-            1,
-            undefined,
-            UnixNow()
+            networkIDs.PrimaryNetworkID.toString(),
+            startTime,
+            endTime,
+            amount / BigInt(1e9),
+            [pAddressBytes],
+            { locktime: BigInt(0), threshold: 1 }
         )
     }
 

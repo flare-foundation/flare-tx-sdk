@@ -397,7 +397,7 @@ export class Network extends NetworkBased {
         this._shouldBeGweiInteger(amount)
         let account = await this._getAccount(wallet)
 
-        let importFee = this.getDefaultTxFeeOnP()
+        let importFee = await this.getBaseTxFeeOnP()
         let notImportedToP = await this._pchain.getBalanceNotImportedToP(account.pAddress)
         if (notImportedToP < amount + importFee) {
             let amountToExport = amount + importFee - notImportedToP
@@ -435,7 +435,7 @@ export class Network extends NetworkBased {
             amountToExport = amount - notImportedToC
         } else {
             let balance = await this._pchain.getBalance(account.pAddress)
-            let exportFee = this.getDefaultTxFeeOnP()
+            let exportFee = await this.getBaseTxFeeOnP()
             amountToExport = balance - exportFee
         }
         if (amountToExport > BigInt(0)) {
@@ -588,11 +588,11 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns the default transaction fee on the P-chain
+     * Returns the base transaction fee on the P-chain
      * @returns The default fee in wei.
      */
-    getDefaultTxFeeOnP(): bigint {
-        return this._pchain.tx.getDefaultTxFee()
+    async getBaseTxFeeOnP(): Promise<bigint> {
+        return this._pchain.tx.getBaseTxFee()
     }
 
     /**

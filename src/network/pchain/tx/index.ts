@@ -1,4 +1,3 @@
-import { GetTxStatusResponse, UnsignedTx, Tx, AddDelegatorTx, AddValidatorTx } from "@flarenetwork/flarejs/dist/apis/platformvm"
 import { Wallet } from "../../../wallet"
 import { Account } from "../../account"
 import { NetworkCore, NetworkBased } from "../../core"
@@ -7,11 +6,11 @@ import { Export } from "./export"
 import { Import } from "./import"
 import { Utils } from "../../utils"
 import { Signature } from "../../sign"
-import { PublicKeyPrefix, Serialization } from "@flarenetwork/flarejs/dist/utils"
-import { EcdsaSignature } from "@flarenetwork/flarejs/dist/common"
 import { ethers } from "ethers"
-import { BN } from "@flarenetwork/flarejs"
+import { messageHashFromUnsignedTx, TypeSymbols, UnsignedTx, utils as futils, EcdsaSignature } from "@flarenetwork/flarejs"
 import { Delegation } from "./delegation"
+import { AddDelegatorTx, AddPermissionlessDelegatorTx, AddPermissionlessValidatorTx, AddValidatorTx } from "@flarenetwork/flarejs/dist/serializable/pvm"
+import { base58 } from "@scure/base"
 
 export class Transactions extends NetworkBased {
 
@@ -48,22 +47,24 @@ export class Transactions extends NetworkBased {
         await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.ADD_DELEGATOR_P)
     }
 
-    getDefaultTxFee(): bigint {
-        return Utils.toBigint(this._core.flarejs.PChain().getDefaultTxFee()) * BigInt(1e9)
+    async getBaseTxFee(): Promise<bigint> {
+        return this._core.flarejs.getBaseTxFee()
     }
 
-    async getStakeTx(txId: string): Promise<AddDelegatorTx | AddValidatorTx> {
-        let txHex = await this._core.flarejs.PChain().getTx(txId, "hex") as string
-        let tx = new Tx()
-        tx.fromBuffer(Buffer.from(Utils.removeHexPrefix(txHex), "hex") as any)
-        let btx = tx.getUnsignedTx().getTransaction()
-        let stx: AddDelegatorTx | AddValidatorTx
-        if (btx.getTypeName() === "AddDelegatorTx") {
-            stx = btx as AddDelegatorTx
-        } else if (btx.getTypeName() === "AddValidatorTx") {
-            stx = btx as AddValidatorTx
+    async getStakeTx(txId: string): Promise<AddDelegatorTx | AddValidatorTx | AddPermissionlessDelegatorTx | AddPermissionlessValidatorTx> {
+        let tx = await this._core.flarejs.pvmApi.getTx({ txID: txId })
+        let utx = tx.unsignedTx
+        let stx: AddDelegatorTx | AddValidatorTx | AddPermissionlessDelegatorTx | AddPermissionlessValidatorTx
+        if (utx._type === TypeSymbols.AddDelegatorTx) {
+            stx = utx as AddDelegatorTx
+        } else if (utx._type === TypeSymbols.AddValidatorTx) {
+            stx = utx as AddValidatorTx
+        } else if (utx._type === TypeSymbols.AddPermissionlessDelegatorTx) {
+            stx = utx as AddPermissionlessDelegatorTx
+        } else if (utx._type === TypeSymbols.AddPermissionlessValidatorTx) {
+            stx = utx as AddPermissionlessValidatorTx
         } else {
-            throw new Error("Not a stake transaction")
+            throw new Error(`Transaction ${txId} is of type ${utx._type} (not a stake transaction)`)
         }
         return stx
     }
@@ -74,7 +75,7 @@ export class Transactions extends NetworkBased {
         unsignedTx: UnsignedTx,
         txType: string
     ): Promise<void> {
-        let unsignedTxHex = Utils.addHexPrefix(unsignedTx.toBuffer().toString("hex"))
+        let unsignedTxHex = ethers.hexlify(unsignedTx.toBytes())
 
         if (this._core.beforeTxSignature) {
             let proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex })
@@ -83,27 +84,32 @@ export class Transactions extends NetworkBased {
             }
         }
 
-        let unsignedHashes = unsignedTx.prepareUnsignedHashes(undefined as any)
-        let digest = Utils.addHexPrefix(unsignedHashes[0].message)
+        let digest = ethers.hexlify(messageHashFromUnsignedTx(unsignedTx))
         let signature = await Signature.signAvaxTx(wallet, unsignedTxHex, digest, account.publicKey)
 
-        let signatures = Array(unsignedHashes.length).fill(this._getEcdsaSignature(signature))
-        let prefixedPublicKey = `${PublicKeyPrefix}${Utils.removeHexPrefix(account.publicKey)}`
-        let kc = this._core.flarejs.PChain().keyChain()
-        kc.importKey(prefixedPublicKey)
-        let tx = unsignedTx.signWithRawSignatures(signatures, kc)
+        let compressedPublicKey = Account.getPublicKey(account.publicKey, true)
+        // let ecdsaSignature = this._getEcdsaSignature(signature)
+        let coordinates = unsignedTx.getSigIndicesForPubKey(ethers.getBytes(compressedPublicKey))
+        if (coordinates) {
+            let sig = ethers.getBytes(ethers.Signature.from(signature).serialized)
+            coordinates.forEach(([index, subIndex]) => {
+                unsignedTx.addSignatureAt(sig, index, subIndex)
+            })
+        }
+        let tx = unsignedTx.getSignedTx().toBytes()
 
         if (this._core.beforeTxSubmission) {
-            let signedTxHex = `0x${tx.toBuffer().toString("hex")}`
-            let txHash = ethers.sha256(signedTxHex).slice(2)
-            let txId = Serialization.getInstance().bufferToType(Buffer.from(txHash, "hex") as any, "cb58")
+            let signedTxHex = ethers.hexlify(tx)
+            // let txHash = ethers.sha256(signedTxHex).slice(2)
+            let txId = base58.encode(futils.addChecksum(tx))
             let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId })
             if (!proceed) {
                 return
             }
         }
 
-        let txId = await this._core.flarejs.PChain().issueTx(tx)
+        let txIssueResponse = await this._core.flarejs.pvmApi.issueTx({ tx: ethers.hexlify(futils.addChecksum(tx)) })
+        let txId = txIssueResponse.txID
 
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
@@ -115,7 +121,8 @@ export class Transactions extends NetworkBased {
         let status = "Unknown"
         let start = Date.now()
         while (Date.now() - start < this._core.const.txConfirmationTimeout) {
-            status = (await this._core.flarejs.PChain().getTxStatus(txId) as GetTxStatusResponse).status
+            let statusResponse = await this._core.flarejs.pvmApi.getTxStatus({ txID: txId })
+            let status = statusResponse.status
             await Utils.sleep(this._core.const.txConfirmationCheckout)
             if (status === "Committed" || status === "Rejected") {
                 if (this._core.afterTxConfirmation) {
@@ -132,8 +139,8 @@ export class Transactions extends NetworkBased {
 
     private _getEcdsaSignature(signature: string): EcdsaSignature {
         let sig = ethers.Signature.from(signature)
-        let r = new BN(Utils.removeHexPrefix(sig.r), "hex")
-        let s = new BN(Utils.removeHexPrefix(sig.s), "hex")
+        let r = BigInt(sig.r)
+        let s = BigInt(sig.s)
         let recoveryParam = sig.yParity
         return { r, s, recoveryParam }
     }

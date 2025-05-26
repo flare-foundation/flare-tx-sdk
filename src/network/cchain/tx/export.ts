@@ -1,8 +1,5 @@
-import { UnsignedTx } from "@flarenetwork/flarejs/dist/apis/evm"
-import { costExportTx } from "@flarenetwork/flarejs/dist/utils"
+import { EVMUnsignedTx, utils as futils } from "@flarenetwork/flarejs"
 import { NetworkBased } from "../../core"
-import { BN } from "@flarenetwork/flarejs"
-import { Utils } from "../../utils"
 
 export class Export extends NetworkBased {
 
@@ -11,7 +8,7 @@ export class Export extends NetworkBased {
         pAddress: string,
         amount: bigint,
         baseFee: bigint
-    ): Promise<UnsignedTx> {
+    ): Promise<EVMUnsignedTx> {
         let amountGwei = amount / BigInt(1e9)
         let fee = await this._getTxFee(cAddress, pAddress, amountGwei, baseFee / BigInt(1e9))
         return this._getTx(cAddress, pAddress, amountGwei, fee)
@@ -22,21 +19,20 @@ export class Export extends NetworkBased {
         pAddress: string,
         amount: bigint,
         fee: bigint
-    ): Promise<UnsignedTx> {
-        let pAddressForC = `C-${pAddress}`
-        let pAddressForP = `P-${pAddress}`
-        let nonce = await this._core.ethers.getTransactionCount(cAddress)
-        return await this._core.flarejs.CChain().buildExportTx(
-            Utils.toBn(amount),
-            this._core.pAssetId,
-            this._core.pBlockchainId,
-            cAddress,
-            pAddressForC,
-            [pAddressForP],
-            nonce,
-            new BN(0),
-            1,
-            Utils.toBn(fee)
+    ): Promise<EVMUnsignedTx> {
+        let pBlockchainId = await this._core.flarejs.getPBlockchainId()
+        let assetId = await this._core.flarejs.getAssetId()
+        let nonce = await this._core.ethers.getTransactionCount(cAddress)        
+        return this._core.flarejs.evm.newExportTx(
+            this._core.flarejs.context,
+            amount,
+            pBlockchainId,
+            futils.hexToBuffer(cAddress),
+            [futils.bech32ToBytes(`P-${pAddress}`)],
+            fee,
+            BigInt(nonce),
+            assetId,
+            { locktime: BigInt(0), threshold: 1 }
         )
     }
 
@@ -47,7 +43,7 @@ export class Export extends NetworkBased {
         baseFee: bigint
     ): Promise<bigint> {
         let tx = await this._getTx(cAddress, pAddress, amount, BigInt(0))
-        let cost = costExportTx(tx)
+        let cost = futils.costCorethTx(tx)
         return baseFee * BigInt(cost)
     }
 

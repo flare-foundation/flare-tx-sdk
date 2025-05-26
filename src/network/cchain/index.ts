@@ -6,6 +6,7 @@ import { Utils } from "../utils"
 import { GenericContract } from "./contract/generic"
 import { ContractRegistry } from "./contract/registry"
 import { Transactions } from "./tx"
+import { utils as futils } from "@flarenetwork/flarejs"
 
 export class CChain extends NetworkBased {
 
@@ -30,13 +31,21 @@ export class CChain extends NetworkBased {
     }
 
     async getBalanceNotImportedToC(pAddress: string): Promise<bigint> {
-        let pBlockchainId = this._core.pBlockchainId
-        let pAssetId = this._core.pAssetId
+        let pBlockchainId = await this._core.flarejs.getPBlockchainId()
+        let assetId = await this._core.flarejs.getAssetId()
         let pAddressForC = `C-${pAddress}`
-        let pAddressHex = Utils.removeHexPrefix(Account.pAddressToHex(pAddress))
-        let response = await this._core.flarejs.CChain().getUTXOs(pAddressForC, pBlockchainId)
-        let balance = response.utxos.getBalance([Buffer.from(pAddressHex, "hex")], pAssetId)
-        return Utils.toBigint(balance) * BigInt(1e9)
+        let response = await this._core.flarejs.evmApi.getUTXOs({ addresses: [pAddressForC], sourceChain: pBlockchainId })
+        let balance = BigInt(0)
+        for (let utxo of response.utxos) {
+            if (utxo.getAssetId() !== assetId) {
+                continue
+            }
+            let out = utxo.output
+            if (futils.isTransferOut(out)) {
+                balance += out.amount()
+            }
+        }
+        return balance * BigInt(1e9)
     }
 
     async getClaimableFlareDropReward(address: string): Promise<bigint> {

@@ -13,7 +13,7 @@ export abstract class Evm extends NetworkBased {
 
     protected async _getType2TxParams(sender: string): Promise<EvmType2TxParams> {
         let type = 2
-        let chainId = this._core.cChainId
+        let chainId = await this._core.getCChainId()
         let nonce = await this._core.ethers.getTransactionCount(sender)
         let feeData = await this._core.ethers.getFeeData()
         let maxFeePerGas = this._core.const.evmMaxFeePerGas

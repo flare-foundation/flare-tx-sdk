@@ -1,25 +1,20 @@
-import { UnixNow } from "@flarenetwork/flarejs/dist/utils"
+import { UnsignedTx, utils as futils } from "@flarenetwork/flarejs"
 import { NetworkBased } from "../../core"
-import { BN } from "@flarenetwork/flarejs"
-import { UnsignedTx } from "@flarenetwork/flarejs/dist/apis/platformvm"
 
 export class Import extends NetworkBased {
 
     async getTx(pAddress: string): Promise<UnsignedTx> {
-        let sourceChain = this._core.cBlockchainId
-        let pChainAddressForP = `P-${pAddress}`
-        let utxosData = await this._core.flarejs.PChain().getUTXOs(pChainAddressForP, sourceChain)
-        return this._core.flarejs.PChain().buildImportTx(
+        let cBlockchainId = await this._core.flarejs.getCBlockchainId()
+        let pAddressForP = `P-${pAddress}`
+        let pAddressBytes = futils.bech32ToBytes(pAddressForP)
+        let utxosData = await this._core.flarejs.pvmApi.getUTXOs({ addresses: [pAddressForP], sourceChain: "C" })
+        return this._core.flarejs.pvm.newImportTx(
+            this._core.flarejs.context,
+            cBlockchainId,
             utxosData.utxos,
-            [pChainAddressForP],
-            sourceChain,
-            [pChainAddressForP],
-            [pChainAddressForP],
-            [pChainAddressForP],
-            undefined,
-            UnixNow(),
-            new BN(0),
-            1
+            [pAddressBytes],
+            [pAddressBytes],
+            { locktime: BigInt(0), threshold: 1 }
         )
     }
 }

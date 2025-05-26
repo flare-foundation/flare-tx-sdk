@@ -18,11 +18,11 @@ export class NetworkCore {
         this.afterTxSubmission = null
     }
 
-    private _cChainId: bigint
+    private _cChainId: number
 
     const: Constants
-    cAssetId: string
-    pAssetId: string
+    // cAssetId: string
+    // pAssetId: string
     flarejs: Flarejs
     ethers: JsonRpcProvider
     beforeTxSignature: BeforeTxSignatureCallback
@@ -52,11 +52,12 @@ export class NetworkCore {
         return new JsonRpcProvider(rpc)
     }
 
-    async getCChainId(): Promise<bigint> {
+    async getCChainId(): Promise<number> {
         if (!this._cChainId) {
-            this._cChainId = (await this.ethers.getNetwork()).chainId
+            let network = await this.ethers.getNetwork()
+            this._cChainId = Number(network.chainId)
         }
-        return this._cChainId        
+        return this._cChainId
     }
 
     async getPChainId(): Promise<number> {

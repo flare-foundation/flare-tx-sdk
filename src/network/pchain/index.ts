@@ -3,6 +3,8 @@ import { Stake } from "../iotype";
 import { NetworkCore, NetworkBased } from "../core";
 import { Utils } from "../utils";
 import { Transactions } from "./tx";
+import { OutputOwners, Utxo, utils as futils } from "@flarenetwork/flarejs";
+import { AddDelegatorTx, AddPermissionlessDelegatorTx, AddPermissionlessValidatorTx, AddValidatorTx } from "@flarenetwork/flarejs/dist/serializable/pvm";
 
 export class PChain extends NetworkBased {
 
@@ -14,27 +16,31 @@ export class PChain extends NetworkBased {
     tx: Transactions
     
     async getBalance(pAddress: string): Promise<bigint> {
-        let response = await this._core.flarejs.PChain().getBalance(`P-${pAddress}`)
-        // let pAssetId = this._core.pAssetId
-        // let pAddressHex = Utils.removeHexPrefix(Account.pAddressToHex(pAddress))
-        // let utxoSet = await this._core.avalanche.PChain().getUTXOs([`P-${pAddress}`])
-        // let balance = utxoSet.utxos.getBalance([Buffer.from(pAddressHex, "hex") as any], pAssetId)
-        return Utils.toBigint(response.balance) * BigInt(1e9)
+        let response = await this._core.flarejs.pvmApi.getBalance({ addresses: [`P-${pAddress}`] })
+        return response.balance * BigInt(1e9)
     }
     
     async getBalanceNotImportedToP(pAddress: string): Promise<bigint> {
-        let cBlockchainId = this._core.cBlockchainId
-        let pAssetId = this._core.pAssetId
+        let cBlockchainId = await this._core.flarejs.getCBlockchainId()
+        let assetId = await this._core.flarejs.getAssetId()
         let pAddressForP = `P-${pAddress}`
-        let pAddressHex = Utils.removeHexPrefix(Account.pAddressToHex(pAddress))
-        let response = await this._core.flarejs.PChain().getUTXOs(pAddressForP, cBlockchainId)
-        let balance = response.utxos.getBalance([Buffer.from(pAddressHex, "hex") as any], pAssetId)
-        return Utils.toBigint(balance) * BigInt(1e9)
+        let response = await this._core.flarejs.pvmApi.getUTXOs({ addresses: [pAddressForP], sourceChain: cBlockchainId })
+        let balance = BigInt(0)
+        for (let utxo of response.utxos) {
+            if (utxo.getAssetId() !== assetId) {
+                continue
+            }
+            let out = utxo.output
+            if (futils.isTransferOut(out)) {
+                balance += out.amount()
+            }
+        }
+        return balance * BigInt(1e9)
     }
     
     async getStakedBalance(pAddress: string): Promise<bigint> {
-        let response = await this._core.flarejs.PChain().getStake([`P-${pAddress}`])
-        return Utils.toBigint(response.staked) * BigInt(1e9)
+        let response = await this._core.flarejs.pvmApi.getStake({ addresses: [`P-${pAddress}`] })
+        return response.staked * BigInt(1e9)
     }
 
     async getStakes(): Promise<Array<Stake>> {
@@ -51,11 +57,10 @@ export class PChain extends NetworkBased {
     
     private async _getCurrentStakes(): Promise<Array<Stake>> {
         let stakes = Array<Stake>()
-        let data = await this._core.flarejs.PChain().getCurrentValidators()
-        let validators = (data as any).validators as Array<any>    
-        for (let validator of validators) {
+        let data = await this._core.flarejs.pvmApi.getCurrentValidators()
+        for (let validator of data.validators) {
             stakes.push(await this._parseStake(validator, "validator"))
-            let delegators = validator.delegators as Array<any>
+            let delegators = validator.delegators
             if (delegators) {
                 for (let delegator of delegators) {
                     stakes.push(await this._parseStake(delegator, "delegator"))
@@ -67,38 +72,39 @@ export class PChain extends NetworkBased {
     
     private async _getPendingStakes(): Promise<Array<Stake>> {
         let stakes = Array<Stake>()
-        let data = await this._core.flarejs.PChain().getPendingValidators() as any
-        let validators = data.validators as Array<any>
-        for (let validator of validators) {
-            stakes.push(await this._parseStake(validator, "validator"))
-            let delegators = validator.delegators as Array<any>
-            if (delegators) {
-                for (let delegator of delegators) {
-                    stakes.push(await this._parseStake(delegator, "delegator"))
-                }
-            }
+        let data = await this._core.flarejs.pvmApi.getPendingValidators()
+        for (let validator of data.validators) {
+            stakes.push(await this._parseStake(validator, "validator"))            
         }
-        let delegators = data.delegators as Array<any>
-        for (let delegator of delegators) {
+        for (let delegator of data.delegators) {
             stakes.push(await this._parseStake(delegator, "delegator"))
         }
         return stakes
     }
     
     private async _parseStake(stake: any, type: string): Promise<Stake> {
-        let txId = stake.txID
+        let txId = stake.txID as string
         let pAddress: string
-        if (stake.rewardOwner &&
-            stake.rewardOwner.addresses &&
-            stake.rewardOwner.addresses.length > 0) {
-            pAddress = stake.rewardOwner.addresses[0]
+        let rewardOwner = stake.validationRewardOwner ?? stake.delegationRewardOwner
+        if (rewardOwner &&
+            rewardOwner.addresses &&
+            rewardOwner.addresses.length > 0) {
+            pAddress = rewardOwner.addresses[0]
             if (pAddress.startsWith("P-")) {
                 pAddress = pAddress.slice(2)
-            }
+            }        
         } else {
             let tx = await this.tx.getStakeTx(txId)
-            let addresses = tx.getRewardOwners().getOutput().getAddresses()
-            pAddress = Account.pAddressToBech(addresses[0].toString("hex"), this._core.hrp)
+            let owners: OutputOwners
+            if (tx instanceof AddDelegatorTx || tx instanceof AddValidatorTx) {
+                owners = tx.getRewardsOwner()
+            } else if (tx instanceof AddPermissionlessDelegatorTx) {
+                owners = tx.getDelegatorRewardsOwner()
+            } else if (tx instanceof AddPermissionlessValidatorTx) {
+                owners = tx.getValidatorRewardsOwner()
+            }
+            pAddress = owners.addrs[0].toString(this._core.hrp)
+            // pAddress = Account.pAddressToBech(addresses[0].toString("hex"), this._core.hrp)
         }
         let nodeId = stake.nodeID
         let startTime = BigInt(stake.startTime)

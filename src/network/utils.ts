@@ -1,5 +1,3 @@
-import { BN } from "@flarenetwork/flarejs";
-
 export class Utils {
 
     static addHexPrefix(hex: string): string {
@@ -14,6 +12,7 @@ export class Utils {
         return /^(0x)?(0+)?$/.test(value)
     }
 
+    /*
     static toBigint(value: BN | number): bigint {
         return BigInt(value.toString(10))
     }
@@ -21,6 +20,7 @@ export class Utils {
     static toBn(value: bigint): BN {
         return new BN(value.toString(10), 10)
     }
+    */
 
     static async sleep(ms: number): Promise<void> {
         await new Promise(resolve => setTimeout(resolve, ms));
