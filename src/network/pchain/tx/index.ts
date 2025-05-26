@@ -7,9 +7,8 @@ import { Import } from "./import"
 import { Utils } from "../../utils"
 import { Signature } from "../../sign"
 import { ethers } from "ethers"
-import { messageHashFromUnsignedTx, TypeSymbols, UnsignedTx, utils as futils, EcdsaSignature } from "@flarenetwork/flarejs"
+import { messageHashFromUnsignedTx, pvmSerial, TypeSymbols, UnsignedTx, utils as futils, EcdsaSignature } from "@flarenetwork/flarejs"
 import { Delegation } from "./delegation"
-import { AddDelegatorTx, AddPermissionlessDelegatorTx, AddPermissionlessValidatorTx, AddValidatorTx } from "@flarenetwork/flarejs/dist/serializable/pvm"
 import { base58 } from "@scure/base"
 
 export class Transactions extends NetworkBased {
@@ -51,18 +50,20 @@ export class Transactions extends NetworkBased {
         return this._core.flarejs.getBaseTxFee()
     }
 
-    async getStakeTx(txId: string): Promise<AddDelegatorTx | AddValidatorTx | AddPermissionlessDelegatorTx | AddPermissionlessValidatorTx> {
+    async getStakeTx(
+        txId: string
+        ): Promise<pvmSerial.AddDelegatorTx | pvmSerial.AddValidatorTx | pvmSerial.AddPermissionlessDelegatorTx | pvmSerial.AddPermissionlessValidatorTx> {
         let tx = await this._core.flarejs.pvmApi.getTx({ txID: txId })
         let utx = tx.unsignedTx
-        let stx: AddDelegatorTx | AddValidatorTx | AddPermissionlessDelegatorTx | AddPermissionlessValidatorTx
+        let stx: pvmSerial.AddDelegatorTx | pvmSerial.AddValidatorTx | pvmSerial.AddPermissionlessDelegatorTx | pvmSerial.AddPermissionlessValidatorTx
         if (utx._type === TypeSymbols.AddDelegatorTx) {
-            stx = utx as AddDelegatorTx
+            stx = utx as pvmSerial.AddDelegatorTx
         } else if (utx._type === TypeSymbols.AddValidatorTx) {
-            stx = utx as AddValidatorTx
+            stx = utx as pvmSerial.AddValidatorTx
         } else if (utx._type === TypeSymbols.AddPermissionlessDelegatorTx) {
-            stx = utx as AddPermissionlessDelegatorTx
+            stx = utx as pvmSerial.AddPermissionlessDelegatorTx
         } else if (utx._type === TypeSymbols.AddPermissionlessValidatorTx) {
-            stx = utx as AddPermissionlessValidatorTx
+            stx = utx as pvmSerial.AddPermissionlessValidatorTx
         } else {
             throw new Error(`Transaction ${txId} is of type ${utx._type} (not a stake transaction)`)
         }
@@ -91,17 +92,18 @@ export class Transactions extends NetworkBased {
         // let ecdsaSignature = this._getEcdsaSignature(signature)
         let coordinates = unsignedTx.getSigIndicesForPubKey(ethers.getBytes(compressedPublicKey))
         if (coordinates) {
-            let sig = ethers.getBytes(ethers.Signature.from(signature).serialized)
+            let sig = ethers.Signature.from(signature)
+            let sigBytes = ethers.getBytes(ethers.concat([sig.r, sig.s, `0x0${sig.yParity}`]))
             coordinates.forEach(([index, subIndex]) => {
-                unsignedTx.addSignatureAt(sig, index, subIndex)
+                unsignedTx.addSignatureAt(sigBytes, index, subIndex)
             })
         }
         let tx = unsignedTx.getSignedTx().toBytes()
 
         if (this._core.beforeTxSubmission) {
             let signedTxHex = ethers.hexlify(tx)
-            // let txHash = ethers.sha256(signedTxHex).slice(2)
-            let txId = base58.encode(futils.addChecksum(tx))
+            let txHash = ethers.sha256(signedTxHex)
+            let txId = base58.encode(futils.addChecksum(ethers.getBytes(txHash)))
             let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId })
             if (!proceed) {
                 return
@@ -110,7 +112,7 @@ export class Transactions extends NetworkBased {
 
         let txIssueResponse = await this._core.flarejs.pvmApi.issueTx({ tx: ethers.hexlify(futils.addChecksum(tx)) })
         let txId = txIssueResponse.txID
-
+        
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
             if (!proceed) {
@@ -122,7 +124,7 @@ export class Transactions extends NetworkBased {
         let start = Date.now()
         while (Date.now() - start < this._core.const.txConfirmationTimeout) {
             let statusResponse = await this._core.flarejs.pvmApi.getTxStatus({ txID: txId })
-            let status = statusResponse.status
+            status = statusResponse.status
             await Utils.sleep(this._core.const.txConfirmationCheckout)
             if (status === "Committed" || status === "Rejected") {
                 if (this._core.afterTxConfirmation) {

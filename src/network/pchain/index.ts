@@ -1,10 +1,7 @@
-import { Account } from "../account";
 import { Stake } from "../iotype";
 import { NetworkCore, NetworkBased } from "../core";
-import { Utils } from "../utils";
 import { Transactions } from "./tx";
-import { OutputOwners, Utxo, utils as futils } from "@flarenetwork/flarejs";
-import { AddDelegatorTx, AddPermissionlessDelegatorTx, AddPermissionlessValidatorTx, AddValidatorTx } from "@flarenetwork/flarejs/dist/serializable/pvm";
+import { OutputOwners, pvmSerial, utils as futils } from "@flarenetwork/flarejs";
 
 export class PChain extends NetworkBased {
 
@@ -40,7 +37,7 @@ export class PChain extends NetworkBased {
     
     async getStakedBalance(pAddress: string): Promise<bigint> {
         let response = await this._core.flarejs.pvmApi.getStake({ addresses: [`P-${pAddress}`] })
-        return response.staked * BigInt(1e9)
+        return BigInt(response.staked) * BigInt(1e9)
     }
 
     async getStakes(): Promise<Array<Stake>> {
@@ -96,11 +93,11 @@ export class PChain extends NetworkBased {
         } else {
             let tx = await this.tx.getStakeTx(txId)
             let owners: OutputOwners
-            if (tx instanceof AddDelegatorTx || tx instanceof AddValidatorTx) {
+            if (tx instanceof pvmSerial.AddDelegatorTx || tx instanceof pvmSerial.AddValidatorTx) {
                 owners = tx.getRewardsOwner()
-            } else if (tx instanceof AddPermissionlessDelegatorTx) {
+            } else if (tx instanceof pvmSerial.AddPermissionlessDelegatorTx) {
                 owners = tx.getDelegatorRewardsOwner()
-            } else if (tx instanceof AddPermissionlessValidatorTx) {
+            } else if (tx instanceof pvmSerial.AddPermissionlessValidatorTx) {
                 owners = tx.getValidatorRewardsOwner()
             }
             pAddress = owners.addrs[0].toString(this._core.hrp)

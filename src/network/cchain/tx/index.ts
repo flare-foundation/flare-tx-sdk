@@ -267,17 +267,18 @@ export class Transactions extends NetworkBased {
         // let ecdsaSignature = this._getEcdsaSignature(signature)
         let coordinates = unsignedTx.getSigIndicesForPubKey(ethers.getBytes(compressedPublicKey))
         if (coordinates) {
-            let sig = ethers.getBytes(ethers.Signature.from(signature).serialized)
+            let sig = ethers.Signature.from(signature)
+            let sigBytes = ethers.getBytes(ethers.concat([sig.r, sig.s, `0x0${sig.yParity}`]))
             coordinates.forEach(([index, subIndex]) => {
-                unsignedTx.addSignatureAt(sig, index, subIndex)
+                unsignedTx.addSignatureAt(sigBytes, index, subIndex)
             })
         }
         let tx = unsignedTx.getSignedTx().toBytes()
 
         if (this._core.beforeTxSubmission) {
             let signedTxHex = ethers.hexlify(tx)
-            // let txHash = ethers.sha256(signedTxHex).slice(2)
-            let txId = base58.encode(futils.addChecksum(tx))
+            let txHash = ethers.sha256(signedTxHex)
+            let txId = base58.encode(futils.addChecksum(ethers.getBytes(txHash)))
             let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId })
             if (!proceed) {
                 return

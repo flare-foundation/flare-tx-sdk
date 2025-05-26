@@ -22,7 +22,7 @@ export class Export extends NetworkBased {
     ): Promise<EVMUnsignedTx> {
         let pBlockchainId = await this._core.flarejs.getPBlockchainId()
         let assetId = await this._core.flarejs.getAssetId()
-        let nonce = await this._core.ethers.getTransactionCount(cAddress)        
+        let nonce = await this._core.ethers.getTransactionCount(cAddress)
         return this._core.flarejs.evm.newExportTx(
             this._core.flarejs.context,
             amount,

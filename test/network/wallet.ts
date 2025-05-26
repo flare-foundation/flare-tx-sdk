@@ -1,9 +1,7 @@
 import { ethers, Wallet as EthersWallet, JsonRpcProvider, Transaction } from "ethers"
-import { Constants, Network } from "../../src/network";
+import { Constants } from "../../src/network";
 import { Wallet } from "../../src/wallet";
-import { UnsignedTx as UnsignedPTx } from "@flarenetwork/flarejs";
-import { unpackWithManager } from "@flarenetwork/flarejs/dist/utils";
-import { Transaction as FTransaction } from "@flarenetwork/flarejs/dist/vms/common";
+import { utils as futils, evmSerial, pvmSerial } from "@flarenetwork/flarejs";
 
 export abstract class TestWallet implements Wallet {
 
@@ -97,28 +95,26 @@ export class TestAvaxTransactionWallet extends TestWallet {
     }
 
     async signPTransaction(tx: string): Promise<string> {
-        tx = tx.startsWith("0x") ? tx.slice(2) : tx
         let digest: string
         let unsignedTx = this._getCTx(tx) ?? this._getPTx(tx)
         if (unsignedTx == null) {
             throw new Error("Failed to parse AVAX transaction")
         }
-        digest = ethers.sha256(`0x${tx}`)
+        digest = ethers.sha256(tx)
         return this.ethersWallet.signingKey.sign(digest).serialized
     }
 
-    _getCTx(tx: string): FTransaction | null {
+    _getCTx(tx: string): evmSerial.EVMTx | null {
         try {
-            let ftx = unpackWithManager("EVM", ethers.getBytes(tx))
-            return unpackWithManager("EVM", ethers.getBytes(tx))
+            return futils.unpackWithManager("EVM", ethers.getBytes(tx)) as evmSerial.EVMTx
         } catch {
             return null
         }
     }
 
-    _getPTx(tx: string): FTransaction | null {
+    _getPTx(tx: string): pvmSerial.BaseTx | null {
         try {
-            return unpackWithManager("PVM", ethers.getBytes(tx))
+            return futils.unpackWithManager("PVM", ethers.getBytes(tx)) as pvmSerial.BaseTx
         } catch {
             return null
         }
