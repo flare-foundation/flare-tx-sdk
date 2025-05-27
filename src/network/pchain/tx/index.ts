@@ -7,7 +7,7 @@ import { Import } from "./import"
 import { Utils } from "../../utils"
 import { Signature } from "../../sign"
 import { ethers } from "ethers"
-import { messageHashFromUnsignedTx, pvmSerial, TypeSymbols, UnsignedTx, utils as futils, EcdsaSignature } from "@flarenetwork/flarejs"
+import { messageHashFromUnsignedTx, pvmSerial, TypeSymbols, UnsignedTx, utils as futils } from "@flarenetwork/flarejs"
 import { Delegation } from "./delegation"
 import { base58 } from "@scure/base"
 
@@ -89,7 +89,6 @@ export class Transactions extends NetworkBased {
         let signature = await Signature.signAvaxTx(wallet, unsignedTxHex, digest, account.publicKey)
 
         let compressedPublicKey = Account.getPublicKey(account.publicKey, true)
-        // let ecdsaSignature = this._getEcdsaSignature(signature)
         let coordinates = unsignedTx.getSigIndicesForPubKey(ethers.getBytes(compressedPublicKey))
         if (coordinates) {
             let sig = ethers.Signature.from(signature)
@@ -137,14 +136,6 @@ export class Transactions extends NetworkBased {
         if (status !== "Committed") {
             throw new Error(`Transaction ${txType} with id ${txId} not confirmed (status is ${status})`)
         }
-    }
-
-    private _getEcdsaSignature(signature: string): EcdsaSignature {
-        let sig = ethers.Signature.from(signature)
-        let r = BigInt(sig.r)
-        let s = BigInt(sig.s)
-        let recoveryParam = sig.yParity
-        return { r, s, recoveryParam }
     }
 
 }

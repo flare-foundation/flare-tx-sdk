@@ -7,7 +7,7 @@ import { Utils } from "../../utils";
 import { TxType } from "../../txtype";
 import { Wallet } from "../../../wallet";
 import { ethers, Transaction as EvmTx } from "ethers";
-import { EVMUnsignedTx as AvaxTx, messageHashFromUnsignedTx, utils as futils, EcdsaSignature } from "@flarenetwork/flarejs"
+import { EVMUnsignedTx as AvaxTx, messageHashFromUnsignedTx, utils as futils } from "@flarenetwork/flarejs"
 import { Transfer } from "./transfer";
 import { ContractRegistry } from "../contract/registry";
 import { GenericContract } from "../contract/generic";
@@ -264,7 +264,6 @@ export class Transactions extends NetworkBased {
         let signature = await Signature.signAvaxTx(wallet, unsignedTxHex, digest, account.publicKey)
 
         let compressedPublicKey = Account.getPublicKey(account.publicKey, true)
-        // let ecdsaSignature = this._getEcdsaSignature(signature)
         let coordinates = unsignedTx.getSigIndicesForPubKey(ethers.getBytes(compressedPublicKey))
         if (coordinates) {
             let sig = ethers.Signature.from(signature)
@@ -312,14 +311,6 @@ export class Transactions extends NetworkBased {
         if (status !== "Accepted") {
             throw new Error(`Transaction ${txType} with id ${txId} not confirmed (status is ${status})`)
         }
-    }
-
-    private _getEcdsaSignature(signature: string): EcdsaSignature {
-        let sig = ethers.Signature.from(signature)
-        let r = BigInt(sig.r)
-        let s = BigInt(sig.s)
-        let recoveryParam = sig.yParity
-        return { r, s, recoveryParam }
     }
 
 }
