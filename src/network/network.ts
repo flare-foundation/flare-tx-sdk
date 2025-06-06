@@ -5,8 +5,9 @@ import { NetworkCore, NetworkBased } from "./core"
 import { PChain } from "./pchain"
 import { AfterTxSubmissionCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
 import { Constants } from "./constants"
-import { Balance, FtsoDelegate as FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, Stake } from "./iotype"
+import { Balance, FtsoDelegate as FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, Stake, StakeLimits } from "./iotype"
 import { FlareContract } from "./contract"
+import { Utils } from "./utils"
 
 /**
  * The main class used for interaction with the Flare network.
@@ -158,6 +159,21 @@ export class Network extends NetworkBased {
         } else {
             return this._pchain.getStakes()
         }
+    }
+
+    /**
+     * Returns information about stake limits on the P-chain
+     * @returns An object of type {@link StakeLimits}
+     */
+    async getStakeLimits(): Promise<StakeLimits> {
+        let csl = await this._cchain.getStakeLimits()        
+        let psl = await this._pchain.getStakeLimits()
+        let minStakeDuration = Utils.max(csl.minStakeDuration, psl.minStakeDuration)
+        let maxStakeDuration = Utils.min(csl.maxStakeDuration, psl.maxStakeDuration)
+        let minStakeAmountDelegator = Utils.max(csl.minStakeAmountDelegator, psl.minStakeAmountDelegator)
+        let minStakeAmountValidator = Utils.max(csl.minStakeAmountValidator, psl.minStakeAmountValidator)
+        let maxStakeAmount = Utils.min(csl.maxStakeAmount, psl.maxStakeAmount)
+        return { minStakeDuration, maxStakeDuration, minStakeAmountDelegator, minStakeAmountValidator, maxStakeAmount }
     }
 
     /**
@@ -530,7 +546,6 @@ export class Network extends NetworkBased {
      * @param amount The amount in wei to be delegated.
      * @param nodeId The code of the validator's node to delegate to.
      * @param startTime The seconds from the Unix epoch marking the start of the delegation.
-     * If the value is not provided, it is set to be equal to the current time.
      * @param endTime The seconds from the Unix epoch marking the end of the delegation.
      * If the value is not provided, it is set to be equal to the validator's end time.
      */
@@ -538,29 +553,17 @@ export class Network extends NetworkBased {
         wallet: Wallet,
         amount: bigint,
         nodeId: string,
-        startTime?: bigint,
+        startTime: bigint,
         endTime?: bigint
     ): Promise<void> {
         this._shouldBeGweiInteger(amount)
-
-        let validator = await this._pchain.getValidator(nodeId)
-        if (!validator) {
-            throw new Error("Validator with the specified node id does not exist")
-        }
-        if (!startTime) {
-            startTime = BigInt(Math.round(new Date().getTime() / 1e3))
-        }
         if (!endTime) {
+            let validator = await this._pchain.getValidator(nodeId)
+            if (!validator) {
+                throw new Error("Validator with the specified node id does not exist")
+            }
             endTime = validator.endTime
-        } else if (endTime > validator.endTime) {
-            throw new Error(`The end time should be less than or equal to the validator's end time (${validator.endTime})`)
         }
-        await this._cchain.verifyStakeParameters(amount, startTime, endTime)
-        let minDelegatorStake = await this._pchain.getMinDelegatorStake()
-        if (amount < minDelegatorStake) {
-            throw new Error(`The minimal delegator staking amount is ${minDelegatorStake} weis`)
-        }
-        
         let account = await this._getAccount(wallet)
 
         let balanceOnP = await this._pchain.getBalance(account.pAddress)

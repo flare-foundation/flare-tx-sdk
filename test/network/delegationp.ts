@@ -6,6 +6,11 @@ import { Amount } from "../../src";
 export function runDelegationPTests(env: TestEnvironment): void {
     describe("P chain delegation tests", function () {
         let network = env.network
+
+        it("stake limits", async() => {
+            await network.getStakeLimits()
+        })
+
         let wallets = env.getAvaxWallets()
 
         for (let wallet of wallets) {

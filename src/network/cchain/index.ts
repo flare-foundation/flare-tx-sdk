@@ -1,5 +1,5 @@
 import { Account } from "../account"
-import { FtsoDelegate, FtsoRewardState } from "../iotype"
+import { FtsoDelegate, FtsoRewardState, StakeLimits } from "../iotype"
 import { FlareContract } from "../contract"
 import { NetworkCore, NetworkBased } from "../core"
 import { Utils } from "../utils"
@@ -91,30 +91,15 @@ export class CChain extends NetworkBased {
         return wnat.delegatesOf(cAddress)
     }
 
-    async verifyStakeParameters(
-        amount: bigint, startTime: bigint, endTime: bigint
-    ): Promise<void> {
+    async getStakeLimits(): Promise<StakeLimits> {
         let stakeVerifier = await this._registry.getStakeVerifier()
-
+        let minStakeDuration = await stakeVerifier.minStakeDurationSeconds()
+        let maxStakeDuration = await stakeVerifier.maxStakeDurationSeconds()
         let minStakeAmount = await stakeVerifier.minStakeAmount()
-        if (amount < minStakeAmount) {
-            throw new Error(`The minimal staking amount is ${minStakeAmount} weis`)
-        }
-
+        let minStakeAmountDelegator = minStakeAmount
+        let minStakeAmountValidator = minStakeAmount     
         let maxStakeAmount = await stakeVerifier.maxStakeAmount()
-        if (amount > maxStakeAmount) {
-            throw new Error(`The maximal staking amount is ${maxStakeAmount} weis`)
-        }
-
-        let minStakeDurationSeconds = await stakeVerifier.minStakeDurationSeconds()
-        if (startTime + minStakeDurationSeconds > endTime) {
-            throw new Error(`The minimal stake duration is ${minStakeDurationSeconds} seconds`)
-        }
-
-        let maxStakeDurationSeconds = await stakeVerifier.maxStakeDurationSeconds()
-        if (startTime + maxStakeDurationSeconds < endTime) {
-            throw new Error(`The maximal stake duration is ${maxStakeDurationSeconds} seconds`)
-        }
+        return { minStakeDuration, maxStakeDuration, minStakeAmountDelegator, minStakeAmountValidator, maxStakeAmount }                
     }
 
     async invokeContractCall(

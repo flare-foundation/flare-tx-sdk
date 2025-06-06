@@ -66,3 +66,14 @@ export type Stake = {
     amount: bigint,
     feePercentage?: number // provided if type == `validator`
 }
+
+/**
+ * The type used for returning information on stake limits
+ */
+export type StakeLimits = {
+    minStakeDuration: bigint, // in seconds
+    maxStakeDuration: bigint, // in seconds
+    minStakeAmountDelegator: bigint, // in weis
+    minStakeAmountValidator: bigint, // in weis
+    maxStakeAmount: bigint // in weis
+}

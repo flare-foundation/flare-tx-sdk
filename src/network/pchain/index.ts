@@ -1,4 +1,4 @@
-import { Stake } from "../iotype";
+import { Stake, StakeLimits } from "../iotype";
 import { NetworkCore, NetworkBased } from "../core";
 import { Transactions } from "./tx";
 import { OutputOwners, pvmSerial, utils as futils } from "@flarenetwork/flarejs";
@@ -52,6 +52,16 @@ export class PChain extends NetworkBased {
     async getValidator(nodeId: string): Promise<Stake> {
         let stakes = await this._getCurrentStakes()
         return stakes.find(s => s.nodeId === nodeId)
+    }
+
+    async getStakeLimits(): Promise<StakeLimits> {
+        let minStake = await this._core.flarejs.pvmApi.getMinStake()
+        let minStakeDuration = undefined
+        let maxStakeDuration = undefined
+        let minStakeAmountDelegator = BigInt(minStake.minDelegatorStake) * BigInt(1e9)
+        let minStakeAmountValidator = BigInt(minStake.minValidatorStake) * BigInt(1e9)
+        let maxStakeAmount = undefined
+        return { minStakeDuration, maxStakeDuration, minStakeAmountDelegator, minStakeAmountValidator, maxStakeAmount }
     }
 
     async getMinDelegatorStake(): Promise<bigint> {
