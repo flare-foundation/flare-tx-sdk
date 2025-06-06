@@ -1,6 +1,7 @@
 export class TxType {
     static readonly TRANSFER_NAT = "transfer_nat"
     static readonly TRANSFER_WNAT = "transfer_wnat"
+    static readonly TRANSFER_PASSET = "transfer_passet"
     static readonly EXPORT_C = "export_c"
     static readonly IMPORT_C = "import_c"
     static readonly WRAP_NAT = "wrap_nat"
@@ -19,10 +20,13 @@ export class TxType {
     static getDescription(type: string): string {
         switch (type) {
             case this.TRANSFER_NAT: {
-                return "Native coin transfer"
+                return "Native coin transfer on the C-chain"
             }
             case this.TRANSFER_WNAT: {
                 return "Wrapped coin transfer"
+            }
+            case this.TRANSFER_PASSET: {
+                return "Native coin transfer on the P-chain"
             }
             case this.EXPORT_C: {
                 return "Export from the C-chain"

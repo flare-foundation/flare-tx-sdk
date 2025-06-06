@@ -456,7 +456,7 @@ export class Network extends NetworkBased {
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getPublicKey`, and
      * - the function `signPTransaction`, `signDigest` or `signEthMessage`.
-     * @param amount An amount in qwei to be exported.
+     * @param amount An amount in wei to be exported.
      * @param baseFee A base C-chain transaction fee in wei to be used for transaction (optional).
      */
     async exportFromC(wallet: Wallet, amount: bigint, baseFee?: bigint): Promise<void> {
@@ -484,11 +484,26 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Transfers wallet funds on the P-chain from one address to another.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getPublicKey`, and
+     * - the function `signPTransaction`, `signDigest` or `signEthMessage`.
+     * @param recipient The P-chain address of the recipient in bech32 encoding.
+     * @param amount An amount in wei to be transferred.
+     * If amount is not provided, the entire P-chain balance of the wallet is transferred.
+     */
+    async transferOnP(wallet: Wallet, recipient: string, amount?: bigint): Promise<void> {
+        this._shouldBeGweiInteger(amount)
+        let account = await this._getAccount(wallet)
+        await this._pchain.tx.transfer(wallet, account, recipient, amount)
+    }
+
+    /**
      * Exports wallet funds from the P-chain address.
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getPublicKey`, and
      * - the function `signPTransaction`, `signDigest` or `signEthMessage`.
-     * @param amount An amount in qwei to be exported.
+     * @param amount An amount in wei to be exported.
      */
     async exportFromP(wallet: Wallet, amount: bigint): Promise<void> {
         this._shouldBeGweiInteger(amount)
@@ -515,17 +530,37 @@ export class Network extends NetworkBased {
      * @param amount The amount in wei to be delegated.
      * @param nodeId The code of the validator's node to delegate to.
      * @param startTime The seconds from the Unix epoch marking the start of the delegation.
+     * If the value is not provided, it is set to be equal to the current time.
      * @param endTime The seconds from the Unix epoch marking the end of the delegation.
+     * If the value is not provided, it is set to be equal to the validator's end time.
      */
     async delegateOnP(
         wallet: Wallet,
         amount: bigint,
         nodeId: string,
-        startTime: bigint,
-        endTime: bigint
+        startTime?: bigint,
+        endTime?: bigint
     ): Promise<void> {
         this._shouldBeGweiInteger(amount)
+
+        let validator = await this._pchain.getValidator(nodeId)
+        if (!validator) {
+            throw new Error("Validator with the specified node id does not exist")
+        }
+        if (!startTime) {
+            startTime = BigInt(Math.round(new Date().getTime() / 1e3))
+        }
+        if (!endTime) {
+            endTime = validator.endTime
+        } else if (endTime > validator.endTime) {
+            throw new Error(`The end time should be less than or equal to the validator's end time (${validator.endTime})`)
+        }
         await this._cchain.verifyStakeParameters(amount, startTime, endTime)
+        let minDelegatorStake = await this._pchain.getMinDelegatorStake()
+        if (amount < minDelegatorStake) {
+            throw new Error(`The minimal delegator staking amount is ${minDelegatorStake} weis`)
+        }
+        
         let account = await this._getAccount(wallet)
 
         let balanceOnP = await this._pchain.getBalance(account.pAddress)

@@ -444,6 +444,7 @@ sequenceDiagram
     B->>P: importToP
     C->>P: transferToP
     P->>P: delegateOnP
+    P->>P: transferOnP
     P->>C: transferToC
     P->>B: exportFromP
     B->>C: importToC
@@ -507,6 +508,14 @@ To import all exported funds from the P-chain to the C-chain, use
 await network.importToP(wallet, baseTxFeeOnC)
 ```
 The parameter `baseFeeTxOnC` is optional and can be used to override the automatically acquired base transaction fee from the C-chain.
+
+### Transferring funds on the P-chain
+
+It is also possible to transfer funds between addresses on the P-chain. Use
+```
+await network.transferOnP(wallet, recipient, amount)
+```
+where `recipient` is the recipient P-chain address in bech32 encoding and `amount` is the amount in weis to be transferred. If `amount` is not provided, the entire wallet's P-chain balance is transferred.
 
 
 ## Standard wallets

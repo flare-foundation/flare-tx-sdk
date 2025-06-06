@@ -41,15 +41,27 @@ export class PChain extends NetworkBased {
     }
 
     async getStakes(): Promise<Array<Stake>> {
-        let stakes = Array<Stake>()
-        stakes = stakes.concat(await this._getCurrentStakes())
-        stakes = stakes.concat(await this._getPendingStakes())
-        return stakes
+        return this._getCurrentStakes()
     }
 
     async getStakesOf(pAddress: string): Promise<Array<Stake>> {
-        let stakes = await this.getStakes()
+        let stakes = await this._getCurrentStakes()
         return stakes.filter(s => s.pAddress === pAddress)
+    }
+
+    async getValidator(nodeId: string): Promise<Stake> {
+        let stakes = await this._getCurrentStakes()
+        return stakes.find(s => s.nodeId === nodeId)
+    }
+
+    async getMinDelegatorStake(): Promise<bigint> {
+        let minStake = await this._core.flarejs.pvmApi.getMinStake()
+        return minStake.minDelegatorStake * BigInt(1e9)
+    }
+
+    async getMinValidatorStake(): Promise<bigint> {
+        let minStake = await this._core.flarejs.pvmApi.getMinStake()
+        return minStake.minValidatorStake * BigInt(1e9)
     }
     
     private async _getCurrentStakes(): Promise<Array<Stake>> {
@@ -63,18 +75,6 @@ export class PChain extends NetworkBased {
                     stakes.push(await this._parseStake(delegator, "delegator"))
                 }
             }
-        }
-        return stakes
-    }
-    
-    private async _getPendingStakes(): Promise<Array<Stake>> {
-        let stakes = Array<Stake>()
-        let data = await this._core.flarejs.pvmApi.getPendingValidators()
-        for (let validator of data.validators) {
-            stakes.push(await this._parseStake(validator, "validator"))            
-        }
-        for (let delegator of data.delegators) {
-            stakes.push(await this._parseStake(delegator, "delegator"))
         }
         return stakes
     }
@@ -101,7 +101,6 @@ export class PChain extends NetworkBased {
                 owners = tx.getValidatorRewardsOwner()
             }
             pAddress = owners.addrs[0].toString(this._core.hrp)
-            // pAddress = Account.pAddressToBech(addresses[0].toString("hex"), this._core.hrp)
         }
         let nodeId = stake.nodeID
         let startTime = BigInt(stake.startTime)

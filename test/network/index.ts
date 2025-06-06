@@ -29,14 +29,17 @@ function execute() {
 
     let network = Network.COSTON2
 
-    const TEST_RECIPIENT1_C = "0x88622075eaC5ef1D2b08ffC8831547c8EaB1411b"
+    const TEST_RECIPIENT1_PUBKEY = "0x04d6720471d6a8fa0bb191a946f668dddf09605ffca423de2a9f8111b63f2fbc5aa803146b925ae1b69042ee601abcb262774330abfa45720ef80c6cbcb47e58f7"
+    const TEST_RECIPIENT1_C = network.getCAddress(TEST_RECIPIENT1_PUBKEY)
+    const TEST_RECIPIENT1_P = network.getPAddress(TEST_RECIPIENT1_PUBKEY)
     const TEST_RECIPIENT2_C = "0x789FdAb73F7aFBb3e97638b039F8EBc0498690Ed"
 
     let env = new TestEnvironment(
         network,
         privateKey,
         TEST_RECIPIENT1_C,
-        TEST_RECIPIENT2_C
+        TEST_RECIPIENT1_P,
+        TEST_RECIPIENT2_C,
     )
 
     runBalanceTests(env)

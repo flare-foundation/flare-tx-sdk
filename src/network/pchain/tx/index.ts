@@ -10,19 +10,37 @@ import { ethers } from "ethers"
 import { messageHashFromUnsignedTx, pvmSerial, TypeSymbols, UnsignedTx, utils as futils } from "@flarenetwork/flarejs"
 import { Delegation } from "./delegation"
 import { base58 } from "@scure/base"
+import { Transfer } from "./transfer"
 
 export class Transactions extends NetworkBased {
 
     constructor(network: NetworkCore) {
         super(network)
+        this._transfer = new Transfer(network)
         this._export = new Export(network)
         this._import = new Import(network)
         this._delegation = new Delegation(network)
     }
 
+    private _transfer: Transfer
     private _export: Export
     private _import: Import
     private _delegation: Delegation
+
+    async transfer(
+            wallet: Wallet, account: Account, recipient: string, amount?: bigint
+        ): Promise<void> {
+            let unsignedTx: UnsignedTx
+            if (amount) {
+                unsignedTx = await this._transfer.getTx(account.pAddress, recipient, amount)
+            } else {
+                let response = await this._core.flarejs.pvmApi.getBalance({ addresses: [`P-${account.pAddress}`] })
+                let balance = response.balance * BigInt(1e9)
+                let fee = await this._core.flarejs.getBaseTxFee()
+                unsignedTx = await this._transfer.getTx(account.pAddress, recipient, balance - fee)
+            }
+            await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.TRANSFER_PASSET)
+        }
 
     async exportFromP(wallet: Wallet, account: Account, amount: bigint): Promise<void> {
         let unsignedTx = await this._export.getTx(account.pAddress, amount)

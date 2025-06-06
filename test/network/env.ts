@@ -3,18 +3,26 @@ import { TestAvaxTransactionWallet, TestDigestWallet, TestEthMessageWallet, Test
 
 export class TestEnvironment {
 
-    constructor(network: Network, privateKey: string, address1: string, address2: string) {
+    constructor(
+        network: Network,
+        privateKey: string,
+        cAddress1: string,
+        pAddress1: string,
+        cAddress2: string
+    ) {
         this.network = network
         this._privateKey = privateKey
-        this.address1 = address1
-        this.address2 = address2
+        this.cAddress1 = cAddress1
+        this.pAddress1 = pAddress1
+        this.cAddress2 = cAddress2
     }
 
     private _privateKey: string
 
     network: Network
-    address1: string
-    address2: string
+    cAddress1: string
+    pAddress1: string
+    cAddress2: string
 
     getDigestWallet(): TestDigestWallet {
         return new TestDigestWallet(this._privateKey)
