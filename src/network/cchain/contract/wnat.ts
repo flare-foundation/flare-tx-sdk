@@ -16,16 +16,16 @@ export class WNat extends EvmContract {
     }
 
     async getTransferTx(address: string, recipient: string, amount: bigint): Promise<Transaction> {
-        let wnat = this._getContract(["function transfer(address recipient, uint256 amount) public returns (bool)"])        
+        let wnat = this._getContract(["function transfer(address recipient, uint256 amount) public returns (bool)"])
         return this._getTx(address, BigInt(0), wnat.transfer, recipient, amount)
     }
 
-    async getWrapTx(address: string, amount: bigint): Promise<Transaction>  {
-        let wnat = this._getContract(["function deposit() public payable"])        
+    async getWrapTx(address: string, amount: bigint): Promise<Transaction> {
+        let wnat = this._getContract(["function deposit() public payable"])
         return this._getTx(address, amount, wnat.deposit)
     }
 
-    async getUnwrapTx(address: string, amount: bigint): Promise<Transaction>  {
+    async getUnwrapTx(address: string, amount: bigint): Promise<Transaction> {
         let wnat = this._getContract(["function withdraw(uint256 amount) external"])
         return this._getTx(address, BigInt(0), wnat.withdraw, amount)
     }

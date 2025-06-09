@@ -65,6 +65,21 @@ export class Constants {
      */
     address_FlareContractRegistry: string
 
+    /**
+     * The address of (Gnosis) Safe Proxy factory for creating smart accounts
+     */
+    address_SafeProxyFactory: string
+
+    /**
+     * The address of (Gnosis) Safe Singleton for creating smart accounts
+     */
+    address_SafeSingleton: string
+
+    /**
+     * The address of (Gnosis) Safe fallback handler for creating smart accounts
+     */
+    address_SafeFallbackHandler: string
+
 
     copy(): Constants {
         return Constants.fromJson(this.toJson())
@@ -161,6 +176,9 @@ export class Constants {
         this.evmMaxFeePerGas = BigInt(50 * 1e9)
         this.evmMaxPriorityFeePerGas = BigInt(0)
         this.address_FlareContractRegistry = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
+        this.address_SafeProxyFactory = "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67"
+        this.address_SafeSingleton = "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762"
+        this.address_SafeFallbackHandler = "0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99"
     }
 
 }

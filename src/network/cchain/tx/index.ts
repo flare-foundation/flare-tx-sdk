@@ -6,7 +6,7 @@ import { Signature } from "../../sign";
 import { Utils } from "../../utils";
 import { TxType } from "../../txtype";
 import { Wallet } from "../../../wallet";
-import { ethers, Transaction as EvmTx } from "ethers";
+import { ethers, Transaction as EvmTx, TransactionReceipt } from "ethers";
 import { EVMUnsignedTx as AvaxTx, messageHashFromUnsignedTx, utils as futils } from "@flarenetwork/flarejs"
 import { Transfer } from "./transfer";
 import { ContractRegistry } from "../contract/registry";
@@ -14,6 +14,7 @@ import { GenericContract } from "../contract/generic";
 import { Constants } from "../../constants";
 import { FtsoRewardClaimWithProof } from "src/network/iotype";
 import { base58 } from "@scure/base";
+import { SafeProxyFactory } from "../contract/safe_proxy_factory";
 
 export class Transactions extends NetworkBased {
 
@@ -140,6 +141,16 @@ export class Transactions extends NetworkBased {
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.UNDELEGATE_FTSO)
     }
 
+    async createSafeSmartAccount(wallet: Wallet, cAddress: string, owners: Array<string>, threshold: bigint): Promise<string> {
+        let proxyFactory = new SafeProxyFactory(this._core, this._core.const.address_SafeProxyFactory)
+        let singleton = this._core.const.address_SafeSingleton
+        let fallbackHandler = this._core.const.address_SafeFallbackHandler
+        let saltNonce = BigInt(Math.floor(Math.random() * 1e6))
+        let unsignedTx = await proxyFactory.getCreatProxyTx(cAddress, singleton, owners, threshold, fallbackHandler, saltNonce)
+        let receipt = await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CREATE_SAFE_SMART_ACCOUNT)
+        return receipt.logs[0].address
+    }
+
     async invokeContractMethod(
         wallet: Wallet,
         cAddress: string,
@@ -189,13 +200,13 @@ export class Transactions extends NetworkBased {
         cAddress: string,
         unsignedTx: EvmTx,
         txType: string
-    ): Promise<void> {
+    ): Promise<TransactionReceipt | null> {
         let unsignedTxHex = unsignedTx.unsignedSerialized
 
         if (this._core.beforeTxSignature) {
             let proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex })
             if (!proceed) {
-                return
+                return null
             }
         }
 
@@ -215,7 +226,7 @@ export class Transactions extends NetworkBased {
                 let signedTxHex = tx.serialized
                 let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId: tx.hash })
                 if (!proceed) {
-                    return
+                    return null
                 }
             }
 
@@ -226,7 +237,7 @@ export class Transactions extends NetworkBased {
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
             if (!proceed) {
-                return
+                return null
             }
         }
 
@@ -243,6 +254,7 @@ export class Transactions extends NetworkBased {
         } else {
             throw new Error(`Transaction ${txType} with id ${txId} not confirmed`)
         }
+        return receipt
     }
 
     private async _signAndSubmitAvaxTx(

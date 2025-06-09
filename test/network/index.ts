@@ -12,6 +12,7 @@ import { runDelegationPTests } from "./delegationp";
 import { runFlareDropClaimTests } from "./claimFlaredrop";
 import { runStakingClaimTests } from "./claimStaking";
 import { runFtsoClaimTests } from "./claimFtso";
+import { runSmartAccountTests } from "./smartAccount";
 
 function execute() {
     const TEST_KEY_FILE = path.join("test", "keys", "key.txt")
@@ -49,6 +50,7 @@ function execute() {
     runStakingClaimTests(env)
     runFtsoClaimTests(env)
     runFtsoDelegationTests(env)
+    runSmartAccountTests(env)
     runGenericContractTests(env)
     runTransferCPTests(env)
     runDelegationPTests(env)

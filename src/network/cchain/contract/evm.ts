@@ -46,6 +46,10 @@ export abstract class EvmContract extends Evm {
         return new Contract(this._address, new Interface(abi), this._core.ethers)
     }
 
+    protected _getData(contract: Contract, method: BaseContractMethod, ...params: any[]): string {
+        return contract.interface.encodeFunctionData(method.fragment, params)
+    }
+
     protected async _getTx(
         sender: string,
         value: bigint,
@@ -55,7 +59,7 @@ export abstract class EvmContract extends Evm {
         let args = await this._getType2TxParams(sender)
         let estimatedGasLimit: bigint
         try {
-            estimatedGasLimit = await method.estimateGas(...params, { from: sender, value, ...args })            
+            estimatedGasLimit = await method.estimateGas(...params, { from: sender, value, ...args })
         } catch (e: any) {
             if (e.reason || e.shortMessage) {
                 throw new Error(`The transaction is expected to fail: ${e.reason ?? e.shortMessage}`)

@@ -11,6 +11,7 @@ export class TxType {
     static readonly CLAIM_REWARD_FTSO = "claim_reward_ftso"
     static readonly DELEGATE_FTSO = "delegate_ftso"
     static readonly UNDELEGATE_FTSO = "undelegate_ftso"
+    static readonly CREATE_SAFE_SMART_ACCOUNT = "create_safe_smart_account"
     static readonly CUSTOM_CONTRACT_C = "custom_contract_c"
     static readonly EXPORT_P = "export_p"
     static readonly IMPORT_P = "import_c"
@@ -54,6 +55,9 @@ export class TxType {
             }
             case this.UNDELEGATE_FTSO: {
                 return "Undelegate from FTSO providers"
+            }
+            case this.CREATE_SAFE_SMART_ACCOUNT: {
+                return "Create Safe smart account"
             }
             case this.CUSTOM_CONTRACT_C: {
                 return "Custom contract transaction"

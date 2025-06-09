@@ -77,3 +77,12 @@ export type StakeLimits = {
     minStakeAmountValidator: bigint, // in weis
     maxStakeAmount: bigint // in weis
 }
+
+/**
+ * The type used for representing a Safe smart account
+ */
+export type SafeSmartAccount = {
+    address: string,
+    owners: Array<string>,
+    threshold: bigint
+}

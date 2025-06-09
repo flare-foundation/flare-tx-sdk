@@ -5,7 +5,7 @@ import { NetworkCore, NetworkBased } from "./core"
 import { PChain } from "./pchain"
 import { AfterTxSubmissionCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
 import { Constants } from "./constants"
-import { Balance, FtsoDelegate as FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, Stake, StakeLimits } from "./iotype"
+import { Balance, FtsoDelegate as FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, SafeSmartAccount, Stake, StakeLimits } from "./iotype"
 import { FlareContract } from "./contract"
 import { Utils } from "./utils"
 
@@ -350,6 +350,33 @@ export class Network extends NetworkBased {
     ): Promise<void> {
         let cAddress = await this._getCAddress(wallet)
         await this._cchain.tx.claimFtsoReward(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap ?? false, proofs ?? [])
+    }
+
+    /**
+     * Returns the information about an existing Safe smart account.
+     * @param address A C-chain address representing the smart account.
+     * @returns An object of type {@link SafeSmartAccount}.
+     */
+    async getSafeSmartAccount(address: string): Promise<SafeSmartAccount> {
+        return this._cchain.getSafeSmartAccountInfo(address)
+    }
+
+    /**
+     * Creates a new Safe smart account and returns its address
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param owners An array of C-chain addresses representing the owners of the smart account.
+     * @param threshold An integer representing the threshold of the smart account.
+     * @returns A string representing the C-chain address of the smart account.
+     */
+    async createSafeSmartAccount(
+        wallet: Wallet,
+        owners: Array<string>,
+        threshold: bigint
+    ): Promise<string> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.createSafeSmartAccount(wallet, cAddress, owners, threshold)
     }
 
     /**

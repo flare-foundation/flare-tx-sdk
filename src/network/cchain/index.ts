@@ -1,5 +1,5 @@
 import { Account } from "../account"
-import { FtsoDelegate, FtsoRewardState, StakeLimits } from "../iotype"
+import { FtsoDelegate, FtsoRewardState, SafeSmartAccount, StakeLimits } from "../iotype"
 import { FlareContract } from "../contract"
 import { NetworkCore, NetworkBased } from "../core"
 import { Utils } from "../utils"
@@ -7,6 +7,7 @@ import { GenericContract } from "./contract/generic"
 import { ContractRegistry } from "./contract/registry"
 import { Transactions } from "./tx"
 import { utils as futils } from "@flarenetwork/flarejs"
+import { GnosisSafeProxy as SafeProxy } from "./contract/safe_proxy"
 
 export class CChain extends NetworkBased {
 
@@ -100,6 +101,13 @@ export class CChain extends NetworkBased {
         let minStakeAmountValidator = minStakeAmount     
         let maxStakeAmount = await stakeVerifier.maxStakeAmount()
         return { minStakeDuration, maxStakeDuration, minStakeAmountDelegator, minStakeAmountValidator, maxStakeAmount }                
+    }
+
+    async getSafeSmartAccountInfo(address: string): Promise<SafeSmartAccount> {
+        let proxy = new SafeProxy(this._core, address)
+        let owners = await proxy.getOwners()
+        let threshold = await proxy.getThreshold()
+        return { address, owners, threshold }
     }
 
     async invokeContractCall(
