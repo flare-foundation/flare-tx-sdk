@@ -283,7 +283,7 @@ export class Network extends NetworkBased {
      */
     async unwrapToNative(wallet: Wallet, amount?: bigint): Promise<void> {
         let cAddress = await this._getCAddress(wallet)
-        amount = amount ?? await this.getBalanceWrappedOnC(cAddress)
+        amount = amount ?? await this.getBalanceWrappedOnC(wallet.smartAccount ?? cAddress)
         await this._cchain.tx.unwrap(wallet, cAddress, amount)
     }
 
@@ -697,7 +697,7 @@ export class Network extends NetworkBased {
 
     private async _getCAddress(wallet: Wallet): Promise<string> {
         if (wallet.getCAddress) {
-            return wallet.getCAddress()
+            return Account.normalizedCAddress(await wallet.getCAddress())
         } else if (wallet.getPublicKey) {
             let publicKey = await wallet.getPublicKey()
             return Account.getCAddress(publicKey)

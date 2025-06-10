@@ -7,7 +7,7 @@ import { GenericContract } from "./contract/generic"
 import { ContractRegistry } from "./contract/registry"
 import { Transactions } from "./tx"
 import { utils as futils } from "@flarenetwork/flarejs"
-import { GnosisSafeProxy as SafeProxy } from "./contract/safe_proxy"
+import { SafeProxy as SafeProxy } from "./contract/safe_proxy"
 
 export class CChain extends NetworkBased {
 

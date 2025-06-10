@@ -15,21 +15,21 @@ export function runFtsoDelegationTests(env: TestEnvironment): void {
 
                 it("delegate to one FTSO provider", async function () {
                     let publicKey = await wallet.getPublicKey()
-                    await network.delegateToFtso(wallet, env.cAddress1, testShareBP)
+                    await network.delegateToFtso(wallet, env.getCAddress(1), testShareBP)
                     let delegates = await network.getFtsoDelegatesOf(publicKey)
                     assert.strictEqual(delegates.length, 1, "there should be one delegate")
-                    assert.strictEqual(delegates[0].address, env.cAddress1, "invalid address")
+                    assert.strictEqual(delegates[0].address, env.getCAddress(1), "invalid address")
                     assert.strictEqual(delegates[0].shareBP, testShareBP, "invalid share amount")
                 })
 
                 it("delegate to two FTSO providers", async function () {
                     let publicKey = await wallet.getPublicKey()
-                    await network.delegateToFtso(wallet, env.cAddress1, testShareBP, env.cAddress2, testShareBP)
+                    await network.delegateToFtso(wallet, env.getCAddress(1), testShareBP, env.getCAddress(2), testShareBP)
                     let delegates = await network.getFtsoDelegatesOf(publicKey)
                     assert.strictEqual(delegates.length, 2, "there should be two delegates")
-                    assert.strictEqual(delegates[0].address, env.cAddress1, "invalid address")
+                    assert.strictEqual(delegates[0].address, env.getCAddress(1), "invalid address")
                     assert.strictEqual(delegates[0].shareBP, testShareBP, "invalid share amount")
-                    assert.strictEqual(delegates[1].address, env.cAddress2, "invalid address")
+                    assert.strictEqual(delegates[1].address, env.getCAddress(2), "invalid address")
                     assert.strictEqual(delegates[1].shareBP, testShareBP, "invalid share amount")
                 })
 

@@ -23,6 +23,10 @@ export class Account {
         return ethers.computeAddress(publicKey)
     }
 
+    static normalizedCAddress(cAddress: string): string {
+        return ethers.getAddress(cAddress)
+    }
+
     static getPAddress(publicKey: string, hrp: string): string {
         let compressed = SigningKey.computePublicKey(publicKey, true)
         let address = ethers.getBytes(ethers.ripemd160(ethers.sha256(compressed)))

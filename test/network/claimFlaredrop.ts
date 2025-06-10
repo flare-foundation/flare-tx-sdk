@@ -17,7 +17,7 @@ export function runFlareDropClaimTests(env: TestEnvironment): void {
 
                 it("claim reward", async function () {
                     let publicKey = await wallet.getPublicKey()
-                    let recipient = env.cAddress1
+                    let recipient = env.getCAddress(1)
                     let wrap = Math.random() < 0.5
                     let startBalance = wrap ? await network.getBalanceWrappedOnC(recipient) : await network.getBalanceOnC(recipient)
                     let reward = await network.getClaimableFlareDropReward(publicKey)                    

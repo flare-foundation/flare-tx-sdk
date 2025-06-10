@@ -1,4 +1,4 @@
-import { EvmContract } from "./evm";
+import { EvmContract } from "./evm_contract";
 
 export class PChainStakeMirrorVerifier extends EvmContract {
 

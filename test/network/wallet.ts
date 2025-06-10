@@ -17,6 +17,8 @@ export abstract class TestWallet implements Wallet {
         return this.ethersWallet.signingKey.publicKey
     }
 
+    smartAccount: string
+
 }
 
 export class TestDigestWallet extends TestWallet {

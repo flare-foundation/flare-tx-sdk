@@ -170,7 +170,7 @@ export class Constants {
     protected _setCommon(): void {
         this.txConfirmationTimeout = 60000
         this.txConfirmationCheckout = 2000
-        this.evmTransferGasLimit = BigInt(21000)
+        this.evmTransferGasLimit = BigInt(42000)
         this.evmGasLimitExtra = 0.05
         this.evmBaseFee = BigInt(25 * 1e9)
         this.evmMaxFeePerGas = BigInt(50 * 1e9)

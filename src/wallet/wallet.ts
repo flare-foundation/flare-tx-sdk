@@ -46,4 +46,12 @@ export interface Wallet {
      * @returns The signature in hexadecimal encoding.
      */
     signPTransaction?(tx: string): Promise<string>
+
+    /**
+     * The C-chain address of a smart account in hexadecimal encoding
+     * @remarks This property should only be set when the wallet is
+     * used for approving an operation on the smart account, and should
+     * be `undefined` otherwise
+     */
+    smartAccount?: string
 }

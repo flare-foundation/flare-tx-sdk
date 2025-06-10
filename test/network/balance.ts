@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "assert";
 import { TestEnvironment } from "./env";
+import { Amount } from "../../src";
 
 export function runBalanceTests(env: TestEnvironment): void {
     let network = env.network
@@ -10,6 +11,8 @@ export function runBalanceTests(env: TestEnvironment): void {
 
         it("balance on C", async function () {
             await network.getBalanceOnC(await wallet.getPublicKey())
+            // await network.transferNative(env.getDigestWallet(1), env.getCAddress(0), Amount.nats(5))
+            // await network.transferNative(env.getDigestWallet(1), env.getCAddress(2), Amount.nats(5))
         })
 
         it("balance on P", async function () {

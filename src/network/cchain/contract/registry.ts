@@ -1,5 +1,5 @@
 import { FlareContract } from "../../contract";
-import { EvmContract } from "./evm";
+import { EvmContract } from "./evm_contract";
 import { PChainStakeMirrorVerifier } from "./stake_verifier";
 import { WNat } from "./wnat";
 import { Utils } from "../../utils";

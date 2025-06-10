@@ -1,5 +1,4 @@
-import { Transaction } from "ethers";
-import { EvmContract } from "./evm";
+import { EvmContract } from "./evm_contract";
 
 export class DistributionToDelegators extends EvmContract {
 
@@ -23,9 +22,9 @@ export class DistributionToDelegators extends EvmContract {
         return distribution.getClaimableAmountOf(address, month)
     }
 
-    async claim(address: string, rewardOwner: string, recipient: string, month: bigint, wrap: boolean): Promise<Transaction> {
+    claim(rewardOwner: string, recipient: string, month: bigint, wrap: boolean): string {
         let distribution = this._getContract(["function claim(address _rewardOwner, address _recipient, uint256 _month, bool _wrap) external returns (uint256 _rewardAmount)"])
-        return this._getTx(address, BigInt(0), distribution.claim, rewardOwner, recipient, month, wrap)
+        return this._getData(distribution, distribution.claim, rewardOwner, recipient, month, wrap)
     }
 
 }
