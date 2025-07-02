@@ -28,19 +28,19 @@ export class Transactions extends NetworkBased {
     private _delegation: Delegation
 
     async transfer(
-            wallet: Wallet, account: Account, recipient: string, amount?: bigint
-        ): Promise<void> {
-            let unsignedTx: UnsignedTx
-            if (amount) {
-                unsignedTx = await this._transfer.getTx(account.pAddress, recipient, amount)
-            } else {
-                let response = await this._core.flarejs.pvmApi.getBalance({ addresses: [`P-${account.pAddress}`] })
-                let balance = response.balance * BigInt(1e9)
-                let fee = await this._core.flarejs.getBaseTxFee()
-                unsignedTx = await this._transfer.getTx(account.pAddress, recipient, balance - fee)
-            }
-            await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.TRANSFER_PASSET)
+        wallet: Wallet, account: Account, recipient: string, amount?: bigint
+    ): Promise<void> {
+        let unsignedTx: UnsignedTx
+        if (amount) {
+            unsignedTx = await this._transfer.getTx(account.pAddress, recipient, amount)
+        } else {
+            let response = await this._core.flarejs.pvmApi.getBalance({ addresses: [`P-${account.pAddress}`] })
+            let balance = response.balance * BigInt(1e9)
+            let fee = await this._core.flarejs.getBaseTxFee()
+            unsignedTx = await this._transfer.getTx(account.pAddress, recipient, balance - fee)
         }
+        await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.TRANSFER_PASSET)
+    }
 
     async exportFromP(wallet: Wallet, account: Account, amount: bigint): Promise<void> {
         let unsignedTx = await this._export.getTx(account.pAddress, amount)
@@ -70,7 +70,7 @@ export class Transactions extends NetworkBased {
 
     async getStakeTx(
         txId: string
-        ): Promise<pvmSerial.AddDelegatorTx | pvmSerial.AddValidatorTx | pvmSerial.AddPermissionlessDelegatorTx | pvmSerial.AddPermissionlessValidatorTx> {
+    ): Promise<pvmSerial.AddDelegatorTx | pvmSerial.AddValidatorTx | pvmSerial.AddPermissionlessDelegatorTx | pvmSerial.AddPermissionlessValidatorTx> {
         let tx = await this._core.flarejs.pvmApi.getTx({ txID: txId })
         let utx = tx.unsignedTx
         let stx: pvmSerial.AddDelegatorTx | pvmSerial.AddValidatorTx | pvmSerial.AddPermissionlessDelegatorTx | pvmSerial.AddPermissionlessValidatorTx
