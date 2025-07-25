@@ -11,6 +11,8 @@ export class TxType {
     static readonly CLAIM_REWARD_FTSO = "claim_reward_ftso"
     static readonly DELEGATE_FTSO = "delegate_ftso"
     static readonly UNDELEGATE_FTSO = "undelegate_ftso"
+    static readonly CLAIM_REWARD_RNAT = "claim_reward_rnat"
+    static readonly WITHDRAW_RNAT = "withdraw_rnat"
     static readonly CREATE_SAFE_SMART_ACCOUNT = "create_safe_smart_account"
     static readonly CUSTOM_CONTRACT_C = "custom_contract_c"
     static readonly EXPORT_P = "export_p"
@@ -55,6 +57,12 @@ export class TxType {
             }
             case this.UNDELEGATE_FTSO: {
                 return "Undelegate from FTSO providers"
+            }
+            case this.CLAIM_REWARD_RNAT: {
+                return "RNat reward claim"
+            }
+            case this.WITHDRAW_RNAT: {
+                return "RNat withdraw"
             }
             case this.CREATE_SAFE_SMART_ACCOUNT: {
                 return "Create Safe smart account"

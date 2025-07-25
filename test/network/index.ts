@@ -13,6 +13,7 @@ import { runFlareDropClaimTests } from "./claimFlaredrop";
 import { runStakingClaimTests } from "./claimStaking";
 import { runFtsoClaimTests } from "./claimFtso";
 import { runSmartAccountTests } from "./smartAccount";
+import { runRNatTests } from "./rnat";
 
 function execute() {
     const TEST_KEYS_FILE = path.join("test", "keys", "keys.txt")
@@ -40,6 +41,7 @@ function execute() {
     runStakingClaimTests(env)
     runFtsoClaimTests(env)
     runFtsoDelegationTests(env)
+    runRNatTests(env)
     runSmartAccountTests(env)
     runGenericContractTests(env)
     runTransferCPTests(env)

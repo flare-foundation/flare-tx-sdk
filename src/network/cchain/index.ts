@@ -1,5 +1,5 @@
 import { Account } from "../account"
-import { FtsoDelegate, FtsoRewardState, SafeSmartAccount, StakeLimits } from "../iotype"
+import { FtsoDelegate, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, StakeLimits } from "../iotype"
 import { FlareContract } from "../contract"
 import { NetworkCore, NetworkBased } from "../core"
 import { Utils } from "../utils"
@@ -101,6 +101,31 @@ export class CChain extends NetworkBased {
         let minStakeAmountValidator = minStakeAmount     
         let maxStakeAmount = await stakeVerifier.maxStakeAmount()
         return { minStakeDuration, maxStakeDuration, minStakeAmountDelegator, minStakeAmountValidator, maxStakeAmount }                
+    }
+
+    async getRNatProjects(): Promise<Array<RNatProject>> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getProjectsBasicInfo()
+    }
+
+    async getRNatProjectInfo(projectId: number): Promise<RNatProjectInfo> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getProjectInfo(projectId)
+    }
+
+    async getClaimableRNatReward(projectId: number, owner: string): Promise<bigint> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getClaimableRewards(projectId, owner)
+    }
+
+    async getRNatAccount(owner: string): Promise<string> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getRNatAccount(owner)
+    }
+
+    async getRNatAccountBalance(owner: string): Promise<RNatAccountBalance> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getBalancesOf(owner)
     }
 
     async getSafeSmartAccountInfo(address: string): Promise<SafeSmartAccount> {

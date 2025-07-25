@@ -10,7 +10,7 @@ export class WNat extends EvmContract {
 
     async delegatesOf(address: string): Promise<Array<FtsoDelegate>> {
         let wnat = this._getContract(["function delegatesOf(address _owner) external view returns (address[] memory _delegateAddresses, uint256[] memory _bips, uint256 _count, uint256 _delegationMode)"])
-        let result = await wnat.delegatesOf(address) as Array<any[]>
+        let result = (await wnat.delegatesOf(address)) as Array<any[]>
         return result[0].map((_, i) => <FtsoDelegate>{ address: result[0][i], shareBP: result[1][i] })
     }
 

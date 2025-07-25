@@ -162,7 +162,47 @@ export class Transactions extends NetworkBased {
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.UNDELEGATE_FTSO)
     }
 
-    async createSafeSmartAccount(wallet: Wallet, cAddress: string, owners: Array<string>, threshold: bigint): Promise<string> {
+    async claimRNatReward(
+        wallet: Wallet,
+        cAddress: string,
+        projectIds: Array<number>
+    ): Promise<void> {
+        let rnat = await this._registry.getRNat()
+        let month = await rnat.getCurrentMonth()
+        let data = rnat.claimRewards(projectIds, month)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, rnat.address, data)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_REWARD_RNAT)
+    }
+
+    async withdrawFromRNatAccount(
+        wallet: Wallet,
+        cAddress: string,
+        amount: bigint,
+        wrap: boolean
+    ): Promise<void> {
+        let rnat = await this._registry.getRNat()
+        let data = rnat.withdraw(amount, wrap)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, rnat.address, data)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.WITHDRAW_RNAT)
+    }
+
+    async withdrawAllFromRNatAccount(
+        wallet: Wallet,
+        cAddress: string,
+        wrap: boolean
+    ): Promise<void> {
+        let rnat = await this._registry.getRNat()
+        let data = rnat.withdrawAll(wrap)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, rnat.address, data)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.WITHDRAW_RNAT)
+    }
+
+    async createSafeSmartAccount(
+        wallet: Wallet,
+        cAddress: string,
+        owners: Array<string>,
+        threshold: bigint
+    ): Promise<string> {
         let proxyFactory = new SafeProxyFactory(this._core, this._core.const.address_SafeProxyFactory)
         let singleton = this._core.const.address_SafeSingleton
         let fallbackHandler = this._core.const.address_SafeFallbackHandler
