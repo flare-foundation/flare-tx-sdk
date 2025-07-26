@@ -107,9 +107,9 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns RNat account address.
+     * Returns rNat account address.
      * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
-     * @returns The C-chain address in hexadecimal encoding of the RNat account associated
+     * @returns The C-chain address in hexadecimal encoding of the rNat account associated
      * with the public key or address.
      */
     async getRNatAccount(publicKeyOrAddress: string): Promise<string> {
@@ -119,10 +119,10 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns balance of the RNat account.
+     * Returns balance of the rNat account.
      * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
      * @returns The object of type {@link RNatAccountBalance} containing the balance
-     * information about the RNat account associated with the public key or address.
+     * information about the rNat account associated with the public key or address.
      */
     async getRNatAccountBalance(publicKeyOrAddress: string): Promise<RNatAccountBalance> {
         let cAddress = Account.isCAddress(publicKeyOrAddress) ?
@@ -131,9 +131,9 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns balance of unlocked wrapped tokens on a RNat account.
+     * Returns balance of unlocked wrapped tokens on an rNat account.
      * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
-     * @returns The balance in wei of the RNat account associated with the public key or address.
+     * @returns The balance in wei of the rNat account associated with the public key or address.
      */
     async getUnlockedBalanceWrappedOnRNatAccount(publicKeyOrAddress: string): Promise<bigint> {
         let cAddress = Account.isCAddress(publicKeyOrAddress) ?
@@ -143,9 +143,9 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns balance of locked wrapped tokens on a RNat account.
+     * Returns balance of locked wrapped tokens on an rNat account.
      * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
-     * @returns The balance in wei of the RNat account associated with the public key or address.
+     * @returns The balance in wei of the rNat account associated with the public key or address.
      */
     async getLockedBalanceWrappedOnRNatAccount(publicKeyOrAddress: string): Promise<bigint> {
         let cAddress = Account.isCAddress(publicKeyOrAddress) ?
@@ -283,32 +283,34 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns RNat projects.
+     * Returns rNat projects.
      * @returns The array of objects of type {@link RNatProject} that contains basic information
-     * about the RNat projects.
+     * about the rNat projects.
      */
     async getRNatProjects(): Promise<Array<RNatProject>> {
         return this._cchain.getRNatProjects()        
     }
 
     /**
-     * Returns RNat project information.
+     * Returns rNat project information.
      * @param projectId A project id number.
      * @returns The object of type {@link RNatProjectInfo} that contains detailed information
-     * about the RNat project with the given project id.
+     * about the rNat project with the given project id.
      */
     async getRNatProjectInfo(projectId: number): Promise<RNatProjectInfo> {
         return this._cchain.getRNatProjectInfo(projectId)
     }
 
     /**
-     * Returns the amount of claimable RNat reward for the given project and owner.
+     * Returns the amount of claimable rNat reward for the given project and owner.
      * @param projectId A project id number
-     * @param owner A C-chain address of the reward owner
-     * @returns The reward in wei for the given project id and owner.
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The reward in wei corresponding to the project and public key or address.
      */
-    async getClaimableRNatReward(projectId: number, owner: string): Promise<bigint> {
-        return this._cchain.getClaimableRNatReward(projectId, owner)
+    async getClaimableRNatReward(projectId: number, publicKeyOrAddress: string): Promise<bigint> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getClaimableRNatReward(projectId, cAddress)
     }
 
     /**
@@ -430,7 +432,7 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Claims entire claimable reward from RNat projects to the RNat account corresponding to the
+     * Claims entire claimable reward from rNat projects to the rNat account corresponding to the
      * wallet's C-chain address.
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getCAddress` or `getPublicKey`, and
@@ -443,12 +445,12 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Withdraws unlocked wrapped funds from a RNat account to its owner.
+     * Withdraws unlocked wrapped funds from an rNat account to its owner.
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getCAddress` or `getPublicKey`, and
      * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
-     * @param amount An amount in wei to be withdrawn from the RNat account associated with the wallet's C-chain address
-     * (optional, entire unlocked wrapped RNat account balance by default).
+     * @param amount An amount in wei to be withdrawn from the rNat account associated with the wallet's C-chain address
+     * (optional, entire unlocked wrapped rNat account balance by default).
      * @param wrap A boolean indicating if the withdrawn amount is to be wrapped (optional, false by default).
      */
     async withdrawFromRNatAccount(wallet: Wallet, amount?: bigint, wrap?: boolean): Promise<void> {
@@ -461,7 +463,7 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Withdraws unlocked and locked wrapped funds from a RNat account to its owner.
+     * Withdraws unlocked and locked wrapped funds from an rNat account to its owner.
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getCAddress` or `getPublicKey`, and
      * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
