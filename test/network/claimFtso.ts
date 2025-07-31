@@ -40,7 +40,7 @@ export function runFtsoClaimTests(env: TestEnvironment): void {
                         }
                     }
 
-                    let recipient = env.address1
+                    let recipient = env.getCAddress(1)
                     let wrap = Math.random() < 0.5
                     let startBalance = wrap ? await network.getBalanceWrappedOnC(recipient) : await network.getBalanceOnC(recipient)
 

@@ -12,31 +12,26 @@ import { runDelegationPTests } from "./delegationp";
 import { runFlareDropClaimTests } from "./claimFlaredrop";
 import { runStakingClaimTests } from "./claimStaking";
 import { runFtsoClaimTests } from "./claimFtso";
+import { runSmartAccountTests } from "./smartAccount";
+import { runRNatTests } from "./rnat";
 
 function execute() {
-    const TEST_KEY_FILE = path.join("test", "keys", "key.txt")
-    let privateKey: string
+    const TEST_KEYS_FILE = path.join("test", "keys", "keys.txt")
+    let privateKeys: string
     if (process.argv.length > 2) {
-        privateKey = process.argv[2]
-    } else if (existsSync(TEST_KEY_FILE)) {
-        privateKey = readFileSync(TEST_KEY_FILE).toString()
+        privateKeys = process.argv[2]
+    } else if (existsSync(TEST_KEYS_FILE)) {
+        privateKeys = readFileSync(TEST_KEYS_FILE).toString()
     } else {
-        console.info("To execute tests provide the private key of a test account.")
-        console.info("Option 1: npm run test {private_key}")
-        console.info(`Option 2: add ${TEST_KEY_FILE} that contains the private key`)
+        console.info("To execute tests provide three private keys for test accounts.")
+        console.info("Option 1: npm run test {comma,separated,private_keys}")
+        console.info(`Option 2: add file ${TEST_KEYS_FILE} that contains a comma separated list of private keys`)
         return
     }
 
-    let network = Network.COSTON2
-
-    const TEST_RECIPIENT1_C = "0x88622075eaC5ef1D2b08ffC8831547c8EaB1411b"
-    const TEST_RECIPIENT2_C = "0x789FdAb73F7aFBb3e97638b039F8EBc0498690Ed"
-
     let env = new TestEnvironment(
-        network,
-        privateKey,
-        TEST_RECIPIENT1_C,
-        TEST_RECIPIENT2_C
+        Network.COSTON2,
+        privateKeys.split(",")
     )
 
     runBalanceTests(env)
@@ -46,6 +41,8 @@ function execute() {
     runStakingClaimTests(env)
     runFtsoClaimTests(env)
     runFtsoDelegationTests(env)
+    runRNatTests(env)
+    runSmartAccountTests(env)
     runGenericContractTests(env)
     runTransferCPTests(env)
     runDelegationPTests(env)

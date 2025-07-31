@@ -4,9 +4,10 @@ This is the official Node.js Software Development Kit (SDK) for performing commo
 
 - [Retrieving account and balance information](#account-and-balance-1)
 - [Transferring native and wrapped coins](#coin-transfers-1)
-- [Claiming rewards from FlareDrop, staking, and FTSO delegation](#reward-claims-1)
+- [Claiming rewards from FlareDrop, staking, FTSO delegation, and rNat projects](#reward-claims-1)
 - [Delegating to FTSO providers](#delegation-to-ftso-providers-1)
 - [Interacting with the C-chain contracts](#c-chain-contracts-1)
+- [Creating and using smart (multisig) accounts](#smart-account)
 - [Staking on the P-chain](#staking-1)
 
 The SDK is designed to simplify blockchain interactions and offer future-proof support for the above described actions, making it easier to develop apps on [Flare's networks](#network-object). It can be integrated with both [standard and custom wallets](#wallet-implementation) for transaction signing, and provides detailed, step-by-step [transaction tracking](#transaction-tracking).
@@ -68,6 +69,15 @@ Claiming reward from FTSO delegation:
 ```
 let amount = await network.getClaimableFtsoReward(cAddress)
 await network.claimFtsoReward(wallet)
+```
+
+Claiming reward from a rNat project and withdrawing from rNat account:
+```
+let amount = await network.getClaimableRNatReward(projectId, cAddress)
+await network.claimRNatReward(wallet, [projectId])
+
+let amount = await network.getUnlockedBalanceWrappedOnRNatAccount(cAddress)
+await network.withdrawFromRNatAccount(wallet)
 ```
 
 ### Delegation to FTSO providers
@@ -158,6 +168,8 @@ Alternatively, for C-chain related operations, when signing and submitting of a 
 signAndSubmitCTransaction(tx: string): Promise<string>
 ```
 The input `tx` is a hex encoded EIP 1559 (type 2) EVM transaction. If the wallet implements this function, it is considered as the default function for signing C-chain transactions. The function should return the transaction id in hexadecimal encoding.
+
+A wallet can also be marked to act as an operation signer in a multisig process based on a [Safe smart account](#smart-account). This is achieved by defining the property `smartAccount` of type `string` and setting it to be equal to the C-chain address of a Safe smart account, in which the wallet's C-chain address represents an owner. When the property is different from `undefined`, all the C-chain operations supported by the SDK produce transactions that induce either approval or execution of these operations on the smart account.
 
 ## Network object
 
@@ -379,6 +391,87 @@ where `proofs` is an array of objects of type [`FtsoRewardClaimWithProof`](src/n
 - `merkleProof` The Merkle proof represented by an array of strings in hexadecimal encoding;
 - `body` The reward claim represented as an object of type [`FtsoRewardClaim`](src/network/iotype.ts) with the same properties as `FtsoRewardState` described above (except `initialised`).
 
+#### rNat rewards
+
+Participation in Flare's networks rNat projects yields rewards in the form of rNat tokens. On claiming, rNat tokens are backed up by wrapped coins deposited to the owner's unique rNat account, where they are vested. The owner can eventually withdraw the wrapped coins from the rNat account to its own account.
+
+The list of all rNat projects can be obtained by
+```
+let projects = await network.getRNatProjects()
+```
+which returns an array of objects of type [`RNatProject`](src/network/iotype.ts) with properties:
+- `id` The project id;
+- `name` The name of the project;
+- `claimingDisabled` The flag indicating if claiming of the rewards on the project is disabled.
+To get more detailed information on a particular project, use
+```
+let projectInfo = await network.getRNatProjectInfo(projectId)
+```
+The resulting object `projectInfo` is of type [`RNatProjectInfo`](src/network/iotype.ts) with properties:
+- `name` The project name;
+- `distributor` The address of the distributor of the rewards for the project;
+- `currentMonthDistributionEnabled` The flag indicating if reward distribution is possible for the current month;
+- `distributionDisabled` The flag indicating if distribution of the rewards is disabled;
+- `claimingDisabled` The flag indicating if claiming of rewards is disabled;
+- `totalAssignedRewards` The total amount of rewards in wei awarded by Flare's networks for this project;
+- `totalDistributedRewards` The total amount of assigned rewards in wei distributed by the distributor;
+- `totalClaimedRewards` The total amount of the distributed rewards in wei claimed by the users;
+- `totalUnassignedUnclaimedRewards` The total amount of rewards in wei that are claimed back by Flare's networks if distribution and claiming is permanently disabled for the project;
+- `monthsWithRewards` The array of months with claimable rewards.
+
+The amount of claimable reward for a given project with `projectId` and a user participating in the project identified by a given public key or C-chain address `publicKeyOrAddress` can be obtained by
+```
+let amount = await network.getClaimableRNatReward(projectId, publicKeyOrAddress)
+```
+To claim all claimable rNat rewards, use
+```
+await network.claimRNatReward(wallet, projectIds)
+```
+where `projectIds` is an array of project ids for which the reward is being claimed. The claimed rewards are deposited as wrapped coins to the dedicated rNat account, which is associated with the wallet's C-chain address (rNat account owner).
+
+The wrapped coins on the rNat account are vested. To get the amount of unlocked wrapped coins, use
+```
+let unlockedBalance = await network.getUnlockedBalanceWrappedOnRNatAccount(publicKeyOrAddress)
+```
+where `publicKeyOrAddress` is the public key or C-chain address of the rNat account owner. The amount of locked wrapped coins can be obtained by
+```
+let lockedBalance = await network.getLockedBalanceWrappedOnRNatAccount(publicKeyOrAddress)
+```
+Full information on the rNat account balance can be obtained by
+```
+let balance = await network.getRNatAccountBalance(publicKeyOrAddress)
+```
+The resulting object `balance` is of type [`RNatAccountBalance`](src/network/iotype.ts) with properties:
+- `wNatBalance` The balance of wrapped coins in wei;
+- `rNatBalance` The balance of rNat tokens in wei;
+- `lockedBalance` The balance of locked wrapped coins in wei.
+
+The amount of rNat tokens equals the difference between received and withdrawn rNat rewards. The amount of wrapped coins on an rNat account can be larger than the amount of rNat tokens.
+
+For example, the amount of wrapped coins can be increased by [claiming the FlareDrop reward](#flaredrop-rewards) accrued from (vested) wrapped coins on the rNat account. To check the amount of unclaimed FlareDrop reward for the rNat account owned by `publicKeyOrAddress`, use
+```
+let rNatAccountAddress = await network.getRNatAccount(publicKeyOrAddress)
+let amount = await network.getClaimableFlareDropReward(rNatAccountAddress)
+```
+To claim the reward, use
+```
+await network.claimFlareDropReward(wallet, rNatAccountAddress, rNatAccountAddress, true)
+```
+where `rNatAccountAddress` is the C-chain address of the rNat account associated with the C-chain address of `wallet`. This operation transfers all claimable FlareDrop reward to the rNat account and increases its balance of wrapped coins.
+
+Finally, to withdraw funds from the rNat account, use
+```
+await network.withdrawFromRNatAccount(wallet, amount, wrap)
+```
+where `amount` is the amount of unlocked wrapped coins to withdraw and `wrap` is a flag indicating if the `amount` is to be transferred as native coin (`false`) or wrapped (`true`). Both, `amount` and `wrap` are optional parameters. By default, `amount` is equal to the amount of all unlocked wrapped balance and `wrap` is equal to `false`.
+
+It is also possible to withdraw all funds from the rNat account, including locked and unlocked balance. To achieve this, use
+```
+await network.withdrawAllFromRNatAccount(wallet, wrap)
+```
+but note that the actual withdrawn amount is reduced as a penalty to withdrawing locked balance. The flag `wrap` is again optional and is by default equal to `false`.
+
+
 ### Delegation to FTSO providers
 
 The account's vote power corresponding to the balance of the wrapped tokens can be delegated to one or two FTSO providers to earn delegation reward. The amount of delegated vote power is specified in percentages. The vote power can be delegated to one or two FTSO providers.
@@ -429,6 +522,50 @@ For the official Flare contracts, the input `address` can be replaced by the con
 await network.getFlareContracts()
 ```
 
+### Smart account
+
+A Safe smart account is a smart contract on the C-chain operated by selected owners. The smart account can be used to execute standard operations on the C-chain provided that the actions are approved by a sufficient number of owners (smart account threshold).
+
+A new smart account can be created by
+```
+let smartAccountAddress = await network.createSafeSmartAccount(wallet, owners, threshold)
+```
+where `owners` is an array of C-chain addresses in hexadecimal encoding representing the owners of the smart account, and `threshold` is an integer between 1 and the length of `owners` representing the smart account threshold. If the wallet's C-chain address is not included in `owners`, the wallet's account is only the creator of the smart account and does not participate in its operation. The result `smartAccountAddress` is the C-chain address of the smart account in hexadecimal encoding.
+
+A smart account can be used in any C-chain operation supported by this SDK. To demosntrate the concept and basic workflow, the following example shows how this functionality can be used to wrap a certain `amount` of native coins on a smart account and how to transfer these wrapped coins from the smart account to a certain `address`.
+
+First, let us deposit funds to the smart account:
+```
+await network.transferNative(wallet, smartAccountAddress, amount)
+```
+Suppose the smart account has 3 or more owners and threshold equal to 3. Moreover, let `wallet1`, `wallet2`, `wallet3` be three wallets that represent three different owners. To make them operate with the smart account, the owners set
+```
+wallet1.smartAccount = smartAccountAddress
+wallet2.smartAccount = smartAccountAddress
+wallet3.smartAccount = smartAccountAddress
+```
+To wrap native coins on the smart account, the owners execute
+```
+await network.wrapNative(wallet1, amount)
+await network.wrapNative(wallet2, amount)
+await network.wrapNative(wallet3, amount)
+```
+All three calls induce a transaction to the smart account. In the first two calls this is a transaction with which two owners approve the wrapping. In the third call this is a transaction with which another owner approves and also executes the operation, i.e., the balance of wrapped coins on the smart account has been increased by `amount`. Note that it is important that all three calls have identical inputs and no other operation on the same smart account interrupt the sequence of their execution.
+
+Finally, the three owners agree to transfer wrapped coins from the smart account to `address`, which is achieved similarly as above by
+```
+await network.transferWrapped(wallet1, address, amount)
+await network.transferWrapped(wallet2, address, amount)
+await network.transferWrapped(wallet3, address, amount)
+```
+
+To use the wallets in a regular way again, the relation to the smart account must be cleared:
+```
+wallet1.smartAccount = undefined
+wallet2.smartAccount = undefined
+wallet3.smartAccount = undefined
+```
+
 ### Staking
 
 For staking, the network uses the P-chain and the information about stakes is then automatically mirrored to the C-chain.
@@ -444,6 +581,7 @@ sequenceDiagram
     B->>P: importToP
     C->>P: transferToP
     P->>P: delegateOnP
+    P->>P: transferOnP
     P->>C: transferToC
     P->>B: exportFromP
     B->>C: importToC
@@ -507,6 +645,14 @@ To import all exported funds from the P-chain to the C-chain, use
 await network.importToP(wallet, baseTxFeeOnC)
 ```
 The parameter `baseFeeTxOnC` is optional and can be used to override the automatically acquired base transaction fee from the C-chain.
+
+### Transferring funds on the P-chain
+
+It is also possible to transfer funds between addresses on the P-chain. Use
+```
+await network.transferOnP(wallet, recipient, amount)
+```
+where `recipient` is the recipient P-chain address in bech32 encoding and `amount` is the amount in weis to be transferred. If `amount` is not provided, the entire wallet's P-chain balance is transferred.
 
 
 ## Standard wallets

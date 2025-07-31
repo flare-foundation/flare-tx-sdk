@@ -1,5 +1,4 @@
-import { Transaction } from "ethers";
-import { EvmContract } from "./evm";
+import { EvmContract } from "./evm_contract";
 
 export class GenericContract extends EvmContract {
 
@@ -8,11 +7,9 @@ export class GenericContract extends EvmContract {
         return contract[method](...params)
     }
 
-    async getTx(
-        address: string, abi: string, method: string, value: bigint, ...params: any[]
-    ): Promise<Transaction> {
+    getData(abi: string, method: string, ...params: any[]): string {
         let contract = this._getContract(abi)
-        return this._getTx(address, value, contract[method], ...params)
+        return this._getData(contract, contract[method], ...params)
     }
 
 }

@@ -1,8 +1,7 @@
 import { ethers, Wallet as EthersWallet, JsonRpcProvider, Transaction } from "ethers"
-import { Constants, Network } from "../../src/network";
+import { Constants } from "../../src/network";
 import { Wallet } from "../../src/wallet";
-import { UnsignedTx as UnsignedCTx } from "@flarenetwork/flarejs/dist/apis/evm";
-import { UnsignedTx as UnsignedPTx } from "@flarenetwork/flarejs/dist/apis/platformvm";
+import { utils as futils, evmSerial, pvmSerial } from "@flarenetwork/flarejs";
 
 export abstract class TestWallet implements Wallet {
 
@@ -17,6 +16,8 @@ export abstract class TestWallet implements Wallet {
     async getPublicKey(): Promise<string> {
         return this.ethersWallet.signingKey.publicKey
     }
+
+    smartAccount: string
 
 }
 
@@ -96,31 +97,26 @@ export class TestAvaxTransactionWallet extends TestWallet {
     }
 
     async signPTransaction(tx: string): Promise<string> {
-        tx = tx.startsWith("0x") ? tx.slice(2) : tx
         let digest: string
         let unsignedTx = this._getCTx(tx) ?? this._getPTx(tx)
         if (unsignedTx == null) {
             throw new Error("Failed to parse AVAX transaction")
         }
-        digest = ethers.sha256(`0x${tx}`)
+        digest = ethers.sha256(tx)
         return this.ethersWallet.signingKey.sign(digest).serialized
     }
 
-    _getCTx(tx: string): UnsignedCTx | null {
+    _getCTx(tx: string): evmSerial.EVMTx | null {
         try {
-            let ctx = new UnsignedCTx()
-            ctx.fromBuffer(Buffer.from(tx, "hex") as any)
-            return ctx
+            return futils.unpackWithManager("EVM", ethers.getBytes(tx)) as evmSerial.EVMTx
         } catch {
             return null
         }
     }
 
-    _getPTx(tx: string): UnsignedPTx | null {
+    _getPTx(tx: string): pvmSerial.BaseTx | null {
         try {
-            let ptx = new UnsignedPTx()
-            ptx.fromBuffer(Buffer.from(tx, "hex") as any)
-            return ptx
+            return futils.unpackWithManager("PVM", ethers.getBytes(tx)) as pvmSerial.BaseTx
         } catch {
             return null
         }

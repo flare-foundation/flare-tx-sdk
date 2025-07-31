@@ -1,11 +1,12 @@
 import { FlareContract } from "../../contract";
-import { EvmContract } from "./evm";
+import { EvmContract } from "./evm_contract";
 import { PChainStakeMirrorVerifier } from "./stake_verifier";
 import { WNat } from "./wnat";
 import { Utils } from "../../utils";
 import { DistributionToDelegators } from "./flaredrop";
 import { GenericRewardManager } from "./generic_reward_manager";
 import { RewardManager } from "./reward_manager";
+import { RNat } from "./rnat";
 
 export class ContractRegistry extends EvmContract {
 
@@ -31,6 +32,11 @@ export class ContractRegistry extends EvmContract {
     async getWNat(): Promise<WNat> {
         let address = await this.getAddress("WNat")
         return new WNat(this._core, address)
+    }
+
+    async getRNat(): Promise<RNat> {
+        let address = await this.getAddress("RNat")
+        return new RNat(this._core, address)
     }
 
     async getFlareDropDistribution(): Promise<DistributionToDelegators> {

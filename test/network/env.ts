@@ -1,39 +1,55 @@
 import { Network } from "../../src"
 import { TestAvaxTransactionWallet, TestDigestWallet, TestEthMessageWallet, TestEvmSubmitTransactionWallet, TestEvmTransactionWallet, TestWallet } from "./wallet"
+import { SigningKey } from "ethers"
 
 export class TestEnvironment {
 
-    constructor(network: Network, privateKey: string, address1: string, address2: string) {
+    constructor(
+        network: Network,
+        privateKeys: Array<string>
+    ) {
         this.network = network
-        this._privateKey = privateKey
-        this.address1 = address1
-        this.address2 = address2
+        this._privateKeys = privateKeys
     }
 
-    private _privateKey: string
+    private _privateKeys: Array<string>
 
     network: Network
-    address1: string
-    address2: string
 
-    getDigestWallet(): TestDigestWallet {
-        return new TestDigestWallet(this._privateKey)
+    getDigestWallet(keyIndex?: number): TestDigestWallet {
+        return new TestDigestWallet(this._privateKeys[keyIndex ?? 0])
     }
 
-    getEvmWallets(): Array<TestWallet> {
+    getEvmWallets(keyIndex?: number): Array<TestWallet> {
         let wallets = new Array<TestWallet>()
-        wallets.push(new TestDigestWallet(this._privateKey))
-        wallets.push(new TestEvmTransactionWallet(this._privateKey))
-        wallets.push(new TestEvmSubmitTransactionWallet(this._privateKey))
+        wallets.push(new TestDigestWallet(this._key(keyIndex)))
+        wallets.push(new TestEvmTransactionWallet(this._key(keyIndex)))
+        wallets.push(new TestEvmSubmitTransactionWallet(this._key(keyIndex)))
         return wallets
     }
 
-    getAvaxWallets(): Array<TestWallet> {
+    getAvaxWallets(keyIndex?: number): Array<TestWallet> {
         let wallets = new Array<TestWallet>()
-        wallets.push(new TestDigestWallet(this._privateKey))
-        wallets.push(new TestEthMessageWallet(this._privateKey))
-        wallets.push(new TestAvaxTransactionWallet(this._privateKey))
+        wallets.push(new TestDigestWallet(this._key(keyIndex)))
+        wallets.push(new TestEthMessageWallet(this._key(keyIndex)))
+        wallets.push(new TestAvaxTransactionWallet(this._key(keyIndex)))
         return wallets
+    }
+
+    getPublicKey(keyIndex?: number): string {
+        return SigningKey.computePublicKey(this._key(keyIndex))
+    }
+
+    getCAddress(keyIndex?: number): string {
+        return this.network.getCAddress(this._key(keyIndex))
+    }
+
+    getPAddress(keyIndex?: number): string {
+        return this.network.getPAddress(this._key(keyIndex))
+    }
+
+    private _key(keyIndex?: number): string {
+        return this._privateKeys[keyIndex ?? 0]
     }
 
 }

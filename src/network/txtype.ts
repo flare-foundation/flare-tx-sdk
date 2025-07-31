@@ -1,6 +1,7 @@
 export class TxType {
     static readonly TRANSFER_NAT = "transfer_nat"
     static readonly TRANSFER_WNAT = "transfer_wnat"
+    static readonly TRANSFER_PASSET = "transfer_passet"
     static readonly EXPORT_C = "export_c"
     static readonly IMPORT_C = "import_c"
     static readonly WRAP_NAT = "wrap_nat"
@@ -10,6 +11,9 @@ export class TxType {
     static readonly CLAIM_REWARD_FTSO = "claim_reward_ftso"
     static readonly DELEGATE_FTSO = "delegate_ftso"
     static readonly UNDELEGATE_FTSO = "undelegate_ftso"
+    static readonly CLAIM_REWARD_RNAT = "claim_reward_rnat"
+    static readonly WITHDRAW_RNAT = "withdraw_rnat"
+    static readonly CREATE_SAFE_SMART_ACCOUNT = "create_safe_smart_account"
     static readonly CUSTOM_CONTRACT_C = "custom_contract_c"
     static readonly EXPORT_P = "export_p"
     static readonly IMPORT_P = "import_c"
@@ -19,10 +23,13 @@ export class TxType {
     static getDescription(type: string): string {
         switch (type) {
             case this.TRANSFER_NAT: {
-                return "Native coin transfer"
+                return "Native coin transfer on the C-chain"
             }
             case this.TRANSFER_WNAT: {
                 return "Wrapped coin transfer"
+            }
+            case this.TRANSFER_PASSET: {
+                return "Native coin transfer on the P-chain"
             }
             case this.EXPORT_C: {
                 return "Export from the C-chain"
@@ -50,6 +57,15 @@ export class TxType {
             }
             case this.UNDELEGATE_FTSO: {
                 return "Undelegate from FTSO providers"
+            }
+            case this.CLAIM_REWARD_RNAT: {
+                return "RNat reward claim"
+            }
+            case this.WITHDRAW_RNAT: {
+                return "RNat withdraw"
+            }
+            case this.CREATE_SAFE_SMART_ACCOUNT: {
+                return "Create Safe smart account"
             }
             case this.CUSTOM_CONTRACT_C: {
                 return "Custom contract transaction"

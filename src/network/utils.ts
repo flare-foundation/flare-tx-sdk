@@ -1,5 +1,3 @@
-import { BN } from "@flarenetwork/flarejs";
-
 export class Utils {
 
     static addHexPrefix(hex: string): string {
@@ -14,12 +12,28 @@ export class Utils {
         return /^(0x)?(0+)?$/.test(value)
     }
 
-    static toBigint(value: BN | number): bigint {
-        return BigInt(value.toString(10))
+    static min(...values: bigint[]): bigint {
+        let m = undefined
+        for (let value of values) {
+            if (!m) {
+                m = value
+            } else if (value && value < m) {
+                m = value
+            }
+        }
+        return m
     }
 
-    static toBn(value: bigint): BN {
-        return new BN(value.toString(10), 10)
+    static max(...values: bigint[]): bigint {
+        let m = undefined
+        for (let value of values) {
+            if (!m) {
+                m = value
+            } else if (value && value > m) {
+                m = value
+            }
+        }
+        return m
     }
 
     static async sleep(ms: number): Promise<void> {

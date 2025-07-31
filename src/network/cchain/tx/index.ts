@@ -6,54 +6,67 @@ import { Signature } from "../../sign";
 import { Utils } from "../../utils";
 import { TxType } from "../../txtype";
 import { Wallet } from "../../../wallet";
-import { ethers, Transaction as EvmTx } from "ethers";
-import { BN } from "@flarenetwork/flarejs";
-import { EcdsaSignature } from "@flarenetwork/flarejs/dist/common";
-import { PublicKeyPrefix, Serialization } from "@flarenetwork/flarejs/dist/utils";
-import { UnsignedTx as AvaxTx } from "@flarenetwork/flarejs/dist/apis/evm";
-import { Transfer } from "./transfer";
+import { ethers, Transaction as EvmTx, TransactionReceipt } from "ethers";
+import { EVMUnsignedTx as AvaxTx, messageHashFromUnsignedTx, utils as futils } from "@flarenetwork/flarejs"
 import { ContractRegistry } from "../contract/registry";
 import { GenericContract } from "../contract/generic";
 import { Constants } from "../../constants";
 import { FtsoRewardClaimWithProof } from "src/network/iotype";
+import { base58 } from "@scure/base";
+import { SafeProxyFactory } from "../contract/safe_proxy_factory";
+import { Evm } from "./evm";
 
 export class Transactions extends NetworkBased {
 
     constructor(network: NetworkCore, registry: ContractRegistry) {
         super(network)
         this._registry = registry
-        this._transfer = new Transfer(network)
+        this._evm = new Evm(network)
         this._export = new Export(network)
         this._import = new Import(network)
     }
 
     private _registry: ContractRegistry
-    private _transfer: Transfer
+    private _evm: Evm
     private _export: Export
     private _import: Import
 
     async transfer(
         wallet: Wallet, cAddress: string, recipient: string, amount?: bigint
     ): Promise<void> {
-        let unsignedTx: EvmTx
-        if (amount) {
-            unsignedTx = await this._transfer.getTx(cAddress, recipient, amount)
+        let evm = new Evm(this._core)
+        let gasLimit: bigint
+        if (wallet.smartAccount) {
+            gasLimit = undefined
+            if (!amount) {
+                amount = await this._core.ethers.getBalance(wallet.smartAccount)
+            }
         } else {
+            gasLimit = this._core.const.evmTransferGasLimit
+        }
+        let unsignedTx = await evm.getTx(cAddress, wallet.smartAccount, recipient, undefined, amount, gasLimit)
+        if (!wallet.smartAccount && !amount) {
             let balance = await this._core.ethers.getBalance(cAddress)
-            unsignedTx = await this._transfer.getWipeTx(cAddress, recipient, balance)
+            amount = balance - gasLimit * unsignedTx.maxFeePerGas
+            if (amount < 0) {
+                throw new Error("Balance too low to execute transfer")
+            }
+            unsignedTx.value = amount
         }
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.TRANSFER_NAT)
     }
 
     async wrap(wallet: Wallet, cAddress: string, amount: bigint): Promise<void> {
         let wnat = await this._registry.getWNat()
-        let unsignedTx = await wnat.getWrapTx(cAddress, amount)
+        let data = wnat.wrap()
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, wnat.address, data, amount)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.WRAP_NAT)
     }
 
     async unwrap(wallet: Wallet, cAddress: string, amount: bigint): Promise<void> {
         let wnat = await this._registry.getWNat()
-        let unsignedTx = await wnat.getUnwrapTx(cAddress, amount)
+        let data = wnat.withdraw(amount)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, wnat.address, data)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.UNWRAP_NAT)
     }
 
@@ -61,7 +74,8 @@ export class Transactions extends NetworkBased {
         wallet: Wallet, cAddress: string, recipient: string, amount: bigint
     ): Promise<void> {
         let wnat = await this._registry.getWNat()
-        let unsignedTx = await wnat.getTransferTx(cAddress, recipient, amount)
+        let data = wnat.transfer(recipient, amount)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, wnat.address, data)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.TRANSFER_NAT)
     }
 
@@ -71,7 +85,8 @@ export class Transactions extends NetworkBased {
         let flareDrop = await this._registry.getFlareDropDistribution()
         let claimableMonths = await flareDrop.getClaimableMonths()
         let lastClaimableMonth = claimableMonths[1]
-        let unsignedTx = await flareDrop.claim(cAddress, rewardOwner, recipient, lastClaimableMonth, wrap)
+        let data = flareDrop.claim(rewardOwner, recipient, lastClaimableMonth, wrap)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, flareDrop.address, data)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_REWARD_FLAREDROP)
     }
 
@@ -81,7 +96,8 @@ export class Transactions extends NetworkBased {
         let manager = await this._registry.getValidatorRewardManager()
         let state = await manager.getStateOfRewards(rewardOwner)
         let rewardAmount = state[0] - state[1]
-        let unsignedTx = await manager.claim(cAddress, rewardOwner, recipient, rewardAmount, wrap)
+        let data = manager.claim(rewardOwner, recipient, rewardAmount, wrap)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, manager.address, data)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_REWARD_STAKING)
     }
 
@@ -113,7 +129,8 @@ export class Transactions extends NetworkBased {
         } else {
             rewardEpochId = proofs.reduce((v, p) => { let id = p.body.rewardEpochId; return id > v ? id : v }, BigInt(0))
         }
-        let unsignedTx = await manager.claim(cAddress, rewardOwner, recipient, rewardEpochId, wrap, proofs)
+        let data = manager.claim(rewardOwner, recipient, rewardEpochId, wrap, proofs)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, manager.address, data)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_REWARD_FTSO)
     }
 
@@ -127,19 +144,73 @@ export class Transactions extends NetworkBased {
                 await this.undelegateFromFtso(wallet, cAddress)
             }
             for (let i = 0; i < delegates.length; i++) {
-                let unsignedTx = await wnat.getDelegateTx(cAddress, delegates[i], sharesBP[i])
+                let data = wnat.delegate(delegates[i], sharesBP[i])
+                let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, wnat.address, data)
                 await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.DELEGATE_FTSO)
             }
         } else {
-            let unsignedTx = await wnat.getBatchDelegateTx(cAddress, delegates, sharesBP)
+            let data = wnat.batchDelegate(delegates, sharesBP)
+            let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, wnat.address, data)
             await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.DELEGATE_FTSO)
         }
     }
 
     async undelegateFromFtso(wallet: Wallet, cAddress: string): Promise<void> {
         let wnat = await this._registry.getWNat()
-        let unsignedTx = await wnat.getUndelegateTx(cAddress)
+        let data = wnat.undelegateAll()
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, wnat.address, data)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.UNDELEGATE_FTSO)
+    }
+
+    async claimRNatReward(
+        wallet: Wallet,
+        cAddress: string,
+        projectIds: Array<number>
+    ): Promise<void> {
+        let rnat = await this._registry.getRNat()
+        let month = await rnat.getCurrentMonth()
+        let data = rnat.claimRewards(projectIds, month)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, rnat.address, data)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_REWARD_RNAT)
+    }
+
+    async withdrawFromRNatAccount(
+        wallet: Wallet,
+        cAddress: string,
+        amount: bigint,
+        wrap: boolean
+    ): Promise<void> {
+        let rnat = await this._registry.getRNat()
+        let data = rnat.withdraw(amount, wrap)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, rnat.address, data)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.WITHDRAW_RNAT)
+    }
+
+    async withdrawAllFromRNatAccount(
+        wallet: Wallet,
+        cAddress: string,
+        wrap: boolean
+    ): Promise<void> {
+        let rnat = await this._registry.getRNat()
+        let data = rnat.withdrawAll(wrap)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, rnat.address, data)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.WITHDRAW_RNAT)
+    }
+
+    async createSafeSmartAccount(
+        wallet: Wallet,
+        cAddress: string,
+        owners: Array<string>,
+        threshold: bigint
+    ): Promise<string> {
+        let proxyFactory = new SafeProxyFactory(this._core, this._core.const.address_SafeProxyFactory)
+        let singleton = this._core.const.address_SafeSingleton
+        let fallbackHandler = this._core.const.address_SafeFallbackHandler
+        let saltNonce = BigInt(Math.floor(Math.random() * 1e6))
+        let data = proxyFactory.createProxy(singleton, owners, threshold, fallbackHandler, saltNonce)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, proxyFactory.address, data)
+        let receipt = await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CREATE_SAFE_SMART_ACCOUNT)
+        return receipt.logs[0].address
     }
 
     async invokeContractMethod(
@@ -153,7 +224,8 @@ export class Transactions extends NetworkBased {
     ): Promise<void> {
         let contractAddress = Account.isCAddress(contract) ? contract : await this._registry.getAddress(contract)
         let generic = new GenericContract(this._core, contractAddress)
-        let unsignedTx = await generic.getTx(cAddress, abi, method, value, ...params)
+        let data = generic.getData(abi, method, ...params)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, generic.address, data, value)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CUSTOM_CONTRACT_C)
     }
 
@@ -191,13 +263,13 @@ export class Transactions extends NetworkBased {
         cAddress: string,
         unsignedTx: EvmTx,
         txType: string
-    ): Promise<void> {
+    ): Promise<TransactionReceipt | null> {
         let unsignedTxHex = unsignedTx.unsignedSerialized
 
         if (this._core.beforeTxSignature) {
             let proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex })
             if (!proceed) {
-                return
+                return null
             }
         }
 
@@ -217,7 +289,7 @@ export class Transactions extends NetworkBased {
                 let signedTxHex = tx.serialized
                 let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId: tx.hash })
                 if (!proceed) {
-                    return
+                    return null
                 }
             }
 
@@ -228,7 +300,7 @@ export class Transactions extends NetworkBased {
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
             if (!proceed) {
-                return
+                return null
             }
         }
 
@@ -245,6 +317,7 @@ export class Transactions extends NetworkBased {
         } else {
             throw new Error(`Transaction ${txType} with id ${txId} not confirmed`)
         }
+        return receipt
     }
 
     private async _signAndSubmitAvaxTx(
@@ -253,7 +326,7 @@ export class Transactions extends NetworkBased {
         unsignedTx: AvaxTx,
         txType: string
     ): Promise<void> {
-        let unsignedTxHex = Utils.addHexPrefix(unsignedTx.toBuffer().toString("hex"))
+        let unsignedTxHex = ethers.hexlify(unsignedTx.toBytes())
 
         if (this._core.beforeTxSignature) {
             let proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex })
@@ -262,27 +335,32 @@ export class Transactions extends NetworkBased {
             }
         }
 
-        let unsignedHashes = unsignedTx.prepareUnsignedHashes(undefined as any)
-        let digest = Utils.addHexPrefix(unsignedHashes[0].message)
+        let digest = ethers.hexlify(messageHashFromUnsignedTx(unsignedTx))
         let signature = await Signature.signAvaxTx(wallet, unsignedTxHex, digest, account.publicKey)
 
-        let signatures = Array(unsignedHashes.length).fill(this._getEcdsaSignature(signature))
-        let prefixedPublicKey = `${PublicKeyPrefix}${Utils.removeHexPrefix(account.publicKey)}`
-        let kc = this._core.avalanche.CChain().keyChain()
-        kc.importKey(prefixedPublicKey)
-        let tx = unsignedTx.signWithRawSignatures(signatures, kc)
+        let compressedPublicKey = Account.getPublicKey(account.publicKey, true)
+        let coordinates = unsignedTx.getSigIndicesForPubKey(ethers.getBytes(compressedPublicKey))
+        if (coordinates) {
+            let sig = ethers.Signature.from(signature)
+            let sigBytes = ethers.getBytes(ethers.concat([sig.r, sig.s, `0x0${sig.yParity}`]))
+            coordinates.forEach(([index, subIndex]) => {
+                unsignedTx.addSignatureAt(sigBytes, index, subIndex)
+            })
+        }
+        let tx = unsignedTx.getSignedTx().toBytes()
 
         if (this._core.beforeTxSubmission) {
-            let signedTxHex = `0x${tx.toBuffer().toString("hex")}`
-            let txHash = ethers.sha256(signedTxHex).slice(2)
-            let txId = Serialization.getInstance().bufferToType(Buffer.from(txHash, "hex") as any, "cb58")
+            let signedTxHex = ethers.hexlify(tx)
+            let txHash = ethers.sha256(signedTxHex)
+            let txId = base58.encode(futils.addChecksum(ethers.getBytes(txHash)))
             let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId })
             if (!proceed) {
                 return
             }
         }
 
-        let txId = await this._core.avalanche.CChain().issueTx(tx)
+        let txIssueResponse = await this._core.flarejs.evmApi.issueTx({ tx: ethers.hexlify(futils.addChecksum(tx)) })
+        let txId = txIssueResponse.txID
 
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
@@ -294,7 +372,8 @@ export class Transactions extends NetworkBased {
         let status = "Unknown"
         let start = Date.now()
         while (Date.now() - start < this._core.const.txConfirmationTimeout) {
-            status = await this._core.avalanche.CChain().getAtomicTxStatus(txId)
+            let statusResponse = await this._core.flarejs.evmApi.getAtomicTxStatus(txId)
+            status = statusResponse.status
             await Utils.sleep(this._core.const.txConfirmationCheckout)
             if (status === "Accepted" || status === "Rejected") {
                 if (this._core.afterTxConfirmation) {
@@ -307,14 +386,6 @@ export class Transactions extends NetworkBased {
         if (status !== "Accepted") {
             throw new Error(`Transaction ${txType} with id ${txId} not confirmed (status is ${status})`)
         }
-    }
-
-    private _getEcdsaSignature(signature: string): EcdsaSignature {
-        let sig = ethers.Signature.from(signature)
-        let r = new BN(Utils.removeHexPrefix(sig.r), "hex")
-        let s = new BN(Utils.removeHexPrefix(sig.s), "hex")
-        let recoveryParam = sig.yParity
-        return { r, s, recoveryParam }
     }
 
 }

@@ -1,11 +1,13 @@
 import { Account } from "../account"
-import { FtsoDelegate, FtsoRewardState } from "../iotype"
+import { FtsoDelegate, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, StakeLimits } from "../iotype"
 import { FlareContract } from "../contract"
 import { NetworkCore, NetworkBased } from "../core"
 import { Utils } from "../utils"
 import { GenericContract } from "./contract/generic"
 import { ContractRegistry } from "./contract/registry"
 import { Transactions } from "./tx"
+import { utils as futils } from "@flarenetwork/flarejs"
+import { SafeProxy as SafeProxy } from "./contract/safe_proxy"
 
 export class CChain extends NetworkBased {
 
@@ -30,13 +32,21 @@ export class CChain extends NetworkBased {
     }
 
     async getBalanceNotImportedToC(pAddress: string): Promise<bigint> {
-        let pBlockchainId = this._core.pBlockchainId
-        let pAssetId = this._core.pAssetId
+        let pBlockchainId = await this._core.flarejs.getPBlockchainId()
+        let assetId = await this._core.flarejs.getAssetId()
         let pAddressForC = `C-${pAddress}`
-        let pAddressHex = Utils.removeHexPrefix(Account.pAddressToHex(pAddress))
-        let response = await this._core.avalanche.CChain().getUTXOs(pAddressForC, pBlockchainId)
-        let balance = response.utxos.getBalance([Buffer.from(pAddressHex, "hex")], pAssetId)
-        return Utils.toBigint(balance) * BigInt(1e9)
+        let response = await this._core.flarejs.evmApi.getUTXOs({ addresses: [pAddressForC], sourceChain: pBlockchainId })
+        let balance = BigInt(0)
+        for (let utxo of response.utxos) {
+            if (utxo.getAssetId() !== assetId) {
+                continue
+            }
+            let out = utxo.output
+            if (futils.isTransferOut(out)) {
+                balance += out.amount()
+            }
+        }
+        return balance * BigInt(1e9)
     }
 
     async getClaimableFlareDropReward(address: string): Promise<bigint> {
@@ -82,30 +92,47 @@ export class CChain extends NetworkBased {
         return wnat.delegatesOf(cAddress)
     }
 
-    async verifyStakeParameters(
-        amount: bigint, startTime: bigint, endTime: bigint
-    ): Promise<void> {
+    async getStakeLimits(): Promise<StakeLimits> {
         let stakeVerifier = await this._registry.getStakeVerifier()
-
+        let minStakeDuration = await stakeVerifier.minStakeDurationSeconds()
+        let maxStakeDuration = await stakeVerifier.maxStakeDurationSeconds()
         let minStakeAmount = await stakeVerifier.minStakeAmount()
-        if (amount < minStakeAmount) {
-            throw new Error(`The minimal staking amount is ${minStakeAmount} weis`)
-        }
-
+        let minStakeAmountDelegator = minStakeAmount
+        let minStakeAmountValidator = minStakeAmount     
         let maxStakeAmount = await stakeVerifier.maxStakeAmount()
-        if (amount > maxStakeAmount) {
-            throw new Error(`The maximal staking amount is ${maxStakeAmount} weis`)
-        }
+        return { minStakeDuration, maxStakeDuration, minStakeAmountDelegator, minStakeAmountValidator, maxStakeAmount }                
+    }
 
-        let minStakeDurationSeconds = await stakeVerifier.minStakeDurationSeconds()
-        if (startTime + minStakeDurationSeconds > endTime) {
-            throw new Error(`The minimal stake duration is ${minStakeDurationSeconds} seconds`)
-        }
+    async getRNatProjects(): Promise<Array<RNatProject>> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getProjectsBasicInfo()
+    }
 
-        let maxStakeDurationSeconds = await stakeVerifier.maxStakeDurationSeconds()
-        if (startTime + maxStakeDurationSeconds < endTime) {
-            throw new Error(`The maximal stake duration is ${maxStakeDurationSeconds} seconds`)
-        }
+    async getRNatProjectInfo(projectId: number): Promise<RNatProjectInfo> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getProjectInfo(projectId)
+    }
+
+    async getClaimableRNatReward(projectId: number, owner: string): Promise<bigint> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getClaimableRewards(projectId, owner)
+    }
+
+    async getRNatAccount(owner: string): Promise<string> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getRNatAccount(owner)
+    }
+
+    async getRNatAccountBalance(owner: string): Promise<RNatAccountBalance> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getBalancesOf(owner)
+    }
+
+    async getSafeSmartAccountInfo(address: string): Promise<SafeSmartAccount> {
+        let proxy = new SafeProxy(this._core, address)
+        let owners = await proxy.getOwners()
+        let threshold = await proxy.getThreshold()
+        return { address, owners, threshold }
     }
 
     async invokeContractCall(

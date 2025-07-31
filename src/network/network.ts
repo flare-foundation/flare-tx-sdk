@@ -5,8 +5,9 @@ import { NetworkCore, NetworkBased } from "./core"
 import { PChain } from "./pchain"
 import { AfterTxSubmissionCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
 import { Constants } from "./constants"
-import { Balance, FtsoDelegate as FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, Stake } from "./iotype"
+import { Balance, FtsoDelegate as FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, Stake, StakeLimits } from "./iotype"
 import { FlareContract } from "./contract"
+import { Utils } from "./utils"
 
 /**
  * The main class used for interaction with the Flare network.
@@ -106,6 +107,54 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Returns rNat account address.
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The C-chain address in hexadecimal encoding of the rNat account associated
+     * with the public key or address.
+     */
+    async getRNatAccount(publicKeyOrAddress: string): Promise<string> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getRNatAccount(cAddress)
+    }
+
+    /**
+     * Returns balance of the rNat account.
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The object of type {@link RNatAccountBalance} containing the balance
+     * information about the rNat account associated with the public key or address.
+     */
+    async getRNatAccountBalance(publicKeyOrAddress: string): Promise<RNatAccountBalance> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getRNatAccountBalance(cAddress)
+    }
+
+    /**
+     * Returns balance of unlocked wrapped tokens on an rNat account.
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The balance in wei of the rNat account associated with the public key or address.
+     */
+    async getUnlockedBalanceWrappedOnRNatAccount(publicKeyOrAddress: string): Promise<bigint> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        let balance = await this._cchain.getRNatAccountBalance(cAddress)
+        return balance.wNatBalance - balance.lockedBalance
+    }
+
+    /**
+     * Returns balance of locked wrapped tokens on an rNat account.
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The balance in wei of the rNat account associated with the public key or address.
+     */
+    async getLockedBalanceWrappedOnRNatAccount(publicKeyOrAddress: string): Promise<bigint> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        let balance = await this._cchain.getRNatAccountBalance(cAddress)
+        return balance.lockedBalance
+    }
+
+    /**
      * Returns balance on the P-chain.
      * @param publicKey A public key in hexadecimal encoding.
      * @returns The balance in wei corresponding to the public key.
@@ -158,6 +207,21 @@ export class Network extends NetworkBased {
         } else {
             return this._pchain.getStakes()
         }
+    }
+
+    /**
+     * Returns information about stake limits on the P-chain
+     * @returns An object of type {@link StakeLimits}
+     */
+    async getStakeLimits(): Promise<StakeLimits> {
+        let csl = await this._cchain.getStakeLimits()        
+        let psl = await this._pchain.getStakeLimits()
+        let minStakeDuration = Utils.max(csl.minStakeDuration, psl.minStakeDuration)
+        let maxStakeDuration = Utils.min(csl.maxStakeDuration, psl.maxStakeDuration)
+        let minStakeAmountDelegator = Utils.max(csl.minStakeAmountDelegator, psl.minStakeAmountDelegator)
+        let minStakeAmountValidator = Utils.max(csl.minStakeAmountValidator, psl.minStakeAmountValidator)
+        let maxStakeAmount = Utils.min(csl.maxStakeAmount, psl.maxStakeAmount)
+        return { minStakeDuration, maxStakeDuration, minStakeAmountDelegator, minStakeAmountValidator, maxStakeAmount }
     }
 
     /**
@@ -219,6 +283,37 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Returns rNat projects.
+     * @returns The array of objects of type {@link RNatProject} that contains basic information
+     * about the rNat projects.
+     */
+    async getRNatProjects(): Promise<Array<RNatProject>> {
+        return this._cchain.getRNatProjects()        
+    }
+
+    /**
+     * Returns rNat project information.
+     * @param projectId A project id number.
+     * @returns The object of type {@link RNatProjectInfo} that contains detailed information
+     * about the rNat project with the given project id.
+     */
+    async getRNatProjectInfo(projectId: number): Promise<RNatProjectInfo> {
+        return this._cchain.getRNatProjectInfo(projectId)
+    }
+
+    /**
+     * Returns the amount of claimable rNat reward for the given project and owner.
+     * @param projectId A project id number
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The reward in wei corresponding to the project and public key or address.
+     */
+    async getClaimableRNatReward(projectId: number, publicKeyOrAddress: string): Promise<bigint> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getClaimableRNatReward(projectId, cAddress)
+    }
+
+    /**
      * Transfers wallet funds to a given recipient on the C-chain.
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getCAddress` or `getPublicKey`, and
@@ -267,7 +362,7 @@ export class Network extends NetworkBased {
      */
     async unwrapToNative(wallet: Wallet, amount?: bigint): Promise<void> {
         let cAddress = await this._getCAddress(wallet)
-        amount = amount ?? await this.getBalanceWrappedOnC(cAddress)
+        amount = amount ?? await this.getBalanceWrappedOnC(wallet.smartAccount ?? cAddress)
         await this._cchain.tx.unwrap(wallet, cAddress, amount)
     }
 
@@ -337,6 +432,77 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Claims entire claimable reward from rNat projects to the rNat account corresponding to the
+     * wallet's C-chain address.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param projectIds An array of project ids to claim for.
+     */
+    async claimRNatReward(wallet: Wallet, projectIds: Array<number>): Promise<void> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.claimRNatReward(wallet, cAddress, projectIds)
+    }
+
+    /**
+     * Withdraws unlocked wrapped funds from an rNat account to its owner.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param amount An amount in wei to be withdrawn from the rNat account associated with the wallet's C-chain address
+     * (optional, entire unlocked wrapped rNat account balance by default).
+     * @param wrap A boolean indicating if the withdrawn amount is to be wrapped (optional, false by default).
+     */
+    async withdrawFromRNatAccount(wallet: Wallet, amount?: bigint, wrap?: boolean): Promise<void> {
+        let cAddress = await this._getCAddress(wallet)
+        if (!amount) {
+            let balance = await this._cchain.getRNatAccountBalance(cAddress)
+            amount = balance.wNatBalance - balance.lockedBalance
+        }
+        return this._cchain.tx.withdrawFromRNatAccount(wallet, cAddress, amount, wrap ?? false)
+    }
+
+    /**
+     * Withdraws unlocked and locked wrapped funds from an rNat account to its owner.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     @param wrap A boolean indicating if the withdrawn amount is to be wrapped (optional, false by default).
+     @remarks If some tokens are still locked, only 50% of them will be withdrawn, the rest will be burned as a penalty.
+     */
+    async withdrawAllFromRNatAccount(wallet: Wallet, wrap?: boolean): Promise<void> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.withdrawAllFromRNatAccount(wallet, cAddress, wrap ?? false)
+    }
+
+    /**
+     * Returns the information about an existing Safe smart account.
+     * @param address A C-chain address representing the smart account.
+     * @returns An object of type {@link SafeSmartAccount}.
+     */
+    async getSafeSmartAccount(address: string): Promise<SafeSmartAccount> {
+        return this._cchain.getSafeSmartAccountInfo(address)
+    }
+
+    /**
+     * Creates a new Safe smart account and returns its address
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param owners An array of C-chain addresses representing the owners of the smart account.
+     * @param threshold An integer representing the threshold of the smart account.
+     * @returns A string representing the C-chain address of the smart account.
+     */
+    async createSafeSmartAccount(
+        wallet: Wallet,
+        owners: Array<string>,
+        threshold: bigint
+    ): Promise<string> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.createSafeSmartAccount(wallet, cAddress, owners, threshold)
+    }
+
+    /**
      * Gets a list of all official Flare network contracts.
      * @returns The array of type {@link FlareContract}.
      */
@@ -397,7 +563,7 @@ export class Network extends NetworkBased {
         this._shouldBeGweiInteger(amount)
         let account = await this._getAccount(wallet)
 
-        let importFee = this.getDefaultTxFeeOnP()
+        let importFee = await this.getBaseTxFeeOnP()
         let notImportedToP = await this._pchain.getBalanceNotImportedToP(account.pAddress)
         if (notImportedToP < amount + importFee) {
             let amountToExport = amount + importFee - notImportedToP
@@ -435,7 +601,7 @@ export class Network extends NetworkBased {
             amountToExport = amount - notImportedToC
         } else {
             let balance = await this._pchain.getBalance(account.pAddress)
-            let exportFee = this.getDefaultTxFeeOnP()
+            let exportFee = await this.getBaseTxFeeOnP()
             amountToExport = balance - exportFee
         }
         if (amountToExport > BigInt(0)) {
@@ -456,7 +622,7 @@ export class Network extends NetworkBased {
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getPublicKey`, and
      * - the function `signPTransaction`, `signDigest` or `signEthMessage`.
-     * @param amount An amount in qwei to be exported.
+     * @param amount An amount in wei to be exported.
      * @param baseFee A base C-chain transaction fee in wei to be used for transaction (optional).
      */
     async exportFromC(wallet: Wallet, amount: bigint, baseFee?: bigint): Promise<void> {
@@ -484,11 +650,26 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Transfers wallet funds on the P-chain from one address to another.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getPublicKey`, and
+     * - the function `signPTransaction`, `signDigest` or `signEthMessage`.
+     * @param recipient The P-chain address of the recipient in bech32 encoding.
+     * @param amount An amount in wei to be transferred.
+     * If amount is not provided, the entire P-chain balance of the wallet is transferred.
+     */
+    async transferOnP(wallet: Wallet, recipient: string, amount?: bigint): Promise<void> {
+        this._shouldBeGweiInteger(amount)
+        let account = await this._getAccount(wallet)
+        await this._pchain.tx.transfer(wallet, account, recipient, amount)
+    }
+
+    /**
      * Exports wallet funds from the P-chain address.
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getPublicKey`, and
      * - the function `signPTransaction`, `signDigest` or `signEthMessage`.
-     * @param amount An amount in qwei to be exported.
+     * @param amount An amount in wei to be exported.
      */
     async exportFromP(wallet: Wallet, amount: bigint): Promise<void> {
         this._shouldBeGweiInteger(amount)
@@ -516,16 +697,23 @@ export class Network extends NetworkBased {
      * @param nodeId The code of the validator's node to delegate to.
      * @param startTime The seconds from the Unix epoch marking the start of the delegation.
      * @param endTime The seconds from the Unix epoch marking the end of the delegation.
+     * If the value is not provided, it is set to be equal to the validator's end time.
      */
     async delegateOnP(
         wallet: Wallet,
         amount: bigint,
         nodeId: string,
         startTime: bigint,
-        endTime: bigint
+        endTime?: bigint
     ): Promise<void> {
         this._shouldBeGweiInteger(amount)
-        await this._cchain.verifyStakeParameters(amount, startTime, endTime)
+        if (!endTime) {
+            let validator = await this._pchain.getValidator(nodeId)
+            if (!validator) {
+                throw new Error("Validator with the specified node id does not exist")
+            }
+            endTime = validator.endTime
+        }
         let account = await this._getAccount(wallet)
 
         let balanceOnP = await this._pchain.getBalance(account.pAddress)
@@ -588,11 +776,11 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns the default transaction fee on the P-chain
+     * Returns the base transaction fee on the P-chain
      * @returns The default fee in wei.
      */
-    getDefaultTxFeeOnP(): bigint {
-        return this._pchain.tx.getDefaultTxFee()
+    async getBaseTxFeeOnP(): Promise<bigint> {
+        return this._pchain.tx.getBaseTxFee()
     }
 
     /**
@@ -632,7 +820,7 @@ export class Network extends NetworkBased {
 
     private async _getCAddress(wallet: Wallet): Promise<string> {
         if (wallet.getCAddress) {
-            return wallet.getCAddress()
+            return Account.normalizedCAddress(await wallet.getCAddress())
         } else if (wallet.getPublicKey) {
             let publicKey = await wallet.getPublicKey()
             return Account.getCAddress(publicKey)

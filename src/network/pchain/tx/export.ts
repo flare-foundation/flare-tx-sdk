@@ -1,27 +1,22 @@
-import { BN } from "@flarenetwork/flarejs"
+import { TransferableOutput, UnsignedTx, utils as futils } from "@flarenetwork/flarejs"
 import { NetworkBased } from "../../core"
-import { UnsignedTx } from "@flarenetwork/flarejs/dist/apis/platformvm"
-import { UnixNow } from "@flarenetwork/flarejs/dist/utils"
-import { Utils } from "../../utils"
 
 export class Export extends NetworkBased {
 
     async getTx(pAddress: string, amount: bigint): Promise<UnsignedTx> {
-        let destinationChain = this._core.cBlockchainId
-        let pChainAddressForC = `C-${pAddress}`
-        let pChainAddressForP = `P-${pAddress}`
-        let utxosData = await this._core.avalanche.PChain().getUTXOs(pChainAddressForP)
-        return this._core.avalanche.PChain().buildExportTx(
+        let cBlockchainId = await this._core.flarejs.getCBlockchainId()
+        let assetId = await this._core.flarejs.getAssetId()        
+        let pAddressForP = `P-${pAddress}`
+        let pAddressBytes = futils.bech32ToBytes(pAddressForP)
+        let utxosData = await this._core.flarejs.pvmApi.getUTXOs({ addresses: [pAddressForP] })
+        let output = TransferableOutput.fromNative(assetId, amount / BigInt(1e9), [pAddressBytes])
+        return this._core.flarejs.pvm.newExportTx(
+            this._core.flarejs.context,
+            cBlockchainId,
+            [pAddressBytes],
             utxosData.utxos,
-            Utils.toBn(amount / BigInt(1e9)),
-            destinationChain,
-            [pChainAddressForC],
-            [pChainAddressForP],
-            [pChainAddressForP],
-            undefined,
-            UnixNow(),
-            new BN(0),
-            1
+            [output],
+            { locktime: BigInt(0), threshold: 1 }
         )
     }
 

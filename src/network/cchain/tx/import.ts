@@ -1,13 +1,11 @@
-import { UnsignedTx } from "@flarenetwork/flarejs/dist/apis/evm";
 import { NetworkBased } from "../../core";
-import { costImportTx } from "@flarenetwork/flarejs/dist/utils";
-import { Utils } from "../../utils";
+import { EVMUnsignedTx, utils as futils } from "@flarenetwork/flarejs";
 
 export class Import extends NetworkBased {
 
     async getTx(
         cAddress: string, pAddress: string, baseFee: bigint
-    ): Promise<UnsignedTx> {
+    ): Promise<EVMUnsignedTx> {
         let fee = await this._getTxFee(cAddress, pAddress, baseFee / BigInt(1e9))
         return this._getTx(cAddress, pAddress, fee)
     }
@@ -15,7 +13,7 @@ export class Import extends NetworkBased {
     private async _getTxFee(
         cAddress: string, pAddress: string, baseFee: bigint
     ): Promise<bigint> {
-        let cost = costImportTx(await this._getTx(cAddress, pAddress, BigInt(0)))
+        let cost = futils.costCorethTx(await this._getTx(cAddress, pAddress, BigInt(0)))
         return baseFee * BigInt(cost)
     }
     
@@ -23,17 +21,17 @@ export class Import extends NetworkBased {
         cAddress: string,
         pAddress: string,
         importFee: bigint
-    ): Promise<UnsignedTx> {
-        let sourceChain = this._core.pBlockchainId
+    ): Promise<EVMUnsignedTx> {
         let pAddressForC = `C-${pAddress}`
-        let utxosData = await this._core.avalanche.CChain().getUTXOs(pAddressForC, sourceChain)
-        return await this._core.avalanche.CChain().buildImportTx(
+        let pBlockchainId = await this._core.flarejs.getPBlockchainId()
+        let utxosData = await this._core.flarejs.evmApi.getUTXOs({ addresses: [pAddressForC], sourceChain: "P" })
+        return await this._core.flarejs.evm.newImportTx(
+            this._core.flarejs.context,
+            futils.hexToBuffer(cAddress),
+            [futils.bech32ToBytes(`C-${pAddress}`)],
             utxosData.utxos,
-            cAddress,
-            [pAddressForC],
-            sourceChain,
-            [pAddressForC],
-            Utils.toBn(importFee)
+            pBlockchainId,
+            importFee
         )
     }
 
