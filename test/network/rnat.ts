@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "assert";
 import { TestEnvironment } from "./env"
-import { RNatProject } from "src";
+import { RNatProject } from "../../src";
 
 export function runRNatTests(env: TestEnvironment): void {
     describe("RNat tests", function () {
@@ -16,7 +16,7 @@ export function runRNatTests(env: TestEnvironment): void {
 
         it("project info", async (t) => {
             if (projects.length == 0) {
-                t.skip("No RNat projects found")
+                t.skip("No RNat project found")
                 return
             }
             let info = await network.getRNatProjectInfo(projects[0].id)

@@ -11,7 +11,7 @@ import { EVMUnsignedTx as AvaxTx, messageHashFromUnsignedTx, utils as futils } f
 import { ContractRegistry } from "../contract/registry";
 import { GenericContract } from "../contract/generic";
 import { Constants } from "../../constants";
-import { FtsoRewardClaimWithProof } from "src/network/iotype";
+import { FtsoRewardClaimWithProof, FoundationProposalSupport } from "src/network/iotype";
 import { base58 } from "@scure/base";
 import { SafeProxyFactory } from "../contract/safe_proxy_factory";
 import { Evm } from "./evm";
@@ -211,6 +211,32 @@ export class Transactions extends NetworkBased {
         let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, proxyFactory.address, data)
         let receipt = await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CREATE_SAFE_SMART_ACCOUNT)
         return receipt.logs[0].address
+    }
+
+    async castVoteForFoundationProposal(
+        wallet: Wallet,
+        cAddress: string,
+        proposalId: bigint,
+        support: FoundationProposalSupport
+    ): Promise<void> {
+        let polling = await this._registry.getPollingFoundation()
+        let data = polling.castVote(proposalId, support)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, polling.address, data)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.FOUNDATION_PROPOSAL_VOTE)
+    }
+
+    async delegateGovernanceVotePower(wallet: Wallet, cAddress: string, delegate: string): Promise<void> {
+        let vp = await this._registry.getGovernanceVotePower()
+        let data = vp.delegate(delegate)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, vp.address, data)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.DELEGATE_GOVERNANCE_VOTE_POWER)
+    }
+
+    async undelegateGovernanceVotePower(wallet: Wallet, cAddress: string): Promise<void> {
+        let vp = await this._registry.getGovernanceVotePower()
+        let data = vp.undelegate()
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, vp.address, data)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.UNDELEGATE_GOVERNANCE_VOTE_POWER)
     }
 
     async invokeContractMethod(

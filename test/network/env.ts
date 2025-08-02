@@ -48,6 +48,19 @@ export class TestEnvironment {
         return this.network.getPAddress(this._key(keyIndex))
     }
 
+    async waitForNextBlockOnC(): Promise<void> {
+        let block = await this.network.getCurrentBlockOnC()
+        let nextBlock = block
+        while (nextBlock <= block) {
+            await this.sleep(500)
+            nextBlock = await this.network.getCurrentBlockOnC()
+        }
+    }
+
+    async sleep(ms: number): Promise<void> {
+        await new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     private _key(keyIndex?: number): string {
         return this._privateKeys[keyIndex ?? 0]
     }

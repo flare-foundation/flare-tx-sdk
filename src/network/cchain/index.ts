@@ -1,5 +1,5 @@
 import { Account } from "../account"
-import { FtsoDelegate, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, StakeLimits } from "../iotype"
+import { FtsoDelegate, FtsoRewardState, FoundationProposalInfo, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, StakeLimits, FoundationProposalState } from "../iotype"
 import { FlareContract } from "../contract"
 import { NetworkCore, NetworkBased } from "../core"
 import { Utils } from "../utils"
@@ -20,6 +20,10 @@ export class CChain extends NetworkBased {
     tx: Transactions
 
     private _registry: ContractRegistry
+
+    async getCurrentBlock(): Promise<number> {
+        return this._core.ethers.getBlockNumber()
+    }
 
     async getBalance(cAddress: string): Promise<bigint> {
         let weiBalance = await this._core.ethers.getBalance(cAddress)
@@ -133,6 +137,51 @@ export class CChain extends NetworkBased {
         let owners = await proxy.getOwners()
         let threshold = await proxy.getThreshold()
         return { address, owners, threshold }
+    }
+
+    async getFoundationProposalIds(): Promise<Array<bigint>> {
+        let polling = await this._registry.getPollingFoundation()
+        return polling.getProposalIds()
+    }
+
+    async getFoundationProposalInfo(proposalId: bigint): Promise<FoundationProposalInfo> {
+        let polling = await this._registry.getPollingFoundation()
+        let info = await polling.getProposalInfo(proposalId)
+        info.state = await polling.getProposalState(proposalId)
+        if (info.state !== FoundationProposalState.PENDING) {
+            let votes = await polling.getProposalVotes(proposalId)
+            info.votePowerFor = votes[0]
+            info.votePowerAgainst = votes[1]
+        }
+        return info
+    }
+
+    async getVotePowerForFoundationProposal(voter: string, proposalId: bigint): Promise<bigint> {
+        let polling = await this._registry.getPollingFoundation()
+        let info = await polling.getProposalInfo(proposalId)
+        return polling.getVotes(voter, info.votePowerBlock)
+    }
+
+    async getVoteDelegateForFoundationProposal(delegator: string, proposalId: bigint): Promise<string> {
+        let polling = await this._registry.getPollingFoundation()
+        let info = await polling.getProposalInfo(proposalId)
+        let vp = await this._registry.getGovernanceVotePower()
+        return vp.getDelegateOfAt(delegator, info.votePowerBlock)
+    }
+
+    async getCurrentGovernanceVotePower(voter: string): Promise<bigint> {
+        let vp = await this._registry.getGovernanceVotePower()
+        return vp.getVotes(voter)
+    }
+
+    async getCurrentGovernanceVoteDelegate(delegator: string): Promise<string> {
+        let vp = await this._registry.getGovernanceVotePower()
+        return vp.getDelegateOfAtNow(delegator)
+    }
+
+    async hasCastVoteForFoundationProposal(voter: string, proposalId: bigint): Promise<boolean> {
+        let polling = await this._registry.getPollingFoundation()
+        return polling.hasVoted(proposalId, voter)
     }
 
     async invokeContractCall(

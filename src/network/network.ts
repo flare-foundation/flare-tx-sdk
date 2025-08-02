@@ -5,7 +5,7 @@ import { NetworkCore, NetworkBased } from "./core"
 import { PChain } from "./pchain"
 import { AfterTxSubmissionCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
 import { Constants } from "./constants"
-import { Balance, FtsoDelegate as FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, Stake, StakeLimits } from "./iotype"
+import { Balance, FoundationProposalInfo, FoundationProposalSupport, FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, Stake, StakeLimits } from "./iotype"
 import { FlareContract } from "./contract"
 import { Utils } from "./utils"
 
@@ -214,7 +214,7 @@ export class Network extends NetworkBased {
      * @returns An object of type {@link StakeLimits}
      */
     async getStakeLimits(): Promise<StakeLimits> {
-        let csl = await this._cchain.getStakeLimits()        
+        let csl = await this._cchain.getStakeLimits()
         let psl = await this._pchain.getStakeLimits()
         let minStakeDuration = Utils.max(csl.minStakeDuration, psl.minStakeDuration)
         let maxStakeDuration = Utils.min(csl.maxStakeDuration, psl.maxStakeDuration)
@@ -288,7 +288,7 @@ export class Network extends NetworkBased {
      * about the rNat projects.
      */
     async getRNatProjects(): Promise<Array<RNatProject>> {
-        return this._cchain.getRNatProjects()        
+        return this._cchain.getRNatProjects()
     }
 
     /**
@@ -500,6 +500,124 @@ export class Network extends NetworkBased {
     ): Promise<string> {
         let cAddress = await this._getCAddress(wallet)
         return this._cchain.tx.createSafeSmartAccount(wallet, cAddress, owners, threshold)
+    }
+
+    /**
+     * Gets a list of foundation proposal ids.
+     * @returns The array of integers representing the ids of the proposals.
+     */
+    async getFoundationProposalIds(): Promise<Array<bigint>> {
+        return this._cchain.getFoundationProposalIds()
+    }
+
+    /**
+     * Gets information about a specific foundation proposal.
+     * @param proposalId An id of proposal.
+     * @returns The object of type {@link FoundationProposalInfo} containing information about
+     * the proposal with the given id.
+     */
+    async getFoundationProposalInfo(proposalId: bigint): Promise<FoundationProposalInfo> {
+        return this._cchain.getFoundationProposalInfo(proposalId)
+    }
+
+    /**
+     * Gets the governance vote power of a voter's vote for a given foundation proposal.
+     * @param publicKeyOrAddress A public key or a C-chain address of the voter in hexadecimal encoding.
+     * @param proposalId An integer representing the id of a foundation proposal.
+     * @returns The integer representing the vote power.
+     */
+    async getVotePowerForFoundationProposal(publicKeyOrAddress: string, proposalId: bigint): Promise<bigint> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getVotePowerForFoundationProposal(cAddress, proposalId)
+    }
+
+    /**
+     * Gets the delegate of a voter for a given foundation proposal, i.e., the address to which the voter's
+     * governance vote power has been delegated at the vote power block of the foundation proposal.
+     * @param publicKeyOrAddress A public key or a C-chain address of the voter in hexadecimal encoding.
+     * @param proposalId An integer representing the id of a foundation proposal.
+     * @returns A string representing the C-chain address of the delegate (zero address indicates no delegate).
+     */
+    async getVoteDelegateForFoundationProposal(publicKeyOrAddress: string, proposalId: bigint): Promise<string> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getVoteDelegateForFoundationProposal(cAddress, proposalId)
+    }
+
+    /**
+     * Gets the current governance vote power of a voter's vote.
+     * @param publicKeyOrAddress A public key or a C-chain address of the voter in hexadecimal encoding.
+     * @returns The integer representing the vote power.
+     */
+    async getCurrentGovernanceVotePower(publicKeyOrAddress: string): Promise<bigint> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getCurrentGovernanceVotePower(cAddress)
+    }
+
+    /**
+     * Gets the current delegate of a voter, i.e., the address to which the voter's governance vote power
+     * is currently delegated.
+     * @param publicKeyOrAddress A public key or a C-chain address of the voter in hexadecimal encoding.
+     * @returns A string representing the C-chain address of the delegate (zero address indicates no delegate).
+     */
+    async getCurrentGovernanceVoteDelegate(publicKeyOrAddress: string): Promise<string> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getCurrentGovernanceVoteDelegate(cAddress)
+    }
+
+    /**
+     * Returns a boolean indicating if a voter has cast vote for a given foundation proposal.
+     * @param publicKeyOrAddress A public key or a C-chain address of the voter in hexadecimal encoding.
+     * @param proposalId An integer representing the id of a foundation proposal.
+     * @returns The boolean indicating if a voter has cast a vote.
+     */
+    async hasCastVoteForFoundationProposal(publicKeyOrAddress: string, proposalId: bigint): Promise<boolean> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.hasCastVoteForFoundationProposal(cAddress, proposalId)
+    }
+
+    /**
+     * Casts a vote for a foundation proposal.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param proposalId An integer representing the id of the foundation proposal.
+     * @param support A value of enum {@link FoundationProposalSupport} representing the support.
+     */
+    async castVoteForFoundationProposal(
+        wallet: Wallet,
+        proposalId: bigint,
+        support: FoundationProposalSupport
+    ): Promise<void> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.castVoteForFoundationProposal(wallet, cAddress, proposalId, support)
+    }
+
+    /**
+     * Delegates governance vote power to the provided delegate.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param delegate A C-chain address of the delegate in hexadecimal notation.
+     */
+    async delegateGovernanceVotePower(wallet: Wallet, delegate: string): Promise<void> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.delegateGovernanceVotePower(wallet, cAddress, delegate)
+    }
+
+    /**
+     * Undelegates governance vote power.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     */
+    async undelegateGovernanceVotePower(wallet: Wallet): Promise<void> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.undelegateGovernanceVotePower(wallet, cAddress)
     }
 
     /**
@@ -765,6 +883,14 @@ export class Network extends NetworkBased {
     async undelegateFromFtso(wallet: Wallet): Promise<void> {
         let cAddress = await this._getCAddress(wallet)
         await this._cchain.tx.undelegateFromFtso(wallet, cAddress)
+    }
+
+    /**
+     * Returns the number of the current block on the C-chain.
+     * @returns Block number.
+     */
+    async getCurrentBlockOnC(): Promise<number> {
+        return this._cchain.getCurrentBlock()
     }
 
     /**

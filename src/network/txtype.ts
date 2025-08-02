@@ -14,6 +14,9 @@ export class TxType {
     static readonly CLAIM_REWARD_RNAT = "claim_reward_rnat"
     static readonly WITHDRAW_RNAT = "withdraw_rnat"
     static readonly CREATE_SAFE_SMART_ACCOUNT = "create_safe_smart_account"
+    static readonly FOUNDATION_PROPOSAL_VOTE = "proposal_vote"
+    static readonly DELEGATE_GOVERNANCE_VOTE_POWER = "delegate_governance_vote_power"
+    static readonly UNDELEGATE_GOVERNANCE_VOTE_POWER = "undelegate_governance_vote_power"
     static readonly CUSTOM_CONTRACT_C = "custom_contract_c"
     static readonly EXPORT_P = "export_p"
     static readonly IMPORT_P = "import_c"
@@ -66,6 +69,15 @@ export class TxType {
             }
             case this.CREATE_SAFE_SMART_ACCOUNT: {
                 return "Create Safe smart account"
+            }
+            case this.FOUNDATION_PROPOSAL_VOTE: {
+                return "Cast vote for a foundation proposal"
+            }
+            case this.DELEGATE_GOVERNANCE_VOTE_POWER: {
+                return "Delegate governance vote power"
+            }
+            case this.UNDELEGATE_GOVERNANCE_VOTE_POWER: {
+                return "Undelegate governance vote power"
             }
             case this.CUSTOM_CONTRACT_C: {
                 return "Custom contract transaction"

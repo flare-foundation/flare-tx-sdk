@@ -7,6 +7,8 @@ import { DistributionToDelegators } from "./flaredrop";
 import { GenericRewardManager } from "./generic_reward_manager";
 import { RewardManager } from "./reward_manager";
 import { RNat } from "./rnat";
+import { PollingFoundation } from "./polling";
+import { GovernanceVotePower } from "./vote_power";
 
 export class ContractRegistry extends EvmContract {
 
@@ -52,6 +54,16 @@ export class ContractRegistry extends EvmContract {
     async getRewardManager(): Promise<RewardManager> {
         let address = await this.getAddress("RewardManager")
         return new RewardManager(this._core, address)
+    }
+
+    async getPollingFoundation(): Promise<PollingFoundation> {
+        let address = await this.getAddress("PollingFoundation")
+        return new PollingFoundation(this._core, address)
+    }
+
+    async getGovernanceVotePower(): Promise<GovernanceVotePower> {
+        let address = await this.getAddress("GovernanceVotePower")
+        return new GovernanceVotePower(this._core, address)
     }
 
     async getStakeVerifier(): Promise<PChainStakeMirrorVerifier> {
