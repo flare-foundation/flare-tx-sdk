@@ -126,10 +126,12 @@ export class Evm extends NetworkBased {
                 throw e
             }
         }
-        let gasLimitExtraFactor = 1 + this._core.const.evmGasLimitExtra
-        let gasLimitExtra = Math.ceil(Number(estimatedGasLimit) * gasLimitExtraFactor)
+        let gasLimitExtraRel = Math.ceil(Number(estimatedGasLimit) * this._core.const.evmGasLimitExtraRel)
+        let gasLimitExtraAbs = Number(this._core.const.evmGasLimitExtraAbs)
+        let gasLimitExtra = Math.max(gasLimitExtraRel, gasLimitExtraAbs)
+        let toppedGasLimit = Number(estimatedGasLimit) + gasLimitExtra
         let gasLimitRoundFactor = 1e3
-        let gasLimit = BigInt(Math.ceil(gasLimitExtra / gasLimitRoundFactor) * gasLimitRoundFactor)
+        let gasLimit = BigInt(Math.ceil(toppedGasLimit / gasLimitRoundFactor) * gasLimitRoundFactor)
         return gasLimit
     }
 

@@ -6,6 +6,7 @@ This is the official Node.js Software Development Kit (SDK) for performing commo
 - [Transferring native and wrapped coins](#coin-transfers-1)
 - [Claiming rewards from FlareDrop, staking, FTSO delegation, and rNat projects](#reward-claims-1)
 - [Delegating to FTSO providers](#delegation-to-ftso-providers-1)
+- [Voting on Flare foundation proposals](#voting-on-flare-foundation-proposals)
 - [Interacting with the C-chain contracts](#c-chain-contracts-1)
 - [Creating and using smart (multisig) accounts](#smart-account)
 - [Staking on the P-chain](#staking-1)
@@ -500,6 +501,76 @@ To undelegate all vote power, use
 ```
 await network.undelegateFromFtso(wallet)
 ```
+
+### Voting on Flare Foundation proposals
+
+Participants in the Flare's networks can vote on proposals issued by the Flare Foundation organization. The governance vote power depends on the amount of wrapped coins and the staking amount of the voter at a particular block related to the proposal (vote power block). A voter can also decide to delegate all the vote power to a different voter.
+
+To obtain Flare Foundation proposals, use
+```
+let proposalIds = await network.getFoundationProposalIds()
+```
+which returns an array of proposal ids. Note that this includes recent proposals, but it is not a complete list of all historical proposals. To obtain detailed information about a proposal with id `proposalId`, use
+```
+let proposalInfo = await network.getFoundationProposalInfo(proposalId)
+```
+which returns an object of type [`FoundationProposalInfo`](src/network/iotype.ts) with properties:
+- `description` The description of the proposal;
+- `state` The state of the proposal:
+    - `FoundationProposalState.PENDING` (`0`) The voting has not yet started;
+    - `FoundationProposalState.ACTIVE` (`1`) The voting is in process;
+    - `FoundationProposalState.DEFEATED` (`2`) The proposal has been unsuccessful;
+    - `FoundationProposalState.SUCCEEDED` (`3`) The proposal has been successful;
+    - `FoundationProposalState.QUEUED` (`4`) The proposal is queued for execution;
+    - `FoundationProposalState.EXPIRED` (`5`) The proposal has expired before it has been executed;
+    - `FoundationProposalState.EXECUTED` (`6`) The proposal has been executed;
+    - `FoundationProposalState.CANCELED` (`7`) The proposal has been canceled;
+- `votePowerFor` The accumulated vote power for the proposal.
+- `votePowerAgainst` The accumulated vote power against the proposal.
+- `proposer` The address of the proposal submitter.
+- `accept` A flag indicating if the proposal is of acceptance type (`true`), i.e., a certain amount of vote power for the proposal must be accumulated for the proposal to be accepted, or rejection type (`false`), i.e., a certain amount of vote power against the proposal must be accumulated for the proposal to be rejected;
+- `votePowerBlock` The block number used to determine the vote powers in voting process;
+- `voteStartTime` The start time (in Unix time) of the proposal voting;
+- `voteEndTime` The end time (in Unix time) of the proposal voting;
+- `thresholdConditionBP` The percentage in base points of the total vote power required for the proposal "quorum";
+- `majorityConditionBP` The percentage in base points of the proper relation between FOR and AGAINST votes;
+- `circulatingSupply` The circulating supply at vote power block.
+
+A vote for a proposal with id `proposalId` can be cast when the state of the proposal is `ACTIVE`. To check if a voter identified by `publicKeyOrAddress` has cast a vote, use
+```
+await network.hasCastVoteForFoundationProposal(publicKeyOrAddress, proposalId)
+```
+A vote can be cast by
+```
+await network.castVoteForFoundationProposal(wallet, proposalId, support)
+```
+where support is either `FoundationProposalSupport.AGAINST` (`0`) or `FoundationProposalSupport.FOR` (`1`).
+
+The governance vote power can be delegated to a different voter identified by the C-chain address `delegate` by
+```
+await network.delegateGovernanceVotePower(wallet, delegate)
+```
+and undelegated by
+```
+await network.undelegateGovernanceVotePower(wallet,)
+```
+
+To check the current governance vote power of a voter identified by `publicKeyOrAddress`, use
+```
+let votePower = await network.getCurrentGovernanceVotePower(publicKeyOrAddress)
+```
+where the resulting `votePower` is the sum of the voter's own vote power and the vote power that is currently delegated to the voter. To obtain the current vote delegate for a given `publicKeyOrAddress`, use
+```
+let delegate = await network.getCurrentGovernanceVoteDelegate(publicKeyOrAddress)
+```
+If `delegate` is zero address, this indicates that there is no delegate. If `delegate` is not zero address, the vote power of the delegator is zero.
+
+It is also possible to obtain the vote power and the delegate of a given account identified by `publicKeyOrAddress` as it has been effective in the voting for a particular proposal with id `proposalId`. In that case, use
+ ```
+let vote power = await network.getVotePowerForFoundationProposal(publicKeyOrAddress, proposalId)
+let delegate = await network.getVoteDelegateForFoundationProposal(publicKeyOrAddress, proposalId)
+ ```
+Note, however, that this query may fail for not so recent proposals as old governance vote power data is being regularly deleted from the C-chain storage.
 
 ### C-chain contracts
 

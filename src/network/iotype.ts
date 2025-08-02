@@ -66,17 +66,26 @@ export type FoundationProposalInfo = {
 /**
  * Foundation proposal states
  */
-export enum FoundationProposalState { PENDING, ACTIVE, DEFEATED, SUCCEEDED, QUEUED, EXPIRED, EXECUTED, CANCELED }
+export enum FoundationProposalState {
+    PENDING = 0,
+    ACTIVE = 1,
+    DEFEATED = 2,
+    SUCCEEDED = 3,
+    QUEUED = 4,
+    EXPIRED = 5,
+    EXECUTED = 6,
+    CANCELED = 7
+}
 
 /**
  * Foundation proposal support
  */
-export enum FoundationProposalSupport { AGAINST, FOR }
+export enum FoundationProposalSupport { AGAINST = 0, FOR = 1 }
 
 /**
  * FTSO reward claim types
  */
-export enum ClaimType { DIRECT, FEE, WNAT, MIRROR, CCHAIN }
+export enum ClaimType { DIRECT = 0, FEE = 1, WNAT = 2, MIRROR = 3, CCHAIN = 4 }
 
 /**
  * The type used for returning FTSO reward state information
