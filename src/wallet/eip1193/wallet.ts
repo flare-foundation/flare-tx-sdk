@@ -90,13 +90,19 @@ export class EIP1193Wallet extends EIP1193Based implements Wallet {
             }
 
             let explorerUrl = chainData.blockExplorerUrls[0]
-            let data = await fetch(`${explorerUrl}api?module=account&action=txlist&address=${this._address}`)
-            let response = await data.json()
+            let response: any
+            try {
+                let data = await fetch(`${explorerUrl}api?module=account&action=txlist&address=${this._address}`)
+                response = await data.json()
+            } catch {
+                continue
+            }
             if (response.status !== "1") {
                 continue
             }
             let txsResponse = response.result as Array<any>
-            let txs = txsResponse.filter((tx: { from: string }) => ethers.getAddress(tx.from) === ethers.getAddress(this._address))
+            let txs = txsResponse
+                .filter((tx: { from: string }) => ethers.getAddress(tx.from) === ethers.getAddress(this._address))
                 .map((tx: { hash: any }) => tx.hash)
             if (txs.length == 0) {
                 continue
