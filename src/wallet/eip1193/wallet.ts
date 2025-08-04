@@ -89,9 +89,9 @@ export class EIP1193Wallet extends EIP1193Based implements Wallet {
                 continue
             }
 
-            let explorerUrl = chainData.blockExplorerUrls[0]
             let response: any
             try {
+                let explorerUrl = chainData.blockExplorerUrls[0]
                 let data = await fetch(`${explorerUrl}api?module=account&action=txlist&address=${this._address}`)
                 response = await data.json()
             } catch {
@@ -109,8 +109,13 @@ export class EIP1193Wallet extends EIP1193Based implements Wallet {
             }
 
             let provider = new JsonRpcProvider(chainData.rpcUrls[0])
-            let txResponse = await provider.getTransaction(txs[0])
-            let tx = Transaction.from(txResponse)
+            let tx: Transaction
+            try {
+                let txResponse = await provider.getTransaction(txs[0])
+                tx = Transaction.from(txResponse)
+            } catch {
+                continue
+            }
             let publicKey = tx.fromPublicKey
             if (ethers.computeAddress(publicKey) !== ethers.getAddress(this._address)) {
                 continue
