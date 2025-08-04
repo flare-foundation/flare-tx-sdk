@@ -1,6 +1,7 @@
 import { Wallet } from "../";
-import { ethers, SigningKey, Transaction } from "ethers";
+import { ethers, JsonRpcProvider, SigningKey, Transaction } from "ethers";
 import { EIP1193Based, EIP1193Core } from "./core";
+import { Chain } from "./chain";
 
 /**
  * The class that implements {@link Wallet} and represents an EIP-1193 account.
@@ -31,11 +32,12 @@ export class EIP1193Wallet extends EIP1193Based implements Wallet {
      */
     async getPublicKey(): Promise<string> {
         if (!this._publicKey) {
-            let msg = "Please sign this message in order to obtain the public key associated with your account.";
-            let signature = await this.signEthMessage(msg);
-            this._publicKey = this._recoverPublicKey(msg, signature, this._address);
+            this._publicKey = await this._recoverPublicKeyFromTx()
         }
-        return this._publicKey;
+        if (!this._publicKey) {
+            this._publicKey = await this._recoverPublicKeyFromMsg()
+        }
+        return this._publicKey
     }
 
     /**
@@ -76,12 +78,50 @@ export class EIP1193Wallet extends EIP1193Based implements Wallet {
         return String(txId);
     }
 
-    protected _recoverPublicKey(msg: string, signature: string, address: string): string {
+    protected async _recoverPublicKeyFromTx(): Promise<string> {
+        for (let chainId of Chain.getChainIds()) {
+            let chainNumber = BigInt(parseInt(chainId, 16))
+            let chainData = Chain.getChainData(chainNumber)
+            if (chainData.blockExplorerUrls.length == 0) {
+                continue
+            }
+            if (chainData.rpcUrls.length == 0) {
+                continue
+            }
+
+            let explorerUrl = chainData.blockExplorerUrls[0]
+            let data = await fetch(`${explorerUrl}api?module=account&action=txlist&address=${this._address}`)
+            let response = await data.json()
+            if (response.status !== "1") {
+                continue
+            }
+            let txsResponse = response.result as Array<any>
+            let txs = txsResponse.filter((tx: { from: string }) => ethers.getAddress(tx.from) === ethers.getAddress(this._address))
+                .map((tx: { hash: any }) => tx.hash)
+            if (txs.length == 0) {
+                continue
+            }
+
+            let provider = new JsonRpcProvider(chainData.rpcUrls[0])
+            let txResponse = await provider.getTransaction(txs[0])
+            let tx = Transaction.from(txResponse)
+            let publicKey = tx.fromPublicKey
+            if (ethers.computeAddress(publicKey) !== ethers.getAddress(this._address)) {
+                continue
+            }
+            return publicKey
+        }
+        return null
+    }
+
+    protected async _recoverPublicKeyFromMsg(): Promise<string> {
+        let msg = "Please sign this message in order to obtain the public key associated with your account.";
+        let signature = await this.signEthMessage(msg)
         let ethMsg = `\x19Ethereum Signed Message:\n${msg.length}${msg}`
         let digest = ethers.id(ethMsg)
         let publicKey = SigningKey.recoverPublicKey(digest, signature)
-        if (ethers.computeAddress(publicKey) !== ethers.getAddress(address)) {
-            throw new Error(`Failed to recover public key for address ${address}`)
+        if (ethers.computeAddress(publicKey) !== ethers.getAddress(this._address)) {
+            return null
         }
         return publicKey
     }

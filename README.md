@@ -4,10 +4,10 @@ This is the official Node.js Software Development Kit (SDK) for performing commo
 
 - [Retrieving account and balance information](#account-and-balance-1)
 - [Transferring native and wrapped coins](#coin-transfers-1)
-- [Claiming rewards from FlareDrop, staking, FTSO delegation, and rNat projects](#reward-claims-1)
+- [Claiming rewards from FlareDrop, staking, FTSO delegation and rNat projects](#reward-claims-1)
 - [Delegating to FTSO providers](#delegation-to-ftso-providers-1)
 - [Voting on Flare foundation proposals](#voting-on-flare-foundation-proposals)
-- [Interacting with the C-chain contracts](#c-chain-contracts-1)
+- [Interacting with C-chain contracts](#c-chain-contracts-1)
 - [Creating and using smart (multisig) accounts](#smart-account)
 - [Staking on the P-chain](#staking-1)
 
@@ -552,7 +552,7 @@ await network.delegateGovernanceVotePower(wallet, delegate)
 ```
 and undelegated by
 ```
-await network.undelegateGovernanceVotePower(wallet,)
+await network.undelegateGovernanceVotePower(wallet)
 ```
 
 To check the current governance vote power of a voter identified by `publicKeyOrAddress`, use

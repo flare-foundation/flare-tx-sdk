@@ -62,6 +62,14 @@ export type CurrencyData = {
 
 export class Chain {
 
+    static getChainIds(): Array<string> {
+        let result = []
+        for (let key in CHAIN_ID) {
+            result.push(CHAIN_ID[key])
+        }
+        return result
+    }
+
     static getChainData(chainId: bigint): ChainData {
         let networkId = this._getNetworkId(chainId)
         return {
