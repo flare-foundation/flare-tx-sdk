@@ -1,8 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "assert";
 import { TestEnvironment } from "./env"
-import { FoundationProposalState, FoundationProposalSupport } from "../../src";
+import { FoundationProposalState } from "../../src";
 import { ethers } from "ethers";
+import { randomInt } from "crypto";
 
 export function runPollingTests(env: TestEnvironment): void {
     describe("Polling tests", function () {
@@ -29,7 +30,7 @@ export function runPollingTests(env: TestEnvironment): void {
             await network.getCurrentGovernanceVotePower(env.getCAddress(0))
         })
 
-        it("vote power for proposal", async (t) => {            
+        it("vote power for proposal", async (t) => {
             if (proposals.length == 0) {
                 t.skip("No proposal found")
                 return
@@ -37,7 +38,7 @@ export function runPollingTests(env: TestEnvironment): void {
             let proposalId = proposals[proposals.length - 1]
             let info = await network.getFoundationProposalInfo(proposalId)
             if (info.state !== FoundationProposalState.PENDING && info.state !== FoundationProposalState.ACTIVE) {
-                t.skip("No pending or acitve proposal found")
+                t.skip("Found no pending or acitve proposal")
                 return
             }
             await network.getVotePowerForFoundationProposal(env.getCAddress(0), proposalId)
@@ -47,7 +48,7 @@ export function runPollingTests(env: TestEnvironment): void {
             await network.getCurrentGovernanceVoteDelegate(env.getCAddress(0))
         })
 
-        it("vote delegation for proposal", async (t) => {            
+        it("vote delegation for proposal", async (t) => {
             if (proposals.length == 0) {
                 t.skip("No proposal found")
                 return
@@ -55,7 +56,7 @@ export function runPollingTests(env: TestEnvironment): void {
             let proposalId = proposals[proposals.length - 1]
             let info = await network.getFoundationProposalInfo(proposalId)
             if (info.state !== FoundationProposalState.PENDING && info.state !== FoundationProposalState.ACTIVE) {
-                t.skip("No pending or acitve proposal found")
+                t.skip("Found no pending or acitve proposal")
                 return
             }
             await network.getVotePowerForFoundationProposal(env.getCAddress(0), proposalId)
@@ -77,20 +78,32 @@ export function runPollingTests(env: TestEnvironment): void {
                         t.skip("No proposal found")
                         return
                     }
-                    let proposalId = proposals[proposals.length - 1]
-                    let info = await network.getFoundationProposalInfo(proposalId)
-                    if (info.state !== FoundationProposalState.ACTIVE) {
-                        t.skip("No acitve proposal found")
+                    let publicKey = await wallet.getPublicKey()
+
+                    let proposalId = undefined
+                    for (let i = proposals.length - 1; i >= 0; i--) {
+                        let hasVoted = await network.hasCastVoteForFoundationProposal(publicKey, proposals[i])
+                        if (hasVoted) {
+                            continue
+                        }
+                        let info = await network.getFoundationProposalInfo(proposals[i])
+                        if (info.state === FoundationProposalState.PENDING) {
+                            continue
+                        } else if (info.state === FoundationProposalState.ACTIVE) {
+                            proposalId = proposals[i]
+                        }
+                        break
+                    }
+                    if (!proposalId) {
+                        t.skip("Found no suitable proposal to cast vote")
                         return
                     }
-                    let publicKey = await wallet.getPublicKey()
-                    let hasVoted = await network.hasCastVoteForFoundationProposal(publicKey, proposalId)
-                    if (!hasVoted) {
-                        await network.castVoteForFoundationProposal(wallet, proposalId, FoundationProposalSupport.FOR)
-                    }
+                    await network.castVoteForFoundationProposal(wallet, proposalId, randomInt(0, 2))
+                    let voted = await network.hasCastVoteForFoundationProposal(publicKey, proposalId)
+                    assert.strictEqual(voted, true, "vote not cast")
                 })
 
-                it ("delegate vote power", async () => {
+                it("delegate vote power", async () => {
                     let publicKey = await wallet.getPublicKey()
                     let delegate = env.getCAddress(1)
                     await network.delegateGovernanceVotePower(wallet, delegate)
@@ -98,7 +111,7 @@ export function runPollingTests(env: TestEnvironment): void {
                     assert.strictEqual(actualDelegate, delegate, "unmatching delegates")
                 })
 
-                it ("undelegate vote power", async () => {
+                it("undelegate vote power", async () => {
                     let publicKey = await wallet.getPublicKey()
                     await network.undelegateGovernanceVotePower(wallet)
                     let delegate = await network.getCurrentGovernanceVoteDelegate(publicKey)

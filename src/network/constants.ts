@@ -180,7 +180,7 @@ export class Constants {
         this.txConfirmationCheckout = 2000
         this.evmTransferGasLimit = BigInt(42000)
         this.evmGasLimitExtraRel = 0.05
-        this.evmGasLimitExtraAbs = BigInt(70000)
+        this.evmGasLimitExtraAbs = BigInt(75000)
         this.evmBaseFee = BigInt(25 * 1e9)
         this.evmMaxFeePerGas = BigInt(50 * 1e9)
         this.evmMaxPriorityFeePerGas = BigInt(0)
