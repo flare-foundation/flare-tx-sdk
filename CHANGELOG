@@ -5,11 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 
-## [1.0.0] - 2025-02-19
+## [1.2.0] - 2025-08-07
 
 ### Added
 
-- Initial version.
+- Native P-chain transfer.
+- Reward claiming for rNat projects.
+- Voting on Flare foundation proposals.
+- Support for smart accounts.
+- Public key recovery from a submitted transaction in EIP-1193 based wallets.
+
+### Changed
+
+- P-chain transaction updates.
+
 
 ## [1.1.0] - 2025-05-23
 
@@ -17,3 +26,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Reward claiming.
 - Support for common wallets.
+
+
+## [1.0.0] - 2025-02-19
+
+### Added
+
+- Initial version.
