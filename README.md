@@ -510,7 +510,9 @@ To obtain Flare Foundation proposals, use
 ```
 let proposalIds = await network.getFoundationProposalIds()
 ```
-which returns an array of proposal ids. Note that this includes recent proposals, but it is not a complete list of all historical proposals. To obtain detailed information about a proposal with id `proposalId`, use
+which returns an array of proposal ids. Note that this includes recent proposals, but it is not a complete list of all historical proposals. To get the latter, go the the [Flare Portal](https://portal.flare.network/voting) and check the proposals list.
+
+To obtain detailed information about a proposal with id `proposalId`, use
 ```
 let proposalInfo = await network.getFoundationProposalInfo(proposalId)
 ```
@@ -532,7 +534,7 @@ which returns an object of type [`FoundationProposalInfo`](src/network/iotype.ts
 - `votePowerBlock` The block number used to determine the vote powers in voting process;
 - `voteStartTime` The start time (in Unix time) of the proposal voting;
 - `voteEndTime` The end time (in Unix time) of the proposal voting;
-- `thresholdConditionBP` The percentage in base points of the total vote power required for the proposal "quorum";
+- `thresholdConditionBP` The percentage in base points of the  circulating supply required for the proposal "quorum";
 - `majorityConditionBP` The percentage in base points of the proper relation between FOR and AGAINST votes;
 - `circulatingSupply` The circulating supply at vote power block.
 
@@ -603,7 +605,7 @@ let smartAccountAddress = await network.createSafeSmartAccount(wallet, owners, t
 ```
 where `owners` is an array of C-chain addresses in hexadecimal encoding representing the owners of the smart account, and `threshold` is an integer between 1 and the length of `owners` representing the smart account threshold. If the wallet's C-chain address is not included in `owners`, the wallet's account is only the creator of the smart account and does not participate in its operation. The result `smartAccountAddress` is the C-chain address of the smart account in hexadecimal encoding.
 
-A smart account can be used in any C-chain operation supported by this SDK. To demosntrate the concept and basic workflow, the following example shows how this functionality can be used to wrap a certain `amount` of native coins on a smart account and how to transfer these wrapped coins from the smart account to a certain `address`.
+A smart account can be used in any C-chain operation supported by this SDK. To demonstrate the concept and basic workflow, the following example shows how this functionality can be used to wrap a certain `amount` of native coins on a smart account and how to transfer these wrapped coins from the smart account to a certain `address`.
 
 First, let us deposit funds to the smart account:
 ```
@@ -734,7 +736,7 @@ As explained in [Wallet implementation](#wallet-implementation), for generating 
 
 The [EIP-1193 standard](https://eips.ethereum.org/EIPS/eip-1193) specifies an API for signing and submitting EVM transactions. This standard is followed by common Web3 wallets such as MetaMask, WalletConnect, Coinbase Wallet, etc. The crucial ingredient of these wallets is the EIP-1193 provider object.
 
-To setup SDK-compatible wallets that communicate with the EIP-1193 provider, first extract `provider` object from the Web3 wallet framework, and then use
+To set up SDK-compatible wallets that communicate with the EIP-1193 provider, first extract `provider` object from the Web3 wallet framework, and then use
 ```
 let controller = new EIP1193WalletController(provider)
 ```
@@ -766,7 +768,7 @@ First, setup `flrApp` (an instance of [`FlareApp`](https://github.com/Zondax/led
 ```
 let controller = new LedgerWalletController(flrApp, ethApp)
 ```
-To obtain a SDK-compatible wallet, provide a [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) path of the account (e.g., `let bip44Path = m/44'/60'/0'/0/0`) and use
+To obtain an SDK-compatible wallet, provide a [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) path of the account (e.g., `let bip44Path = m/44'/60'/0'/0/0`) and use
 ```
 let wallet = await controller.getWallet(bip44Path)
 ```
