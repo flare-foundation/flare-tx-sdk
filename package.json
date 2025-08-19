@@ -1,6 +1,6 @@
 {
   "name": "@flarenetwork/flare-tx-sdk",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Official SDK for generating and executing transactions on Flare Networks.",
   "main": "dist/index.js",
   "files": [
