@@ -19,7 +19,7 @@ export class TxType {
     static readonly UNDELEGATE_GOVERNANCE_VOTE_POWER = "undelegate_governance_vote_power"
     static readonly CUSTOM_CONTRACT_C = "custom_contract_c"
     static readonly EXPORT_P = "export_p"
-    static readonly IMPORT_P = "import_c"
+    static readonly IMPORT_P = "import_p"
     static readonly ADD_DELEGATOR_P = "add_delegator_p"
     static readonly ADD_VALIDATOR_P = "add_validator_p"
 
