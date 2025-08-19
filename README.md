@@ -569,7 +569,7 @@ If `delegate` is zero address, this indicates that there is no delegate. If `del
 
 It is also possible to obtain the vote power and the delegate of a given account identified by `publicKeyOrAddress` as it has been effective in the voting for a particular proposal with id `proposalId`. In that case, use
  ```
-let vote power = await network.getVotePowerForFoundationProposal(publicKeyOrAddress, proposalId)
+let votePower = await network.getVotePowerForFoundationProposal(publicKeyOrAddress, proposalId)
 let delegate = await network.getVoteDelegateForFoundationProposal(publicKeyOrAddress, proposalId)
  ```
 Note, however, that this query may fail for not so recent proposals as old governance vote power data is being regularly deleted from the C-chain storage.
