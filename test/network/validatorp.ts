@@ -72,7 +72,7 @@ export function runAddValidatorOnPTests(env: TestEnvironment): void {
             network.setBeforeTxSignatureCallback(null)
             network.setBeforeTxSubmissionCallback(null)
 
-            if (validatorExists && submitTx) {
+            if (validatorExists) {
                 t.skip(`Validator with node id ${nodeId} already exists`)
                 return
             } else if (!validatorExists && submitTx) {
