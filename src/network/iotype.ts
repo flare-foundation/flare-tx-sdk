@@ -135,7 +135,7 @@ export type Stake = {
     startTime: bigint // in seconds from unix
     endTime: bigint // in seconds from unix
     amount: bigint
-    feePercentage?: number // provided if type == `validator`
+    delegationFee?: bigint // percentage in base points provided if type == `validator`
 }
 
 /**

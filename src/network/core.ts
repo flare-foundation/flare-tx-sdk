@@ -7,10 +7,6 @@ export class NetworkCore {
 
     constructor(constants: Constants) {
         this.const = constants.copy()
-        // this.pChainId = HRPToNetworkID[constants.hrp as keyof object]
-        // this.cChainId = Defaults.network[this.pChainId].C.chainID!
-        // this.cAssetId = this._getCAssetId()
-        // this.pAssetId = this._getPAssetId()
         this.flarejs = this._getFlarejs(constants.rpc)
         this.ethers = this._getEthers(constants.rpc)
         this.beforeTxSignature = null
@@ -21,8 +17,6 @@ export class NetworkCore {
     private _cChainId: number
 
     const: Constants
-    // cAssetId: string
-    // pAssetId: string
     flarejs: Flarejs
     ethers: JsonRpcProvider
     beforeTxSignature: BeforeTxSignatureCallback
@@ -63,16 +57,6 @@ export class NetworkCore {
     async getPChainId(): Promise<number> {
         return this.flarejs.getPChainId()
     }
-
-    /*
-    private _getCAssetId(): string {
-        return Defaults.network[this.pChainId].C.avaxAssetID!
-    }
-
-    private _getPAssetId(): string {
-        return Defaults.network[this.pChainId].P.avaxAssetID!
-    }
-    */
 }
 
 export abstract class NetworkBased {

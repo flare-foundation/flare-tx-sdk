@@ -8,9 +8,10 @@ import { Utils } from "../../utils"
 import { Signature } from "../../sign"
 import { ethers } from "ethers"
 import { messageHashFromUnsignedTx, pvmSerial, TypeSymbols, UnsignedTx, utils as futils } from "@flarenetwork/flarejs"
-import { Delegation } from "./delegation"
+import { Delegation as Delegator } from "./delegator"
 import { base58 } from "@scure/base"
 import { Transfer } from "./transfer"
+import { Validator } from "./validator"
 
 export class Transactions extends NetworkBased {
 
@@ -19,13 +20,15 @@ export class Transactions extends NetworkBased {
         this._transfer = new Transfer(network)
         this._export = new Export(network)
         this._import = new Import(network)
-        this._delegation = new Delegation(network)
+        this._delegator = new Delegator(network)
+        this._validator = new Validator(network)
     }
 
     private _transfer: Transfer
     private _export: Export
     private _import: Import
-    private _delegation: Delegation
+    private _delegator: Delegator
+    private _validator: Validator
 
     async transfer(
         wallet: Wallet, account: Account, recipient: string, amount?: bigint
@@ -60,8 +63,24 @@ export class Transactions extends NetworkBased {
         startTime: bigint,
         endTime: bigint
     ): Promise<void> {
-        let unsignedTx = await this._delegation.getTx(account.pAddress, amount, nodeId, startTime, endTime)
+        let unsignedTx = await this._delegator.getTx(account.pAddress, amount, nodeId, startTime, endTime)
         await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.ADD_DELEGATOR_P)
+    }
+
+    async addValidatorOnP(
+        wallet: Wallet,
+        account: Account,
+        amount: bigint,
+        nodeId: string,
+        startTime: bigint,
+        endTime: bigint,
+        delegationFee: bigint,
+        popBLSPublicKey: string,
+        popBLSSignature: string
+    ): Promise<void> {
+        let unsignedTx = await this._validator.getTx(
+            account.pAddress, amount, nodeId, startTime, endTime, delegationFee, popBLSPublicKey, popBLSSignature)
+        await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.ADD_VALIDATOR_P)
     }
 
     async getBaseTxFee(): Promise<bigint> {
@@ -129,7 +148,7 @@ export class Transactions extends NetworkBased {
 
         let txIssueResponse = await this._core.flarejs.pvmApi.issueTx({ tx: ethers.hexlify(futils.addChecksum(tx)) })
         let txId = txIssueResponse.txID
-        
+
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
             if (!proceed) {

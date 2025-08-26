@@ -25,8 +25,8 @@ export class Import extends NetworkBased {
         let pAddressForC = `C-${pAddress}`
         let pBlockchainId = await this._core.flarejs.getPBlockchainId()
         let utxosData = await this._core.flarejs.evmApi.getUTXOs({ addresses: [pAddressForC], sourceChain: "P" })
-        return await this._core.flarejs.evm.newImportTx(
-            this._core.flarejs.context,
+        return this._core.flarejs.evm.newImportTx(
+            await this._core.flarejs.getContext(),
             futils.hexToBuffer(cAddress),
             [futils.bech32ToBytes(`C-${pAddress}`)],
             utxosData.utxos,

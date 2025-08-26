@@ -11,7 +11,7 @@ export class Export extends NetworkBased {
         let utxosData = await this._core.flarejs.pvmApi.getUTXOs({ addresses: [pAddressForP] })
         let output = TransferableOutput.fromNative(assetId, amount / BigInt(1e9), [pAddressBytes])
         return this._core.flarejs.pvm.newExportTx(
-            this._core.flarejs.context,
+            await this._core.flarejs.getContext(),
             cBlockchainId,
             [pAddressBytes],
             utxosData.utxos,

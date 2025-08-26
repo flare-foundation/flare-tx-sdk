@@ -11,7 +11,7 @@ export class Transfer extends NetworkBased {
         let utxosData = await this._core.flarejs.pvmApi.getUTXOs({ addresses: [senderForP] })
         let output = TransferableOutput.fromNative(assetId, amount / BigInt(1e9), [recipientBytes])
         return this._core.flarejs.pvm.newBaseTx(
-            this._core.flarejs.context,
+            await this._core.flarejs.getContext(),
             [senderBytes],
             utxosData.utxos,
             [output],

@@ -15,6 +15,7 @@ import { runFtsoClaimTests } from "./claimFtso";
 import { runSmartAccountTests } from "./smartAccount";
 import { runRNatTests } from "./rnat";
 import { runPollingTests } from "./polling";
+import { runAddValidatorOnPTests } from "./validatorp";
 
 function execute() {
     const TEST_KEYS_FILE = path.join("test", "keys", "keys.txt")
@@ -48,6 +49,7 @@ function execute() {
     runGenericContractTests(env)
     runTransferCPTests(env)
     runDelegationPTests(env)
+    runAddValidatorOnPTests(env)
 }
 
 execute()

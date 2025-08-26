@@ -9,7 +9,7 @@ export class Import extends NetworkBased {
         let pAddressBytes = futils.bech32ToBytes(pAddressForP)
         let utxosData = await this._core.flarejs.pvmApi.getUTXOs({ addresses: [pAddressForP], sourceChain: "C" })
         return this._core.flarejs.pvm.newImportTx(
-            this._core.flarejs.context,
+            await this._core.flarejs.getContext(),
             cBlockchainId,
             utxosData.utxos,
             [pAddressBytes],

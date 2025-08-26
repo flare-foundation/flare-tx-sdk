@@ -14,7 +14,7 @@ export class Flarejs {
     private _uri: string
     private _hrp: string
     
-    context: Context.Context
+    private _context: Context.Context
 
     evm: typeof evm
     evmApi: evm.EVMApi
@@ -23,37 +23,42 @@ export class Flarejs {
     pvmApi: pvm.PVMApi
 
     private async _initContext(): Promise<void> {
-        if (this.context === undefined) {
-            this.context = await Context.getContextFromURI(this._uri)
-            if (this.context.hrp !== this._hrp) {
-                throw new Error(`The HRP of the node's network is ${this.context.hrp} but expected to be ${this._hrp}`)
+        if (this._context === undefined) {
+            this._context = await Context.getContextFromURI(this._uri)
+            if (this._context.hrp !== this._hrp) {
+                throw new Error(`The HRP of the node's network is ${this._context.hrp} but expected to be ${this._hrp}`)
             }
         }
     }
 
+    async getContext(): Promise<Context.Context> {
+        await this._initContext()
+        return this._context
+    }
+
     async getPChainId(): Promise<number> {
         await this._initContext()
-        return this.context.networkID
+        return this._context.networkID
     }
 
     async getCBlockchainId(): Promise<string> {
         await this._initContext()
-        return this.context.cBlockchainID
+        return this._context.cBlockchainID
     }
 
     async getPBlockchainId(): Promise<string> {
         await this._initContext()
-        return this.context.pBlockchainID
+        return this._context.pBlockchainID
     }
 
     async getAssetId(): Promise<string> {
         await this._initContext()
-        return this.context.avaxAssetID
+        return this._context.avaxAssetID
     }
 
     async getBaseTxFee(): Promise<bigint> {
         await this._initContext()
-        return this.context.baseTxFee * BigInt(1e9)
+        return this._context.baseTxFee * BigInt(1e9)
     }
 
 }

@@ -843,6 +843,45 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Adds validator on the P-chain.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getPublicKey`, and
+     * - the function `signPTransaction`, `signDigest` or `signEthMessage`.
+     * @param amount The amount in wei to be delegated.
+     * @param nodeId The code of the validator's node.
+     * @param startTime The seconds from the Unix epoch marking the start of the delegation.
+     * @param endTime The seconds from the Unix epoch marking the end of the delegation.
+     * @param delegationFee The percentage in base points that corresponds to the fee the validator charges
+     * to delegators.
+     * @param popBLSPublicKey The public key in hexadecimal notation for the proof of possesion of the BLS key.
+     * @param popBLSSignature The signature in hexadecimal notation for the proof of possesion of the BLS key.
+     */
+    async addValidatorOnP(
+        wallet: Wallet,
+        amount: bigint,
+        nodeId: string,
+        startTime: bigint,
+        endTime: bigint,
+        delegationFee: bigint,
+        popBLSPublicKey: string,
+        popBLSSignature: string
+    ): Promise<void> {
+        this._shouldBeGweiInteger(amount)
+        let account = await this._getAccount(wallet)
+        await this._pchain.tx.addValidatorOnP(
+            wallet,
+            account,
+            amount,
+            nodeId,
+            startTime,
+            endTime,
+            delegationFee,
+            popBLSPublicKey,
+            popBLSSignature
+        )
+    }
+
+    /**
      * Delegates vote power to FTSO providers on the C-chain.
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getCAddress` or `getPublicKey`, and
