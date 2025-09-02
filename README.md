@@ -654,6 +654,7 @@ sequenceDiagram
     B->>P: importToP
     C->>P: transferToP
     P->>P: delegateOnP
+    P->>P: addValidatorOnP
     P->>P: transferOnP
     P->>C: transferToC
     P->>B: exportFromP
@@ -690,6 +691,48 @@ await network.delegateOnP(wallet, amount, nodeId, startTime, endTime)
 where `amount` is the amount to delegate, `nodeId` is the validator code of the form `NodeID-...`, and `startTime` and `endTime` are times given by the number of seconds from the Unix epoch. A delegation transaction is invoked. After the transaction is signed, submitted and confirmed, the balance on the P-chain address is reduced by `amount` and the staked balance on P is increased by `amount`. The transaction is without fee. After the delegation is complete, the staked amount is returned to the P-chain address.
 
 If the provided `amount` is greater than `availableOnP` at the time of the call, the function attempts to transfer `amount - availableOnP` from the C-chain to the P-chain. Therefore, in such cases, the above call also invokes the export and import transactions as described in the previous section.
+
+#### Adding a validator on the P-chain
+
+To add a validator on the P-chain, use
+```
+await network.addValidatorOnP(wallet, amount, nodeId, startTime, endTime, delegationFee, popBLSPublicKey, popBLSSignature)
+```
+where `amount` is the amount to be staked, `nodeId` is the validator code of the form `NodeID-...`, `startTime` and `endTime` are times given by the number of seconds from the Unix epoch, `delegationFee` is the fee percentage in base points (1% is 100 base points) to be charged to delegators, and `popBLSPublicKey` and `popBLSSignature` determine the proof of possession of a validator node. A transaction for adding a validator is invoked. After the transaction is signed, submitted and confirmed, the balance on the P-chain address is reduced by `amount` and the staked balance on P is increased by `amount`. The transaction is without fee. After the staking period is complete, the staked amount is returned to the P-chain address.
+
+The provided `amount` must not be smaller than `availableOnP` at the time of the call. The function does not attempt to transfer any funds from the C-chain to the P-chain, this must be done manually by invoking the export and import transactions as described previously.
+
+#### Reviewing the stakes
+
+The functions for reviewing the current stakes on the P-chain return an array of objects of type [`Stake`](src/network/iotype.ts) and has the following properties:
+- `txId` The hash of the staking transaction;
+- `type` The stake type (`delegator` or `validator`);
+- `pAddress` The P-chain address of the stake reward owner;
+- `nodeId` The code of the validator node the stake is assigned to;
+- `startTime` The staking start time in seconds from unix;
+- `endTime` The staking end time in in seconds from unix;
+- `amount` The staked amount in weis;
+- `delegationFee` If stake is of type `validator`, the percentage in base points that determines the validator's fee charged to the delegators.
+
+To get the array of all stakes of type `validator`, use
+```
+let stakes = await network.getValidatorsOnP()
+```
+For obtaining all stakes corresponding to a specific validator, use
+```
+let stakes = await network.getValidatorStakes(nodeId)
+```
+The resulting array contains all stakes (of type `validator` and `delegator`) to the validator's `nodeId`.
+
+Moreover, to obtain an array of all stakes on the network, use
+```
+let stakes = await network.getStakesOnP()
+```
+The filtered array containing only stakes where the reward owner is identified by `publicKey` can be obtained by
+```
+let stakes = await network.getStakesOnP(publicKey)
+```
+Depending on the RPC connection, the later two calls may require a large number of requests to the network node.
 
 #### Transferring funds from the P-chain to the C-chain
 

@@ -7,8 +7,12 @@ export function runDelegationPTests(env: TestEnvironment): void {
     describe("P chain delegation tests", function () {
         let network = env.network
 
-        it("stake limits", async() => {
+        it("stake limits", async () => {
             await network.getStakeLimits()
+        })
+
+        it("stakes", async () => {
+            await network.getStakesOnP()
         })
 
         let wallets = env.getAvaxWallets()
@@ -32,13 +36,13 @@ export function runDelegationPTests(env: TestEnvironment): void {
                     let startTime = now + startTimeDelay
                     let endTime = startTime + delegationPeriod
 
-                    let stakes = await network.getStakesOnP()
-                    let validator = stakes.find(s => s.type === "validator" && s.endTime >= endTime)
+                    let stakes = await network.getValidatorsOnP()
+                    let validator = stakes.find(s => s.endTime >= endTime)
                     if (!validator) {
                         t.skip("No suitable validator found")
                         return
                     }
-                    
+
                     await network.delegateOnP(wallet, toStake, validator.nodeId, startTime, endTime)
                     // await Utils.sleep(Number(startTimeDelay) * 1e3)
                     let stakedBalance = await network.getBalanceStakedOnP(publicKey)

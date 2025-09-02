@@ -128,14 +128,19 @@ export type FtsoDelegate = {
  * The type used for returning information on stakes on the P-chain
  */
 export type Stake = {
-    txId: string
-    type: string // `delegator` or `validator`
-    pAddress: string
-    nodeId: string
+    txId: string // stake transaction id
+    type: StakeType // stake type
+    pAddress: string // stake reward owner
+    nodeId: string // code of the validator node
     startTime: bigint // in seconds from unix
     endTime: bigint // in seconds from unix
-    amount: bigint
+    amount: bigint // staked amount in weis
     delegationFee?: bigint // percentage in base points provided if type == `validator`
+}
+
+export enum StakeType {
+    DELEGATOR = "delegator",
+    VALIDATOR = "validator"
 }
 
 /**

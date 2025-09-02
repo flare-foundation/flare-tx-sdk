@@ -210,6 +210,23 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Returns information about validators on the P-chain.
+     * @returns The array of stakes on the P-chain corresponding to validators.
+     */
+    async getValidatorsOnP(): Promise<Array<Stake>> {
+        return this._pchain.getValidators()
+    }
+
+    /**
+     * Returns information about stakes on the P-chain corresponding to a specific validator.
+     * @param nodeId The code of a validator's node. (optional).
+     * @returns The array of stakes on the P-chain (corresponding to the given node if given).
+     */
+    async getValidatorStakesOnP(nodeId: string): Promise<Array<Stake>> {
+        return this._pchain.getStakes(nodeId)
+    }
+
+    /**
      * Returns information about stake limits on the P-chain
      * @returns An object of type {@link StakeLimits}
      */
@@ -826,7 +843,8 @@ export class Network extends NetworkBased {
     ): Promise<void> {
         this._shouldBeGweiInteger(amount)
         if (!endTime) {
-            let validator = await this._pchain.getValidator(nodeId)
+            let validators = await this._pchain.getValidators()
+            let validator = validators.find(v => v.nodeId === nodeId)
             if (!validator) {
                 throw new Error("Validator with the specified node id does not exist")
             }

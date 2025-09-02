@@ -1,7 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "assert";
 import { TestEnvironment } from "./env";
-import { Amount } from "../../src";
 
 export function runBalanceTests(env: TestEnvironment): void {
     let network = env.network
@@ -11,8 +10,6 @@ export function runBalanceTests(env: TestEnvironment): void {
 
         it("balance on C", async function () {
             await network.getBalanceOnC(await wallet.getPublicKey())
-            // await network.transferNative(env.getDigestWallet(1), env.getCAddress(0), Amount.nats(5))
-            // await network.transferNative(env.getDigestWallet(1), env.getCAddress(2), Amount.nats(5))
         })
 
         it("balance on P", async function () {
@@ -27,6 +24,14 @@ export function runBalanceTests(env: TestEnvironment): void {
             await network.getBalanceStakedOnP(await wallet.getPublicKey())
         })
 
+        it("stakes on P", async function () {
+            let publicKey = await wallet.getPublicKey()
+            let stakes = await network.getStakesOnP(publicKey)
+            let balance = await network.getBalanceStakedOnP(publicKey)
+            let amount = stakes.map(s => s.amount).reduce((sum, value) => sum + value, BigInt(0))
+            assert.strictEqual(balance, amount, "staked amounts do not sum to the staked balance")
+        })
+
         it("balance not imported to C", async function () {
             await network.getBalanceNotImportedToC(await wallet.getPublicKey())
         })
@@ -39,16 +44,5 @@ export function runBalanceTests(env: TestEnvironment): void {
             await network.getBalance(await wallet.getPublicKey())
         })
 
-        it("all stakes", async function () {
-            await network.getStakesOnP()
-        })
-
-        it("individual stakes", async function () {
-            let publicKey = await wallet.getPublicKey()
-            let stakes = await network.getStakesOnP(publicKey)
-            let balance = await network.getBalanceStakedOnP(publicKey)
-            let amount = stakes.map(s => s.amount).reduce((sum, value) => sum + value, BigInt(0))
-            assert.strictEqual(balance, amount, "staked amounts do not sum to the staked balance")
-        })
     })
 }

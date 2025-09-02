@@ -13,6 +13,13 @@ export function runAddValidatorOnPTests(env: TestEnvironment): void {
     describe("P chain validator tests", function () {
         let network = env.network
 
+        it("validators on P", async () => {
+            let validators = await network.getValidatorsOnP()
+            if (validators.length > 0) {
+                await network.getValidatorStakesOnP(validators[0].nodeId)
+            }
+        })
+
         it("add validator on P", async (t) => {
             if (!existsSync(TEST_VALIDATOR_FILE)) {
                 t.skip(`Validator file ${TEST_VALIDATOR_FILE} not provided`)
@@ -46,8 +53,8 @@ export function runAddValidatorOnPTests(env: TestEnvironment): void {
                 }
             }
 
-            let stakesBefore = await network.getStakesOnP()
-            let validatorExists = stakesBefore.some(s => s.type === "validator" && s.nodeId === nodeId)
+            let validatorsBefore = await network.getValidatorsOnP()
+            let validatorExists = validatorsBefore.some(s => s.nodeId === nodeId)
 
             network.setBeforeTxSignatureCallback(async data => {
                 data
@@ -76,8 +83,8 @@ export function runAddValidatorOnPTests(env: TestEnvironment): void {
                 t.skip(`Validator with node id ${nodeId} already exists`)
                 return
             } else if (!validatorExists && submitTx) {
-                let stakesAfter = await network.getStakesOnP()
-                let validator = stakesAfter.find(s => s.type === "validator" && s.nodeId === nodeId)
+                let validatorsAfter = await network.getValidatorsOnP()
+                let validator = validatorsAfter.find(s => s.nodeId === nodeId)
                 assert.strictEqual(validator !== undefined, true)
                 assert.strictEqual(validator.amount, amount)
                 assert.strictEqual(validator.endTime, endTime)
