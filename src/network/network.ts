@@ -3,7 +3,7 @@ import { Account } from "./account"
 import { CChain } from "./cchain"
 import { NetworkCore, NetworkBased } from "./core"
 import { PChain } from "./pchain"
-import { AfterTxSubmissionCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
+import { AfterTxSubmissionCallback, AfterTxConfirmationCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
 import { Constants } from "./constants"
 import { Balance, FoundationProposalInfo, FoundationProposalSupport, FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, Stake, StakeLimits } from "./iotype"
 import { FlareContract } from "./contract"
@@ -942,6 +942,15 @@ export class Network extends NetworkBased {
      */
     setAfterTxSubmissionCallback(callback: AfterTxSubmissionCallback): void {
         this._core.afterTxSubmission = callback
+    }
+
+    /**
+     * Sets the callback that is invoked after each transaction confirmation to the network.
+     * @param callback The callback function of type {@link AfterTxConfirmationCallback}.
+     * Use `null` to remove the callback.
+     */
+    setAfterTxConfirmationCallback(callback: AfterTxConfirmationCallback): void {
+        this._core.afterTxConfirmation = callback
     }
 
     private async _getCAddress(wallet: Wallet): Promise<string> {
