@@ -12,6 +12,7 @@ export class NetworkCore {
         this.beforeTxSignature = null
         this.beforeTxSubmission = null
         this.afterTxSubmission = null
+        this.afterTxConfirmation = null
     }
 
     private _cChainId: number
