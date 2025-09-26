@@ -9,12 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Add validator on P-chain.
-- Added setAfterTxConfirmationCallback.
-
+- Method setAfterTxConfirmationCallback.
 
 ### Changed
 
 - Fee percentage changed to delegation fee (a percentage in base points) in type Stake.
+- Methods for fetching stake information.
 
 
 ## [1.2.1] - 2025-08-19

@@ -732,7 +732,6 @@ The filtered array containing only stakes where the reward owner is identified b
 ```
 let stakes = await network.getStakesOnP(publicKey)
 ```
-Depending on the RPC connection, the later two calls may require a large number of requests to the network node.
 
 #### Transferring funds from the P-chain to the C-chain
 
