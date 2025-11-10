@@ -1,6 +1,6 @@
 {
   "name": "@flarenetwork/flare-tx-sdk",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Official SDK for generating and executing transactions on Flare Networks.",
   "main": "dist/index.js",
   "files": [
@@ -21,11 +21,11 @@
   "author": "Flare Network",
   "license": "MIT",
   "dependencies": {
-    "@flarenetwork/flarejs": "^4.0.5",
+    "@flarenetwork/flarejs": "^4.1.1",
     "ethers": "^6.15.0"
   },
   "devDependencies": {
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   }
 }

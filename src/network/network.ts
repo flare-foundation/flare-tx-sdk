@@ -693,15 +693,26 @@ export class Network extends NetworkBased {
      * - the function `getPublicKey`, and
      * - the function `signPTransaction`, `signDigest` or `signEthMessage`.
      * @param amount An amount in wei to be transferred to the P-chain.
+     * @param allocatedFeeOnP An amount in wei specifying the allocated fee for import to the P-chain.
+     * If the amount is not provided, the default fee allocation value is used.
      */
-    async transferToP(wallet: Wallet, amount: bigint): Promise<void> {
+    async transferToP(wallet: Wallet, amount: bigint, allocatedFeeOnP?: bigint): Promise<void> {
         this._shouldBeGweiInteger(amount)
+
+        if (!allocatedFeeOnP) {
+            if (await this._core.flarejs.isEtnaForkActive()) {
+                allocatedFeeOnP = this._core.const.pvmAllocatedFee
+            } else {
+                allocatedFeeOnP = await this.getBaseTxFeeOnP()
+            }
+        }
+        this._shouldBeGweiInteger(allocatedFeeOnP)
+
         let account = await this._getAccount(wallet)
 
-        let importFee = await this.getBaseTxFeeOnP()
         let notImportedToP = await this._pchain.getBalanceNotImportedToP(account.pAddress)
-        if (notImportedToP < amount + importFee) {
-            let amountToExport = amount + importFee - notImportedToP
+        if (notImportedToP < amount + allocatedFeeOnP) {
+            let amountToExport = amount + allocatedFeeOnP - notImportedToP
             await this._cchain.tx.exportFromC(wallet, account, amountToExport)
             notImportedToP = await this._pchain.getBalanceNotImportedToP(account.pAddress)
         }
@@ -831,17 +842,24 @@ export class Network extends NetworkBased {
      * @param amount The amount in wei to be delegated.
      * @param nodeId The code of the validator's node to delegate to.
      * @param startTime The seconds from the Unix epoch marking the start of the delegation.
+     * If the value is not provided, it is set to be equal to the current time.
      * @param endTime The seconds from the Unix epoch marking the end of the delegation.
      * If the value is not provided, it is set to be equal to the validator's end time.
+     * @param allocatedFeeOnP An amount in wei specifying the allocated fee for import to and delegate on
+     * the P-chain. If the amount is not provided, the default fee allocation value is used.
      */
     async delegateOnP(
         wallet: Wallet,
         amount: bigint,
         nodeId: string,
-        startTime: bigint,
-        endTime?: bigint
+        startTime?: bigint,
+        endTime?: bigint,
+        allocatedFeeOnP?: bigint
     ): Promise<void> {
         this._shouldBeGweiInteger(amount)
+        if (!startTime) {
+            startTime = BigInt(Date.now())
+        }
         if (!endTime) {
             let validators = await this._pchain.getValidators()
             let validator = validators.find(v => v.nodeId === nodeId)
@@ -853,8 +871,8 @@ export class Network extends NetworkBased {
         let account = await this._getAccount(wallet)
 
         let balanceOnP = await this._pchain.getBalance(account.pAddress)
-        if (balanceOnP < amount) {
-            await this.transferToP(wallet, amount - balanceOnP)
+        if (balanceOnP < amount + allocatedFeeOnP) {
+            await this.transferToP(wallet, amount - balanceOnP, allocatedFeeOnP)
         }
 
         await this._pchain.tx.delegateOnP(wallet, account, amount, nodeId, startTime, endTime)

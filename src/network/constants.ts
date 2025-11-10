@@ -40,7 +40,7 @@ export class Constants {
     evmTransferGasLimit: bigint
 
     /**
-     * The percentage of estimated gas limit to specify as extra in C-chain transactions
+     * The share of estimated gas limit to specify as extra in C-chain transactions
      * (does not apply to EVM transfers), which is used in combination with evmGasLimitExtraAbs
      * (the maximum value prevails)
      */
@@ -67,6 +67,16 @@ export class Constants {
      * The default max priority fee per gas in weis used as fallback for C-chain transactions
      */
     evmMaxPriorityFeePerGas: bigint
+
+    /**
+     * The default allocated fee in weis for P-chain transactions
+     */
+    pvmAllocatedFee: bigint
+
+    /**
+     * The share of current network fee to specify as extra in P-chain transactions
+     */
+    pvmBaseFeeExtraRel: number
 
     /**
      * The address of the FlareContractRegistry contract
@@ -184,6 +194,8 @@ export class Constants {
         this.evmBaseFee = BigInt(25 * 1e9)
         this.evmMaxFeePerGas = BigInt(50 * 1e9)
         this.evmMaxPriorityFeePerGas = BigInt(0)
+        this.pvmAllocatedFee = BigInt(1e17)
+        this.pvmBaseFeeExtraRel = 0.05
         this.address_FlareContractRegistry = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
         this.address_SafeProxyFactory = "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67"
         this.address_SafeSingleton = "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762"

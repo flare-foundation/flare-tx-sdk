@@ -1,10 +1,11 @@
-import { Context, evm, pvm } from "@flarenetwork/flarejs"
+import { Context, evm, pvm, info } from "@flarenetwork/flarejs"
 
 export class Flarejs {
 
     constructor(rpc: string, hrp: string) {
         this._uri = new URL(rpc).origin
         this._hrp = hrp
+        this.infoApi = new info.InfoApi(this._uri)
         this.evm = evm
         this.evmApi = new evm.EVMApi(this._uri)
         this.pvm = pvm
@@ -13,8 +14,10 @@ export class Flarejs {
 
     private _uri: string
     private _hrp: string
-    
+
     private _context: Context.Context
+
+    infoApi: info.InfoApi
 
     evm: typeof evm
     evmApi: evm.EVMApi
@@ -57,8 +60,18 @@ export class Flarejs {
     }
 
     async getBaseTxFee(): Promise<bigint> {
-        await this._initContext()
-        return this._context.baseTxFee * BigInt(1e9)
+        if (await this.isEtnaForkActive()) {
+            let feeState = await this.pvmApi.getFeeState()
+            return feeState.price
+        } else {
+            await this._initContext()
+            return this._context.baseTxFee * BigInt(1e9)
+        }
+    }
+
+    async isEtnaForkActive(): Promise<boolean> {
+        let { etnaTime } = await this.infoApi.getUpgradesInfo();
+        return new Date() > new Date(etnaTime)
     }
 
 }

@@ -665,13 +665,13 @@ sequenceDiagram
 
 The process of transferring funds from the C-chain to the P-chain consists of two transactions: export from the C-chain and import to the P-chain. The call
 ```
-await network.transferToP(wallet, amount)
+await network.transferToP(wallet, amount, allocatedFeeOnP)
 ```
-first generates an export transaction that exports `amount + importFeeOnP` from the C-chain address and spends a certain `exportFeeOnC`. After the export transaction is signed, submitted and confirmed, an import transaction is generated that imports `amount` to the P-chain address and spends `importFeeOnP`. After the import transaction is signed, submitted and confirmed, the call is complete. The balance on the C-chain address is reduced by `amount + exportFeeOnC + importFeeOnP` and the balance on the P-chain address is increased by `amount`.
+first generates an export transaction that exports `amount + allocatedFeeOnP` from the C-chain address and spends a certain `exportFeeOnC`. The input parameter `allocatedFeeOnP` is optional and is set to a default value if omitted. After the export transaction is signed, submitted and confirmed, an import transaction is generated that imports `amount + allocatedFeeOnP - importFeeOnP` to the P-chain address and spends a certain `importFeeOnP`. After the import transaction is signed, submitted and confirmed, the call is complete. The balance on the C-chain address is reduced by `amount + exportFeeOnC + allocatedFeeOnP` and the balance on the P-chain address is increased by `amount + allocatedFeeOnP - importFeeOnP`.
 
-Note that the values appearing in the export and import transactions invoked by `transferToP` may differ from the described above if a certain `valueNotImportedToP` had previously not been imported to the P-chain due to the import transaction failure. The export transaction then exports `amount + importFeeOnP - valueNotImportedToP` from the C-chain address or is skipped if this export value is not positive. The import transaction imports `max(amount, valueNotImportedToP)` to the P-chain address and the balance of funds not imported to the P-chain becomes zero.
+Note that the values appearing in the export and import transactions invoked by `transferToP` may differ from the described above if a certain `valueNotImportedToP` had previously not been imported to the P-chain due to the import transaction failure. The export transaction then exports `amount + allocatedFeeOnP - valueNotImportedToP` from the C-chain address or is skipped if this export value is not positive. The import transaction imports `max(amount, valueNotImportedToP)` to the P-chain address and the balance of funds not imported to the P-chain becomes zero.
 
-The value of `exportFeeOnC` is computed as the product of the `baseTxFeeOnC` and the size of the export transaction. The current value of the `baseTxFeeOnC` can be obtained by calling `await network.getBaseTxFeeOnC()`. The value of `importFeeOnP` is fixed and can be obtained by calling `network.getDefaultTxFeeOnP()`.
+The value of `exportFeeOnC` is computed as the product of the `baseTxFeeOnC` and the size of the export transaction. The current value of the `baseTxFeeOnC` can be obtained by calling `await network.getBaseTxFeeOnC()`. The value of `importFeeOnP` is computed based on the size of the import transaction and the base fee on the P-chain, which can be obtained by calling `network.getBaseTxFeeOnP()`.
 
 The export and import can be executed by individual calls as well, in order to have a separate call for each transaction. To export `amount` from the C-chain, use
 ```
@@ -686,11 +686,11 @@ await network.importToP(wallet)
 
 The delegation on the P-chain can be executed by
 ```
-await network.delegateOnP(wallet, amount, nodeId, startTime, endTime)
+await network.delegateOnP(wallet, amount, nodeId, startTime, endTime, allocatedFeeOnP)
 ```
-where `amount` is the amount to delegate, `nodeId` is the validator code of the form `NodeID-...`, and `startTime` and `endTime` are times given by the number of seconds from the Unix epoch. A delegation transaction is invoked. After the transaction is signed, submitted and confirmed, the balance on the P-chain address is reduced by `amount` and the staked balance on P is increased by `amount`. The transaction is without fee. After the delegation is complete, the staked amount is returned to the P-chain address.
+where `amount` is the amount to delegate, `nodeId` is the validator code of the form `NodeID-...`, and `startTime` and `endTime` are times given by the number of seconds from the Unix epoch. The input parameter `allocatedFeeOnP` is optional and is used to reserve funds for transaction fees. A delegation transaction is invoked. After the transaction is signed, submitted and confirmed, the balance on the P-chain address is reduced by `amount + fee` and the staked balance on P is increased by `amount`. After the delegation is complete, the staked amount is returned to the P-chain address.
 
-If the provided `amount` is greater than `availableOnP` at the time of the call, the function attempts to transfer `amount - availableOnP` from the C-chain to the P-chain. Therefore, in such cases, the above call also invokes the export and import transactions as described in the previous section.
+If `amount + allocatedFeeOnP` is greater than `availableOnP` at the time of the call, the function attempts to transfer `amount + allocatedFeeOnP - availableOnP` from the C-chain to the P-chain. Therefore, in such cases, the above call also invokes the export and import transactions as described in the previous section.
 
 #### Adding a validator on the P-chain
 
@@ -698,7 +698,7 @@ To add a validator on the P-chain, use
 ```
 await network.addValidatorOnP(wallet, amount, nodeId, startTime, endTime, delegationFee, popBLSPublicKey, popBLSSignature)
 ```
-where `amount` is the amount to be staked, `nodeId` is the validator code of the form `NodeID-...`, `startTime` and `endTime` are times given by the number of seconds from the Unix epoch, `delegationFee` is the fee percentage in base points (1% is 100 base points) to be charged to delegators, and `popBLSPublicKey` and `popBLSSignature` determine the proof of possession of a validator node. A transaction for adding a validator is invoked. After the transaction is signed, submitted and confirmed, the balance on the P-chain address is reduced by `amount` and the staked balance on P is increased by `amount`. The transaction is without fee. After the staking period is complete, the staked amount is returned to the P-chain address.
+where `amount` is the amount to be staked, `nodeId` is the validator code of the form `NodeID-...`, `startTime` and `endTime` are times given by the number of seconds from the Unix epoch, `delegationFee` is the fee percentage in base points (1% is 100 base points) to be charged to delegators, and `popBLSPublicKey` and `popBLSSignature` determine the proof of possession of a validator node. A transaction for adding a validator is invoked. After the transaction is signed, submitted and confirmed, the balance on the P-chain address is reduced by `amount + fee` and the staked balance on P is increased by `amount`. After the staking period is complete, the staked amount is returned to the P-chain address.
 
 The provided `amount` must not be smaller than `availableOnP` at the time of the call. The function does not attempt to transfer any funds from the C-chain to the P-chain, this must be done manually by invoking the export and import transactions as described previously.
 

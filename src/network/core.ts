@@ -39,7 +39,7 @@ export class NetworkCore {
         this.ethers = this._getEthers(this.const.rpc)
     }
 
-    private _getFlarejs(rpc: string): Flarejs {        
+    private _getFlarejs(rpc: string): Flarejs {
         return new Flarejs(rpc, this.const.hrp)
     }
 
@@ -58,10 +58,11 @@ export class NetworkCore {
     async getPChainId(): Promise<number> {
         return this.flarejs.getPChainId()
     }
+
 }
 
 export abstract class NetworkBased {
-    
+
     constructor(core: NetworkCore) {
         this._core = core
     }

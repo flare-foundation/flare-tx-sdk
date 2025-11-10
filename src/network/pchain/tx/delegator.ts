@@ -7,24 +7,57 @@ export class Delegator extends NetworkBased {
         pAddress: string,
         amount: bigint,
         nodeId: string,
-        startTime: bigint,
-        endTime: bigint
+        start: bigint,
+        end: bigint
     ): Promise<UnsignedTx> {
+        let context = await this._core.flarejs.getContext()
+
         let pAddressForP = `P-${pAddress}`
         let pAddressBytes = futils.bech32ToBytes(pAddressForP)
+        let fromAddressesBytes = [pAddressBytes]
         let utxosData = await this._core.flarejs.pvmApi.getUTXOs({ addresses: [pAddressForP] })
-        return this._core.flarejs.pvm.newAddPermissionlessDelegatorTx(
-            await this._core.flarejs.getContext(),
-            utxosData.utxos,
-            [pAddressBytes],
-            nodeId,
-            networkIDs.PrimaryNetworkID.toString(),
-            startTime,
-            endTime,
-            amount / BigInt(1e9),
-            [pAddressBytes],
-            { locktime: BigInt(0), threshold: 1 }
-        )
+        let utxos = utxosData.utxos
+        let subnetId = networkIDs.PrimaryNetworkID.toString()
+        let weight = amount / BigInt(1e9)
+        let rewardAddresses = [pAddressBytes]
+        let locktime = BigInt(0)
+        let threshold = 1
+
+        if (await this._core.flarejs.isEtnaForkActive()) {
+            let feeState = await this._core.flarejs.pvmApi.getFeeState();
+            feeState.price = BigInt(Math.ceil(Number(feeState.price) * this._core.const.pvmBaseFeeExtraRel))
+
+            return this._core.flarejs.pvm.e.newAddPermissionlessDelegatorTx(
+                {
+                    feeState,
+                    utxos,
+                    fromAddressesBytes,
+                    nodeId,
+                    subnetId,
+                    start,
+                    end,
+                    weight,
+                    rewardAddresses,
+                    locktime,
+                    threshold
+                },
+                context
+            )
+        } else {
+            return this._core.flarejs.pvm.newAddPermissionlessDelegatorTx(
+                context,
+                utxos,
+                fromAddressesBytes,
+                nodeId,
+                subnetId,
+                start,
+                end,
+                weight,
+                rewardAddresses,
+                { locktime, threshold }
+            )
+        }
+
     }
 
 }

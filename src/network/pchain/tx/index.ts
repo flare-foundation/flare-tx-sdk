@@ -39,7 +39,7 @@ export class Transactions extends NetworkBased {
         } else {
             let response = await this._core.flarejs.pvmApi.getBalance({ addresses: [`P-${account.pAddress}`] })
             let balance = response.balance * BigInt(1e9)
-            let fee = await this._core.flarejs.getBaseTxFee()
+            let fee = this._core.const.pvmAllocatedFee
             unsignedTx = await this._transfer.getTx(account.pAddress, recipient, balance - fee)
         }
         await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.TRANSFER_PASSET)
