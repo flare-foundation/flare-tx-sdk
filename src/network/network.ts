@@ -747,7 +747,7 @@ export class Network extends NetworkBased {
             amountToExport = amount - notImportedToC
         } else {
             let balance = await this._pchain.getBalance(account.pAddress)
-            let exportFee = await this.getBaseTxFeeOnP()
+            let exportFee = this._core.const.pvmAllocatedFee
             amountToExport = balance - exportFee
         }
         if (amountToExport > BigInt(0)) {

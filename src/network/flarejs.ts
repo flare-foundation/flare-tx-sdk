@@ -1,4 +1,5 @@
 import { Context, evm, pvm, info } from "@flarenetwork/flarejs"
+import { FeeState } from "@flarenetwork/flarejs/dist/vms/pvm"
 
 export class Flarejs {
 
@@ -62,11 +63,19 @@ export class Flarejs {
     async getBaseTxFee(): Promise<bigint> {
         if (await this.isEtnaForkActive()) {
             let feeState = await this.pvmApi.getFeeState()
-            return feeState.price
+            return feeState.price * BigInt(1e9)
         } else {
             await this._initContext()
             return this._context.baseTxFee * BigInt(1e9)
         }
+    }
+
+    async getFeeState(extraRel?: number): Promise<FeeState> {
+        let feeState = await this.pvmApi.getFeeState()
+        if (extraRel) {
+            feeState.price = BigInt(Math.ceil(Number(feeState.price) * (1 + extraRel)))
+        }
+        return feeState
     }
 
     async isEtnaForkActive(): Promise<boolean> {

@@ -32,8 +32,7 @@ export class Validator extends NetworkBased {
         let signature = futils.hexToBuffer(popBLSSignature)
 
         if (await this._core.flarejs.isEtnaForkActive()) {
-            let feeState = await this._core.flarejs.pvmApi.getFeeState();
-            feeState.price = BigInt(Math.ceil(Number(feeState.price) * this._core.const.pvmBaseFeeExtraRel))
+            let feeState = await this._core.flarejs.getFeeState(this._core.const.pvmBaseFeeExtraRel)
 
             return this._core.flarejs.pvm.e.newAddPermissionlessValidatorTx(
                 {

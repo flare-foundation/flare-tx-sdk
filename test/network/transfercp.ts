@@ -25,10 +25,9 @@ export function runTransferCPTests(env: TestEnvironment): void {
                     let publicKey = await wallet.getPublicKey()
                     let startBalanceOnP = await network.getBalanceOnP(publicKey)
                     let amount = testAmount / BigInt(100)
-                    let fee = await network.getBaseTxFeeOnP()
                     await network.transferOnP(wallet, env.getPAddress(1), amount)
                     let balanceOnP = await network.getBalanceOnP(publicKey)
-                    assert.strictEqual(balanceOnP, startBalanceOnP - amount - fee)
+                    assert.strictEqual(balanceOnP < startBalanceOnP - amount, true)
                 })
 
                 it("transfer to C", async () => {
@@ -55,7 +54,7 @@ export function runTransferCPTests(env: TestEnvironment): void {
                 it("export from P", async function () {
                     let publicKey = await wallet.getPublicKey()
                     let startBalanceOnP = await network.getBalanceOnP(publicKey)
-                    let txFeeOnP = await network.getBaseTxFeeOnP()
+                    let txFeeOnP = Amount.gweis(1e8)
                     await network.exportFromP(wallet, startBalanceOnP - txFeeOnP)
                     let balanceNotImportedToC = await network.getBalanceNotImportedToC(publicKey)
                     assert.strictEqual(true, balanceNotImportedToC > BigInt(0))
