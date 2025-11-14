@@ -868,6 +868,9 @@ export class Network extends NetworkBased {
             }
             endTime = validator.endTime
         }
+        if (!allocatedFeeOnP) {
+            allocatedFeeOnP = this._core.const.pvmAllocatedFee
+        }
         let account = await this._getAccount(wallet)
 
         let balanceOnP = await this._pchain.getBalance(account.pAddress)
