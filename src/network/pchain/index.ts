@@ -122,7 +122,7 @@ export class PChain extends NetworkBased {
         let nodeId = stake.nodeID
         let startTime = BigInt(stake.startTime)
         let endTime = BigInt(stake.endTime)
-        let amount = BigInt(stake.stakeAmount) * BigInt(1e9)
+        let amount = BigInt(stake.weight) * BigInt(1e9)
         let delegationFee = stake.delegationFee ? Amount.percentages(stake.delegationFee) : undefined
         return { txId, type, pAddress, nodeId, startTime, endTime, amount, delegationFee }
     }
