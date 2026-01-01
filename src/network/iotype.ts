@@ -125,6 +125,47 @@ export type FtsoDelegate = {
 }
 
 /**
+ * Source networks in FDC protocol
+ */
+export enum FdcSourceNetwork {
+    ETH = "ETH",
+    FLR = "FLR",
+    SGB = "SGB",
+    ETH_TEST = "testETH",
+    FLR_TEST = "testFLR",
+    SGB_TEST = "testSGB",
+    BTC = "BTC",
+    DOGE = "DOGE",
+    XRP = "XRP",
+    BTC_TEST = "testBTC",
+    DOGE_TEST = "testDOGE",
+    XRP_TEST = "testXRP"
+}
+
+/**
+ * The type used for describing FDC attestation request
+ */
+export type FdcAttestationRequest = {
+    data: string
+    votingRoundId: number
+}
+
+/**
+ * The type used for describing FDC attestation
+ */
+export type FdcAttestation = {
+    response: {
+        attestationType: string,
+        sourceId: string,
+        votingRound: number,
+        lowestUsedTimestamp: number,
+        requestBody: any,
+        responseBody: any
+    },
+    proof: Array<string>
+}
+
+/**
  * The type used for returning information on stakes on the P-chain
  */
 export type Stake = {
@@ -138,6 +179,9 @@ export type Stake = {
     delegationFee?: bigint // percentage in base points provided if type == `validator`
 }
 
+/**
+ * Stake types
+ */
 export enum StakeType {
     DELEGATOR = "delegator",
     VALIDATOR = "validator"

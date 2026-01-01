@@ -11,10 +11,11 @@ import { EVMUnsignedTx as AvaxTx, messageHashFromUnsignedTx, utils as futils } f
 import { ContractRegistry } from "../contract/registry";
 import { GenericContract } from "../contract/generic";
 import { Constants } from "../../constants";
-import { FtsoRewardClaimWithProof, FoundationProposalSupport } from "src/network/iotype";
+import { FtsoRewardClaimWithProof, FoundationProposalSupport, FdcSourceNetwork, FdcAttestationRequest } from "src/network/iotype";
 import { base58 } from "@scure/base";
 import { SafeProxyFactory } from "../contract/safe_proxy_factory";
 import { Evm } from "./evm";
+import { FdcVerifiers } from "../fdc/verifiers";
 
 export class Transactions extends NetworkBased {
 
@@ -210,7 +211,7 @@ export class Transactions extends NetworkBased {
         let data = proxyFactory.createProxy(singleton, owners, threshold, fallbackHandler, saltNonce)
         let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, proxyFactory.address, data)
         let receipt = await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CREATE_SAFE_SMART_ACCOUNT)
-        return receipt.logs[0].address
+        return receipt ? receipt.logs[0].address : null
     }
 
     async castVoteForFoundationProposal(
@@ -237,6 +238,59 @@ export class Transactions extends NetworkBased {
         let data = vp.undelegate()
         let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, vp.address, data)
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.UNDELEGATE_GOVERNANCE_VOTE_POWER)
+    }
+
+    async submitFdcAttestationRequestForEvmTransaction(
+        wallet: Wallet,
+        cAddress: string,
+        source: FdcSourceNetwork,
+        txId: string
+    ): Promise<FdcAttestationRequest> {
+        let verifiers = new FdcVerifiers(this._core)
+        let data = await verifiers.prepareEvmTransactionRequest(source, txId)
+        let votingRoundId = await this._submitFdcAttestationRequest(wallet, cAddress, data)
+        return { data, votingRoundId }
+    }
+
+    async submitFdcAttestationRequestForPayment(
+        wallet: Wallet,
+        cAddress: string,
+        source: FdcSourceNetwork,
+        txId: string
+    ): Promise<FdcAttestationRequest> {
+        let verifiers = new FdcVerifiers(this._core)
+        let data = await verifiers.preparePaymentRequest(source, txId)
+        let votingRoundId = await this._submitFdcAttestationRequest(wallet, cAddress, data)
+        return { data, votingRoundId }
+    }
+
+    async submitFdcAttestationRequestForAddressValidity(
+        wallet: Wallet,
+        cAddress: string,
+        source: FdcSourceNetwork,
+        address: string
+    ): Promise<FdcAttestationRequest> {
+        let verifiers = new FdcVerifiers(this._core)
+        let data = await verifiers.prepareAddressValidityRequest(source, address)
+        let votingRoundId = await this._submitFdcAttestationRequest(wallet, cAddress, data)
+        return { data, votingRoundId }
+    }
+
+    async _submitFdcAttestationRequest(wallet: Wallet, cAddress: string, request: string): Promise<number | null> {
+        let hub = await this._registry.getFdcHub()
+        let data = hub.requestAttestation(request)
+        let conf = await this._registry.getFdcRequestFeeConfigurations()
+        let fee = await conf.getRequestFee(request)
+        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, hub.address, data, fee)
+        let receipt = await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.SUBMIT_ATTESTATION_REQUEST)
+        if (receipt) {
+            let block = await receipt.getBlock()
+            let fsm = await this._registry.getFlareSystemManager()
+            let votingStart = Number(await fsm.firstVotingRoundStartTs())
+            let votingEpochDuration = Number(await fsm.votingEpochDurationSeconds())
+            return Math.floor((block.timestamp - votingStart) / votingEpochDuration)
+        }
+        return null
     }
 
     async invokeContractMethod(

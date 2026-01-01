@@ -1,5 +1,5 @@
 import { Account } from "../account"
-import { FtsoDelegate, FtsoRewardState, FoundationProposalInfo, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, StakeLimits, FoundationProposalState } from "../iotype"
+import { FtsoDelegate, FtsoRewardState, FoundationProposalInfo, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, StakeLimits, FoundationProposalState, FdcAttestationRequest, FdcAttestation, } from "../iotype"
 import { FlareContract } from "../contract"
 import { NetworkCore, NetworkBased } from "../core"
 import { Utils } from "../utils"
@@ -8,6 +8,7 @@ import { ContractRegistry } from "./contract/registry"
 import { Transactions } from "./tx"
 import { utils as futils } from "@flarenetwork/flarejs"
 import { SafeProxy as SafeProxy } from "./contract/safe_proxy"
+import { FdcDataAvailability } from "./fdc/data_availability"
 
 export class CChain extends NetworkBased {
 
@@ -102,9 +103,9 @@ export class CChain extends NetworkBased {
         let maxStakeDuration = await stakeVerifier.maxStakeDurationSeconds()
         let minStakeAmount = await stakeVerifier.minStakeAmount()
         let minStakeAmountDelegator = minStakeAmount
-        let minStakeAmountValidator = minStakeAmount     
+        let minStakeAmountValidator = minStakeAmount
         let maxStakeAmount = await stakeVerifier.maxStakeAmount()
-        return { minStakeDuration, maxStakeDuration, minStakeAmountDelegator, minStakeAmountValidator, maxStakeAmount }                
+        return { minStakeDuration, maxStakeDuration, minStakeAmountDelegator, minStakeAmountValidator, maxStakeAmount }
     }
 
     async getRNatProjects(): Promise<Array<RNatProject>> {
@@ -182,6 +183,21 @@ export class CChain extends NetworkBased {
     async hasCastVoteForFoundationProposal(voter: string, proposalId: bigint): Promise<boolean> {
         let polling = await this._registry.getPollingFoundation()
         return polling.hasVoted(proposalId, voter)
+    }
+
+    async isFdcVotingRoundFinalized(votingRoundId: number): Promise<boolean> {
+        let relay = await this._registry.getRelay()
+        return relay.isFinalized(200, votingRoundId)
+    }
+
+    async getFdcAttestation(request: FdcAttestationRequest): Promise<FdcAttestation> {
+        let votingRoundFinalized = await this.isFdcVotingRoundFinalized(request.votingRoundId)
+        if (!votingRoundFinalized) {
+            throw new Error("FDC voting round not finalized")
+        }
+        let da = new FdcDataAvailability(this._core)
+        let attestation = await da.getAttestation(request.data, request.votingRoundId)
+        return attestation
     }
 
     async invokeContractCall(

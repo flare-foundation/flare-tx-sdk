@@ -16,6 +16,7 @@ import { runSmartAccountTests } from "./smartAccount";
 import { runRNatTests } from "./rnat";
 import { runPollingTests } from "./polling";
 import { runAddValidatorOnPTests } from "./validatorp";
+import { runFdcTests } from "./fdc";
 
 function execute() {
     const TEST_KEYS_FILE = path.join("test", "keys", "keys.txt")
@@ -35,6 +36,9 @@ function execute() {
         Network.COSTON2,
         privateKeys.split(",")
     )
+
+    runFdcTests(env)
+    return
 
     runBalanceTests(env)
     runWNatTests(env)

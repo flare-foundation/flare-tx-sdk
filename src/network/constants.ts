@@ -98,6 +98,36 @@ export class Constants {
      */
     address_SafeFallbackHandler: string
 
+    /**
+     * The base url of FDC mainnet verifiers service
+     */
+    api_FdcMainnetVerifiersBaseUrl: string
+
+    /**
+     * The API key for a FDC mainnet verifiers service
+     */
+    api_FdcMainnetVerifiersKey: string
+
+    /**
+     * The base url of FDC testnet verifiers service
+     */
+    api_FdcTestnetVerifiersBaseUrl: string
+
+    /**
+     * The API key for a FDC testnet verifiers service
+     */
+    api_FdcTestnetVerifiersKey: string
+
+    /**
+     * The base url of a FDC data availability service
+     */
+    api_FdcDABaseUrl: string
+
+    /**
+     * The API key for a FDC data availability service
+     */
+    api_FdcDAKey: string
+
 
     copy(): Constants {
         return Constants.fromJson(this.toJson())
@@ -134,6 +164,7 @@ export class Constants {
         let constants = new Constants()
         constants.hrp = "flare"
         constants.rpc = "https://flare-api.flare.network/ext/bc/C/rpc"
+        constants.api_FdcDABaseUrl = "https://flr-data-availability.flare.network"
         return constants
     }
 
@@ -150,6 +181,7 @@ export class Constants {
         let constants = new Constants()
         constants.hrp = "songbird"
         constants.rpc = "https://songbird-api.flare.network/ext/bc/C/rpc"
+        constants.api_FdcDABaseUrl = "https://sgb-data-availability.flare.network"
         return constants
     }
 
@@ -166,6 +198,7 @@ export class Constants {
         let constants = new Constants()
         constants.hrp = "costwo"
         constants.rpc = "https://coston2-api.flare.network/ext/bc/C/rpc"
+        constants.api_FdcDABaseUrl = "https://ctn2-data-availability.flare.network"
         return constants
     }
 
@@ -182,6 +215,7 @@ export class Constants {
         let constants = new Constants()
         constants.hrp = "coston"
         constants.rpc = "https://coston-api.flare.network/ext/bc/C/rpc"
+        constants.api_FdcDABaseUrl = "https://ctn-data-availability.flare.network"
         return constants
     }
 
@@ -200,6 +234,11 @@ export class Constants {
         this.address_SafeProxyFactory = "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67"
         this.address_SafeSingleton = "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762"
         this.address_SafeFallbackHandler = "0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99"
+        this.api_FdcMainnetVerifiersBaseUrl = "https://fdc-verifiers-mainnet.flare.network"
+        this.api_FdcMainnetVerifiersKey = "00000000-0000-0000-0000-000000000000"
+        this.api_FdcTestnetVerifiersBaseUrl = "https://fdc-verifiers-testnet.flare.network"
+        this.api_FdcTestnetVerifiersKey = "00000000-0000-0000-0000-000000000000"
+        this.api_FdcDAKey = "00000000-0000-0000-0000-000000000000"
     }
 
 }

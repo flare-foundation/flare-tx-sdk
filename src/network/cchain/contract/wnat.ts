@@ -1,4 +1,4 @@
-import { FtsoDelegate as FtsoDelegate } from "src/network/iotype";
+import { FtsoDelegate as FtsoDelegate } from "../../iotype";
 import { EvmContract } from "./evm_contract";
 
 export class WNat extends EvmContract {

@@ -5,7 +5,7 @@ import { NetworkCore, NetworkBased } from "./core"
 import { PChain } from "./pchain"
 import { AfterTxConfirmationCallback, AfterTxSubmissionCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
 import { Constants } from "./constants"
-import { Balance, FoundationProposalInfo, FoundationProposalSupport, FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, Stake, StakeLimits } from "./iotype"
+import { Balance, FdcAttestation, FdcAttestationRequest, FdcSourceNetwork, FoundationProposalInfo, FoundationProposalSupport, FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, Stake, StakeLimits } from "./iotype"
 import { FlareContract } from "./contract"
 import { Utils } from "./utils"
 
@@ -635,6 +635,56 @@ export class Network extends NetworkBased {
     async undelegateGovernanceVotePower(wallet: Wallet): Promise<void> {
         let cAddress = await this._getCAddress(wallet)
         return this._cchain.tx.undelegateGovernanceVotePower(wallet, cAddress)
+    }
+
+    async submitFdcAttestationRequestForEvmTransaction(
+        wallet: Wallet,
+        source: FdcSourceNetwork,
+        txId: string
+    ): Promise<FdcAttestationRequest> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.submitFdcAttestationRequestForEvmTransaction(
+            wallet,
+            cAddress,
+            source,
+            txId
+        )
+    }
+
+    async submitFdcAttestationRequestForPayment(
+        wallet: Wallet,
+        source: FdcSourceNetwork,
+        txId: string
+    ): Promise<FdcAttestationRequest> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.submitFdcAttestationRequestForPayment(
+            wallet,
+            cAddress,
+            source,
+            txId
+        )
+    }
+
+    async submitFdcAttestationRequestForAddressValidity(
+        wallet: Wallet,
+        source: FdcSourceNetwork,
+        address: string
+    ): Promise<FdcAttestationRequest> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.submitFdcAttestationRequestForAddressValidity(
+            wallet,
+            cAddress,
+            source,
+            address
+        )
+    }
+
+    async isFdcVotingRoundFinalized(votingRoundId: number) : Promise<boolean> {
+        return this._cchain.isFdcVotingRoundFinalized(votingRoundId)
+    }
+
+    async getFdcAttestation(request: FdcAttestationRequest): Promise<FdcAttestation> {
+        return this._cchain.getFdcAttestation(request)
     }
 
     /**

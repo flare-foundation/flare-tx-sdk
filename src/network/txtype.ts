@@ -17,6 +17,7 @@ export class TxType {
     static readonly FOUNDATION_PROPOSAL_VOTE = "proposal_vote"
     static readonly DELEGATE_GOVERNANCE_VOTE_POWER = "delegate_governance_vote_power"
     static readonly UNDELEGATE_GOVERNANCE_VOTE_POWER = "undelegate_governance_vote_power"
+    static readonly SUBMIT_ATTESTATION_REQUEST = "submit_attestation_request"
     static readonly CUSTOM_CONTRACT_C = "custom_contract_c"
     static readonly EXPORT_P = "export_p"
     static readonly IMPORT_P = "import_p"
@@ -78,6 +79,9 @@ export class TxType {
             }
             case this.UNDELEGATE_GOVERNANCE_VOTE_POWER: {
                 return "Undelegate governance vote power"
+            }
+            case this.SUBMIT_ATTESTATION_REQUEST: {
+                return "Submit attestation request"
             }
             case this.CUSTOM_CONTRACT_C: {
                 return "Custom contract transaction"

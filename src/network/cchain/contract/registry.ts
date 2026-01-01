@@ -9,6 +9,10 @@ import { RewardManager } from "./reward_manager";
 import { RNat } from "./rnat";
 import { PollingFoundation } from "./polling";
 import { GovernanceVotePower } from "./vote_power";
+import { FdcHub } from "./fdc_hub";
+import { FdcRequestFeeConfigurations } from "./fdc_request_fee_configurations";
+import { FlareSystemsManager } from "./flare_systems_manager";
+import { Relay } from "./relay";
 
 export class ContractRegistry extends EvmContract {
 
@@ -69,6 +73,26 @@ export class ContractRegistry extends EvmContract {
     async getStakeVerifier(): Promise<PChainStakeMirrorVerifier> {
         let address = await this.getAddress("PChainStakeMirrorVerifier")
         return new PChainStakeMirrorVerifier(this._core, address)
+    }
+
+    async getFdcHub(): Promise<FdcHub> {
+        let address = await this.getAddress("FdcHub")
+        return new FdcHub(this._core, address)
+    }
+
+    async getFdcRequestFeeConfigurations(): Promise<FdcRequestFeeConfigurations> {
+        let address = await this.getAddress("FdcRequestFeeConfigurations")
+        return new FdcRequestFeeConfigurations(this._core, address)
+    }
+
+    async getFlareSystemManager(): Promise<FlareSystemsManager> {
+        let address = await this.getAddress("FlareSystemsManager")
+        return new FlareSystemsManager(this._core, address)
+    }
+
+    async getRelay(): Promise<Relay> {
+        let address = await this.getAddress("Relay")
+        return new Relay(this._core, address)
     }
 
 }
