@@ -9,6 +9,7 @@ import { Transactions } from "./tx"
 import { utils as futils } from "@flarenetwork/flarejs"
 import { SafeProxy as SafeProxy } from "./contract/safe_proxy"
 import { FdcDataAvailability } from "./fdc/data_availability"
+import { AttestationType, AttestationTypes } from "./fdc/attestation_type"
 
 export class CChain extends NetworkBased {
 
@@ -198,6 +199,19 @@ export class CChain extends NetworkBased {
         let da = new FdcDataAvailability(this._core)
         let attestation = await da.getAttestation(request.data, request.votingRoundId)
         return attestation
+    }
+
+    async verifyFdcAttestation(attestation: FdcAttestation): Promise<boolean> {
+        let verification = await this._registry.getFdcVerification()
+        let type = AttestationTypes.getType(attestation.response.attestationType)
+        if (type == AttestationType.EVM_TRANSACTION) {
+            return verification.verifyEVMTransaction(attestation)
+        } else if (type == AttestationType.PAYMENT) {
+            return verification.verifyPayment(attestation)
+        } else if (type == AttestationType.ADDRESS_VALIDITY) {
+            return verification.verifyAddressValidity(attestation)
+        }
+        throw new Error("Unsupported attestation type")
     }
 
     async invokeContractCall(

@@ -13,6 +13,7 @@ import { FdcHub } from "./fdc_hub";
 import { FdcRequestFeeConfigurations } from "./fdc_request_fee_configurations";
 import { FlareSystemsManager } from "./flare_systems_manager";
 import { Relay } from "./relay";
+import { FdcVerification } from "./fdc_verification";
 
 export class ContractRegistry extends EvmContract {
 
@@ -83,6 +84,11 @@ export class ContractRegistry extends EvmContract {
     async getFdcRequestFeeConfigurations(): Promise<FdcRequestFeeConfigurations> {
         let address = await this.getAddress("FdcRequestFeeConfigurations")
         return new FdcRequestFeeConfigurations(this._core, address)
+    }
+
+    async getFdcVerification(): Promise<FdcVerification> {
+        let address = await this.getAddress("FdcVerification")
+        return new FdcVerification(this._core, address)
     }
 
     async getFlareSystemManager(): Promise<FlareSystemsManager> {

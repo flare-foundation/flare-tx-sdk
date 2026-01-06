@@ -637,34 +637,67 @@ export class Network extends NetworkBased {
         return this._cchain.tx.undelegateGovernanceVotePower(wallet, cAddress)
     }
 
+    /**
+     * Submits Flare Data Connector (FDC) attestation request for EVM transaction.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param source An instance of the enum {@link FdcSourceNetwork} that determines the source network (ETH, FLR, or SGB) of the EVM transaction to attest.
+     * @param transactionId Hash of the EVM transaction to attest.
+     * @returns The instance of type {@link FdcAttestationRequest} that specifies the attestation request data.
+     */
     async submitFdcAttestationRequestForEvmTransaction(
         wallet: Wallet,
         source: FdcSourceNetwork,
-        txId: string
+        transactionId: string
     ): Promise<FdcAttestationRequest> {
         let cAddress = await this._getCAddress(wallet)
         return this._cchain.tx.submitFdcAttestationRequestForEvmTransaction(
             wallet,
             cAddress,
             source,
-            txId
+            transactionId
         )
     }
 
+    /**
+     * Submits Flare Data Connector (FDC) attestation request for payment transaction.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param source An instance of the enum {@link FdcSourceNetwork} that determines the source network (BTC, DOGE, or XRP) of the payment transaction to attest.
+     * @param transactionId Id of the payment transaction to attest.
+     * @param senderUtxo Input index or address specifying the sender of the UTXO based payment transaction (optional, equal to 0 by default, relevant for BTC and DOGE)
+     * @param recipientUtxo Output index or address specifying the recipient of the UTXO based payment transaction (optional, equal to 0 by default, relevant for BTC and DOGE)
+     * @returns The instance of type {@link FdcAttestationRequest} that specifies the attestation request data.
+     */
     async submitFdcAttestationRequestForPayment(
         wallet: Wallet,
         source: FdcSourceNetwork,
-        txId: string
+        transactionId: string,
+        senderUtxo?: number | string,
+        recipientUtxo?: number | string
     ): Promise<FdcAttestationRequest> {
         let cAddress = await this._getCAddress(wallet)
         return this._cchain.tx.submitFdcAttestationRequestForPayment(
             wallet,
             cAddress,
             source,
-            txId
+            transactionId,
+            senderUtxo,
+            recipientUtxo
         )
     }
 
+    /**
+     * Submits Flare Data Connector (FDC) attestation request for the validity of an address.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param source An instance of the enum {@link FdcSourceNetwork} that determines the source network (BTC, DOGE, or XRP) of the address to attest.
+     * @param address Address to attest.
+     * @returns The instance of type {@link FdcAttestationRequest} that specifies the attestation request data.
+     */
     async submitFdcAttestationRequestForAddressValidity(
         wallet: Wallet,
         source: FdcSourceNetwork,
@@ -679,12 +712,31 @@ export class Network extends NetworkBased {
         )
     }
 
-    async isFdcVotingRoundFinalized(votingRoundId: number) : Promise<boolean> {
+    /**
+     * Determines if the Flare Data Connector (FDC) voting round is finalized.
+     * @param votingRoundId A number that specifies the voting round id.
+     * @returns The boolean indicating if the voting round is finalized.
+     */
+    async isFdcVotingRoundFinalized(votingRoundId: number): Promise<boolean> {
         return this._cchain.isFdcVotingRoundFinalized(votingRoundId)
     }
 
+    /**
+     * Returns the Flare Data Connector (FDC) attestation.
+     * @param request An instance of type {@link FdcAttestationRequest} specifying the submitted attestation request.
+     * @returns The instance of type {@link FdcAttestation} specifying the attestation.
+     */
     async getFdcAttestation(request: FdcAttestationRequest): Promise<FdcAttestation> {
         return this._cchain.getFdcAttestation(request)
+    }
+
+    /**
+     * Verifies the Flare Data Connector (FDC) attestation.
+     * @param attestation An instance of type {@link FdcAttestation} specifiyng the attestation.
+     * @returns The boolean indicating if the attestation data (response) matches the attestation proof.
+     */
+    async verifyFdcAttestation(attestation: FdcAttestation): Promise<boolean> {
+        return this._cchain.verifyFdcAttestation(attestation)
     }
 
     /**
@@ -1030,11 +1082,19 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns the base transaction fee on the P-chain
+     * Returns the base transaction fee on the P-chain.
      * @returns The default fee in wei.
      */
     async getBaseTxFeeOnP(): Promise<bigint> {
         return this._pchain.tx.getBaseTxFee()
+    }
+
+    /**
+     * Returns the network identifier (human-readable part).
+     * @returns The string identifier.
+     */
+    getHrp(): string {
+        return this._core.hrp
     }
 
     /**

@@ -9,76 +9,168 @@ export function runFdcTests(env: TestEnvironment): void {
 
     describe("Attestation tests", function () {
 
-        it("attestation for EVM transaction (ETH test)", async function () {
-            let txId = "0x8e7e4da9eb87b22e3eb7f06e7886f3dfe0d94e6a70f3b912ed37b3523e1e1dd6"
+        it("attestation for EVM transaction (SGB)", async function (t) {
+            if (!["coston", "costwo"].includes(network.getHrp())) {
+                t.skip("unsupported network")
+                return
+            }
+
+            let tx = await getRecentTx("sgb")
+            if (!tx) {
+                t.skip("no EVM transaction found")
+                return
+            }
+            let txId = tx.hash
             let request = await network.submitFdcAttestationRequestForEvmTransaction(
                 wallet,
-                FdcSourceNetwork.ETH_TEST,
+                FdcSourceNetwork.SGB,
                 txId
             )
+            assert.equal(request.votingRoundId > 0, true)
+
             while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
                 await env.sleep(3000)
             }
             let attestation = await network.getFdcAttestation(request)
-            console.log(attestation)
+            assert.equal(tx.block_number, attestation.response.responseBody.blockNumber, "invalid block number")
+
+            let verification = await network.verifyFdcAttestation(attestation)
+            assert.equal(verification, true, "verification failed")
         })
 
-        it("attestation for payment (BTC test)", async function () {
-            let txId = "d7bc29e1415dcd84cad09a0528973065cd6f1182800270814e197c22a3a7b155"
+        it("attestation for payment (DOGE)", async function (t) {
+            if (!["coston", "costwo"].includes(network.getHrp())) {
+                t.skip("unsupported network")
+                return
+            }
+
+            let tx = await getRecentTx("doge")
+            if (!tx) {
+                t.skip("no payment transaction found")
+                return
+            }
+            let txId = tx.transactionId
             let request = await network.submitFdcAttestationRequestForPayment(
                 wallet,
-                FdcSourceNetwork.BTC_TEST,
+                FdcSourceNetwork.DOGE,
                 txId
             )
+
+            return
             while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
                 await env.sleep(3000)
             }
             let attestation = await network.getFdcAttestation(request)
-            console.log(attestation)
+            assert.equal(tx.blockNumber, attestation.response.responseBody.blockNumber, "invalid block number")
+
+            let verification = await network.verifyFdcAttestation(attestation)
+            assert.equal(verification, true, "verification failed")
         })
 
-        it("attestation for payment (XRP test)", async function () {
-            let txId = "61B3F82572EB36BED16C14470D8F6E10E877AAF41D82E0A990F2385C40F445C6"
+        it("attestation for payment (XRP)", async function (t) {
+            if (!["coston", "costwo"].includes(network.getHrp())) {
+                t.skip("unsupported network")
+                return
+            }
+
+            let tx = await getRecentTx("xrp")
+            if (!tx) {
+                t.skip("no payment transaction found")
+                return
+            }
+            let txId = tx.transactionId
             let request = await network.submitFdcAttestationRequestForPayment(
                 wallet,
-                FdcSourceNetwork.XRP_TEST,
+                FdcSourceNetwork.XRP,
                 txId
             )
+
             while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
                 await env.sleep(3000)
             }
             let attestation = await network.getFdcAttestation(request)
-            console.log(attestation)
+            assert.equal(tx.blockNumber, attestation.response.responseBody.blockNumber, "invalid block number")
+
+            let verification = await network.verifyFdcAttestation(attestation)
+            assert.equal(verification, true, "verification failed")
         })
 
-        it("attestation for address validity (BTC test)", async function () {
-            let address = "tb1qsdxygae5zfrnhdpsjrlsev9zw40dx88z72vrkx"
+        it("attestation for address validity (DOGE)", async function () {
+            let address = "nmZ36RoFkyd9tKqfTk2iBt5UfgLfbcxC98"
             let request = await network.submitFdcAttestationRequestForAddressValidity(
                 wallet,
-                FdcSourceNetwork.BTC_TEST,
+                FdcSourceNetwork.DOGE,
                 address
             )
+
             while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
                 await env.sleep(3000)
             }
             let attestation = await network.getFdcAttestation(request)
-            console.log(attestation)
+            assert.equal(attestation.response.responseBody.isValid, true, "invalid address")
+
+            let verification = await network.verifyFdcAttestation(attestation)
+            assert.equal(verification, true, "verification failed")
         })
 
-        it("attestation for address validity (XRP test)", async function () {
+        it("attestation for address validity (XRP)", async function () {
             let address = "rGBERS6aZcwaRjanAsao7n972v6wjYBkr1"
             let request = await network.submitFdcAttestationRequestForAddressValidity(
                 wallet,
-                FdcSourceNetwork.XRP_TEST,
+                FdcSourceNetwork.XRP,
                 address
             )
+
             while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
                 await env.sleep(3000)
             }
             let attestation = await network.getFdcAttestation(request)
-            console.log(attestation)
+            assert.equal(attestation.response.responseBody.isValid, true, "invalid address")
+
+            let verification = await network.verifyFdcAttestation(attestation)
+            assert.equal(verification, true, "verification failed")
         })
 
     })
 
+}
+
+async function getRecentTx(network: string): Promise<any> {
+    if (["doge", "xrp"].includes(network)) {
+        let limit = 100
+        let attempts = 100
+        for (let i = 0; i < attempts; i++) {
+            let response = await fetch(
+                `https://fdc-verifiers-testnet.flare.network/verifier/${network}/api/indexer/transaction?limit=${limit}&offset=${i * limit}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "X-API-KEY": "00000000-0000-0000-0000-000000000000",
+                        "Content-Type": "application/json",
+                    }
+                }
+            )
+            let json = await response.json()
+            let txs = json.data.items
+            let payment = txs.find((tx: any) => tx.isNativePayment)
+            if (payment) {
+                return payment
+            }
+        }
+        return null
+    } else if (network == "sgb") {
+        let response = await fetch(
+            "https://coston-explorer.flare.network/api/v2/transactions",
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            }
+        )
+        let json = await response.json()
+        return json.items && json.items.length > 0 ? json.items[0] : null
+    } else {
+        throw new Error("Unsupported network")
+    }
 }

@@ -1,12 +1,7 @@
 import { ethers } from "ethers";
 import { NetworkBased } from "../../core";
 import { FdcSourceNetwork } from "../../iotype";
-
-enum AttestationType {
-    EVM_TRANSACTION = "EVMTransaction",
-    PAYMENT = "Payment",
-    ADDRESS_VALIDITY = "AddressValidity"
-}
+import { AttestationType, AttestationTypes } from "./attestation_type";
 
 export class FdcVerifiers extends NetworkBased {
 
@@ -14,7 +9,7 @@ export class FdcVerifiers extends NetworkBased {
         source: FdcSourceNetwork,
         txId: string
     ): Promise<string> {
-        let attestationType = this._getAttestationType(AttestationType.EVM_TRANSACTION)
+        let attestationType = AttestationTypes.getCode(AttestationType.EVM_TRANSACTION)
         let sourceId = this._getSourceId(source)
         let requestBody = {
             transactionHash: txId,
@@ -27,28 +22,16 @@ export class FdcVerifiers extends NetworkBased {
         let apiKey: string
         switch (source) {
             case FdcSourceNetwork.ETH:
-                apiUrl = `${this._core.const.api_FdcMainnetVerifiersBaseUrl}/verifier/eth`
-                apiKey = this._core.const.api_FdcMainnetVerifiersKey
+                apiUrl = `${this._core.const.api_FdcVerifiersBaseUrl}/verifier/eth`
+                apiKey = this._core.const.api_FdcVerifiersKey
                 break
             case FdcSourceNetwork.FLR:
-                apiUrl = `${this._core.const.api_FdcMainnetVerifiersBaseUrl}/verifier/flr`
-                apiKey = this._core.const.api_FdcMainnetVerifiersKey
+                apiUrl = `${this._core.const.api_FdcVerifiersBaseUrl}/verifier/flr`
+                apiKey = this._core.const.api_FdcVerifiersKey
                 break
             case FdcSourceNetwork.SGB:
-                apiUrl = `${this._core.const.api_FdcMainnetVerifiersBaseUrl}/verifier/sgb`
-                apiKey = this._core.const.api_FdcMainnetVerifiersKey
-                break
-            case FdcSourceNetwork.ETH_TEST:
-                apiUrl = `${this._core.const.api_FdcTestnetVerifiersBaseUrl}/verifier/eth`
-                apiKey = this._core.const.api_FdcTestnetVerifiersKey
-                break
-            case FdcSourceNetwork.FLR_TEST:
-                apiUrl = `${this._core.const.api_FdcTestnetVerifiersBaseUrl}/verifier/flr`
-                apiKey = this._core.const.api_FdcTestnetVerifiersKey
-                break
-            case FdcSourceNetwork.SGB_TEST:
-                apiUrl = `${this._core.const.api_FdcTestnetVerifiersBaseUrl}/verifier/sgb`
-                apiKey = this._core.const.api_FdcTestnetVerifiersKey
+                apiUrl = `${this._core.const.api_FdcVerifiersBaseUrl}/verifier/sgb`
+                apiKey = this._core.const.api_FdcVerifiersKey
                 break
             default:
                 throw new Error(`${source} is not supported source for EVM transaction attestation request`)
@@ -60,42 +43,30 @@ export class FdcVerifiers extends NetworkBased {
     async preparePaymentRequest(
         source: FdcSourceNetwork,
         txId: string,
-        sender?: string,
-        recipient?: string
+        senderUtxo?: number | string,
+        recipientUtxo?: number | string
     ): Promise<string> {
-        let attestationType = this._getAttestationType(AttestationType.PAYMENT)
+        let attestationType = AttestationTypes.getCode(AttestationType.PAYMENT)
         let sourceId = this._getSourceId(source)
         let requestBody = {
             transactionId: txId,
-            inUtxo: sender ? ethers.id(sender) : "0",
-            utxo: recipient ? ethers.id(recipient) : "0"
+            inUtxo: this._getUtxoParameter(senderUtxo),
+            utxo: this._getUtxoParameter(recipientUtxo)
         }
         let apiUrl: string
         let apiKey: string
         switch (source) {
             case FdcSourceNetwork.BTC:
-                apiUrl = `${this._core.const.api_FdcMainnetVerifiersBaseUrl}/verifier/btc`
-                apiKey = this._core.const.api_FdcMainnetVerifiersKey
+                apiUrl = `${this._core.const.api_FdcVerifiersBaseUrl}/verifier/btc`
+                apiKey = this._core.const.api_FdcVerifiersKey
                 break
             case FdcSourceNetwork.DOGE:
-                apiUrl = `${this._core.const.api_FdcMainnetVerifiersBaseUrl}/verifier/doge`
-                apiKey = this._core.const.api_FdcMainnetVerifiersKey
+                apiUrl = `${this._core.const.api_FdcVerifiersBaseUrl}/verifier/doge`
+                apiKey = this._core.const.api_FdcVerifiersKey
                 break
             case FdcSourceNetwork.XRP:
-                apiUrl = `${this._core.const.api_FdcMainnetVerifiersBaseUrl}/verifier/xrp`
-                apiKey = this._core.const.api_FdcMainnetVerifiersKey
-                break
-            case FdcSourceNetwork.BTC_TEST:
-                apiUrl = `${this._core.const.api_FdcTestnetVerifiersBaseUrl}/verifier/btc`
-                apiKey = this._core.const.api_FdcTestnetVerifiersKey
-                break
-            case FdcSourceNetwork.DOGE_TEST:
-                apiUrl = `${this._core.const.api_FdcTestnetVerifiersBaseUrl}/verifier/doge`
-                apiKey = this._core.const.api_FdcTestnetVerifiersKey
-                break
-            case FdcSourceNetwork.XRP_TEST:
-                apiUrl = `${this._core.const.api_FdcTestnetVerifiersBaseUrl}/verifier/xrp`
-                apiKey = this._core.const.api_FdcTestnetVerifiersKey
+                apiUrl = `${this._core.const.api_FdcVerifiersBaseUrl}/verifier/xrp`
+                apiKey = this._core.const.api_FdcVerifiersKey
                 break
             default:
                 throw new Error(`${source} is not supported source for payment attestation request`)
@@ -104,11 +75,24 @@ export class FdcVerifiers extends NetworkBased {
         return this._prepareRequest(apiUrl, apiKey, attestationType, sourceId, requestBody)
     }
 
+    private _getUtxoParameter(utxo: string | number | undefined): string {
+        if (!utxo) {
+            return "0"
+        }
+        if (typeof utxo === "number") {
+            return utxo.toString()
+        }
+        if (Number.isInteger(Number(utxo))) {
+            return utxo.toString()
+        }
+        return ethers.id(utxo)
+    }
+
     async prepareAddressValidityRequest(
         source: FdcSourceNetwork,
         address: string
     ): Promise<string> {
-        let attestationType = this._getAttestationType(AttestationType.ADDRESS_VALIDITY)        
+        let attestationType = AttestationTypes.getCode(AttestationType.ADDRESS_VALIDITY)
         let sourceId = this._getSourceId(source)
         let requestBody = {
             addressStr: address
@@ -117,28 +101,16 @@ export class FdcVerifiers extends NetworkBased {
         let apiKey: string
         switch (source) {
             case FdcSourceNetwork.BTC:
-                apiUrl = `${this._core.const.api_FdcMainnetVerifiersBaseUrl}/verifier/btc`
-                apiKey = this._core.const.api_FdcMainnetVerifiersKey
+                apiUrl = `${this._core.const.api_FdcVerifiersBaseUrl}/verifier/btc`
+                apiKey = this._core.const.api_FdcVerifiersKey
                 break
             case FdcSourceNetwork.DOGE:
-                apiUrl = `${this._core.const.api_FdcMainnetVerifiersBaseUrl}/verifier/doge`
-                apiKey = this._core.const.api_FdcMainnetVerifiersKey
+                apiUrl = `${this._core.const.api_FdcVerifiersBaseUrl}/verifier/doge`
+                apiKey = this._core.const.api_FdcVerifiersKey
                 break
             case FdcSourceNetwork.XRP:
-                apiUrl = `${this._core.const.api_FdcMainnetVerifiersBaseUrl}/verifier/xrp`
-                apiKey = this._core.const.api_FdcMainnetVerifiersKey
-                break
-            case FdcSourceNetwork.BTC_TEST:
-                apiUrl = `${this._core.const.api_FdcTestnetVerifiersBaseUrl}/verifier/btc`
-                apiKey = this._core.const.api_FdcTestnetVerifiersKey
-                break
-            case FdcSourceNetwork.DOGE_TEST:
-                apiUrl = `${this._core.const.api_FdcTestnetVerifiersBaseUrl}/verifier/doge`
-                apiKey = this._core.const.api_FdcTestnetVerifiersKey
-                break
-            case FdcSourceNetwork.XRP_TEST:
-                apiUrl = `${this._core.const.api_FdcTestnetVerifiersBaseUrl}/verifier/xrp`
-                apiKey = this._core.const.api_FdcTestnetVerifiersKey
+                apiUrl = `${this._core.const.api_FdcVerifiersBaseUrl}/verifier/xrp`
+                apiKey = this._core.const.api_FdcVerifiersKey
                 break
             default:
                 throw new Error(`${source} is not supported source for address validity attestation request`)
@@ -147,12 +119,9 @@ export class FdcVerifiers extends NetworkBased {
         return this._prepareRequest(apiUrl, apiKey, attestationType, sourceId, requestBody)
     }
 
-    private _getAttestationType(type: AttestationType): string {
-        return ethers.zeroPadBytes(ethers.toUtf8Bytes(type), 32)
-    }
-
     private _getSourceId(source: FdcSourceNetwork) {
-        return ethers.zeroPadBytes(ethers.toUtf8Bytes(source), 32)
+        let prefix = ["coston", "costwo"].includes(this._core.const.hrp) ? "test" : ""
+        return ethers.zeroPadBytes(ethers.toUtf8Bytes(`${prefix}${source}`), 32)
     }
 
     private async _prepareRequest(
@@ -186,7 +155,7 @@ export class FdcVerifiers extends NetworkBased {
                 info.push(json.status)
             }
             if (json.error) {
-                info.push(json.error)                
+                info.push(json.error)
             }
             if (json.message) {
                 info.push(json.message)

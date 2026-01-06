@@ -256,10 +256,12 @@ export class Transactions extends NetworkBased {
         wallet: Wallet,
         cAddress: string,
         source: FdcSourceNetwork,
-        txId: string
+        txId: string,
+        senderUtxo?: number | string,
+        recipientUtxo?: number | string
     ): Promise<FdcAttestationRequest> {
         let verifiers = new FdcVerifiers(this._core)
-        let data = await verifiers.preparePaymentRequest(source, txId)
+        let data = await verifiers.preparePaymentRequest(source, txId, senderUtxo, recipientUtxo)
         let votingRoundId = await this._submitFdcAttestationRequest(wallet, cAddress, data)
         return { data, votingRoundId }
     }

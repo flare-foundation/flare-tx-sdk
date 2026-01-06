@@ -131,15 +131,9 @@ export enum FdcSourceNetwork {
     ETH = "ETH",
     FLR = "FLR",
     SGB = "SGB",
-    ETH_TEST = "testETH",
-    FLR_TEST = "testFLR",
-    SGB_TEST = "testSGB",
     BTC = "BTC",
     DOGE = "DOGE",
-    XRP = "XRP",
-    BTC_TEST = "testBTC",
-    DOGE_TEST = "testDOGE",
-    XRP_TEST = "testXRP"
+    XRP = "XRP"
 }
 
 /**
@@ -158,7 +152,7 @@ export type FdcAttestation = {
         attestationType: string,
         sourceId: string,
         votingRound: number,
-        lowestUsedTimestamp: number,
+        lowestUsedTimestamp: bigint,
         requestBody: any,
         responseBody: any
     },

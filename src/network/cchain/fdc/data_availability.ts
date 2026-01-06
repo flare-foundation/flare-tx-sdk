@@ -5,7 +5,8 @@ import { Utils } from "../../utils";
 export class FdcDataAvailability extends NetworkBased {
 
     private static ATTESTATION_NOT_FOUND_ERROR = "attestation request not found"
-    private static ATTESTATION_NOT_FOUND_TIMEOUT_MS = 30000
+    private static ATTESTATION_NOT_FOUND_TIMEOUT_MS = 60000
+    private static ATTESTATION_NOT_FOUND_SLEEP_MS = 2000
 
     async getAttestation(request: string, roundId: number): Promise<FdcAttestation> {
         let requestData = {
@@ -25,12 +26,20 @@ export class FdcDataAvailability extends NetworkBased {
                     body: JSON.stringify(requestData),
                 }
             )
-            let json = await response.json()
+            let json: any
+            try {
+                json = await response.json()
+            } catch (e) {
+                throw new Error(`Failed to parse response from FDC data availability service: ${e}`)
+            }
             if (!json.error) {
+                if (!Number.isSafeInteger(json.response.lowestUsedTimestamp)) {
+                    json.response.lowestUsedTimestamp = BigInt("18446744073709551615")
+                }
                 return json
             }
             if (json.error == FdcDataAvailability.ATTESTATION_NOT_FOUND_ERROR) {
-                await Utils.sleep(1000)
+                await Utils.sleep(FdcDataAvailability.ATTESTATION_NOT_FOUND_SLEEP_MS)
                 continue
             }
             throw new Error(`Failed to obtain FDC attestation: ${json.error}`)
