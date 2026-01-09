@@ -7,6 +7,7 @@ This is the official Node.js Software Development Kit (SDK) for performing commo
 - [Claiming rewards from FlareDrop, staking, FTSO delegation and rNat projects](#reward-claims-1)
 - [Delegating to FTSO providers](#delegation-to-ftso-providers-1)
 - [Voting on Flare foundation proposals](#voting-on-flare-foundation-proposals)
+- [Managing FDC attestations](#fdc-attestations-1)
 - [Interacting with C-chain contracts](#c-chain-contracts-1)
 - [Creating and using smart (multisig) accounts](#smart-account)
 - [Staking on the P-chain](#staking-1)
@@ -92,6 +93,27 @@ await network.delegateToFtso(wallet, address1, share, address2, share)
 Delegation information:
 ```
 let delegates = await network.getFtsoDelegatesOf(cAddress)
+```
+
+### FDC attestations
+
+Submitting requests:
+```
+let req1 = await network.submitFdcAttestationRequestForEvmTransaction(wallet, FdcSourceNetwork.ETH, txId)
+let req2 = await network.submitFdcAttestationRequestForPayment(wallet, FdcSourceNetwork.XRP, txId)
+let req3 = await network.submitFdcAttestationRequestForAddressValidity(wallet, FdcSourceNetwork.BTC, address)
+```
+
+Fetching attestation:
+```
+if (await network.isFdcVotingRoundFinalized(req.votingRoundId)) {
+    let attestation = await network.getFdcAttestation(req)
+}
+```
+
+Verifying attestation:
+```
+let proved = verifyFdcAttestation(attestation)
 ```
 
 ### C-chain contracts
@@ -573,6 +595,50 @@ let votePower = await network.getVotePowerForFoundationProposal(publicKeyOrAddre
 let delegate = await network.getVoteDelegateForFoundationProposal(publicKeyOrAddress, proposalId)
  ```
 Note, however, that this query may fail for not so recent proposals as old governance vote power data is being regularly deleted from the C-chain storage.
+
+### FDC attestations
+
+Flare Data Connector (FDC) protocol enables importing and verifying data from other blockchains and networks. In order to obtain data attestation, the data is first submitted to the Flare's network. In the course of a FDC voting round, the data providers vote on data and provide attestation proofs. These proofs can be fetched and used as verifiable data on custom contracts on the Flare's network C-chain.
+
+There exist different attestation types. To submit an attestation request for an EVM transaction on a supported EVM network (e.g., Ethereum, but also Flare and Songbird), use
+```
+let request = network.submitFdcAttestationRequestForEvmTransaction(wallet, FdcSourceNetwork.ETH, txId)
+```
+where `txId` is the hash of the EVM transaction to verify. Similarly, an attestation request for payment on a supported blockchain (e.g., Ripple, but also Bitcoin and Doge) can be subbmited by
+```
+let request = network.submitFdcAttestationRequestForPayment(wallet, FdcSourceNetwork.XRP, txId),
+```
+where `txId` is the hash of the payment transaction to verify. A request to check the validity of an `address` on Bitcoin, Doge, or Ripple blockchain can be submitted by
+```
+let request = network.submitFdcAttestationRequestForAddressValidity(wallet, FdcSourceNetwork.BTC, address).
+```
+In all cases the resulting object `request` is of type [`FdcAttestationRequest`](src/network/iotype.ts) and has the following properties:
+- `data` The request data in hexadecimal encoding;
+- `votingRoundId` The id of the voting round in which the request has been submitted.
+
+Once the attestation request is submitted, it is necessary to wait for the voting round to finalize. To check if the voting round is finalized, use
+```
+let finalized = await network.isFdcVotingRoundFinalized(request.votingRoundId)
+```
+When `finalized` is `true`, it is possible to obtain attestation proof from the FDC Data Availability service, using
+```
+let attestation = await network.getFdcAttestation(request)
+```
+The object `attestation` is of type [FdcAttestation](src/network/iotype.ts) and has the following properties:
+- `response` Attestation data;
+    - `attestationType` Identifier of the attestation type;
+    - `sourceId` Identifier of the source network;
+    - `votingRound` Voting round id;
+    - `lowestUsedTimestamp` Lowest used timestamp in seconds from the Unix epoch;
+    - `requestBody` Detailed info about the attestation request;
+    - `responseBody` Detailed info about the attestation response;
+- `proof` An array corresponding to the attestation proof.
+
+The validity of the attestation proof can be checked using
+```
+let proved = await network.verifyFdcAttestation(attestation)
+```
+If `proved` is `true`, the attestation is valid and the same response is expected on-chain by calling a suitable function on the Flare's network contract `FdcVerification`.
 
 ### C-chain contracts
 
