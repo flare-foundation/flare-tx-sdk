@@ -34,7 +34,7 @@ variables:
     - npm run build
     - if [ ! -d dist ] || [ ! -f dist/index.js ]; then echo "Dist folder or dist/index.js missing"; exit 1; fi;
     - npm pack
-    - tar -xzf flarenetwork-flare-stake-tool-*.tgz
+    - tar -xzf flarenetwork-flare-tx-sdk-*.tgz
     - if [ ! -d package/dist ] || [ ! -f package/dist/index.js ]; then echo "Dist folder or dist/index.js missing in tarball"; exit 1; fi;
     - if [ $result -eq 1 ]; then npm publish; else npm publish --tag beta; fi;
 
