@@ -20,13 +20,22 @@ variables:
 
 .publish-npm_template:
   image: node:20
+  id_tokens:
+    NPM_ID_TOKEN:
+      aud: "npm:registry.npmjs.org"
+    SIGSTORE_ID_TOKEN:
+      aud: sigstore
   script:
     - apt-get update
     - apt-get install -y gettext
-    - envsubst <<< '//registry.npmjs.org/:_authToken=$AUTH_TOKEN' > .npmrc
     - result=$(grep -Pc "$PATTERN_SEMI" <<< "$CI_COMMIT_TAG") || true
+    - yarn global add npm@latest
     - npm ci
     - npm run build
+    - if [ ! -d dist ] || [ ! -f dist/index.js ]; then echo "Dist folder or dist/index.js missing"; exit 1; fi;
+    - npm pack
+    - tar -xzf flarenetwork-flare-stake-tool-*.tgz
+    - if [ ! -d package/dist ] || [ ! -f package/dist/index.js ]; then echo "Dist folder or dist/index.js missing in tarball"; exit 1; fi;
     - if [ $result -eq 1 ]; then npm publish; else npm publish --tag beta; fi;
 
 stages:
