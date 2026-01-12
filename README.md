@@ -606,7 +606,7 @@ let request = network.submitFdcAttestationRequestForEvmTransaction(wallet, FdcSo
 ```
 where `txId` is the hash of the EVM transaction to verify. Similarly, an attestation request for payment on the Ripple blockchain can be subbmited by
 ```
-let request = network.submitFdcAttestationRequestForPayment(wallet, FdcSourceNetwork.XRP, txId),
+let request = network.submitFdcAttestationRequestForPayment(wallet, FdcSourceNetwork.XRP, txId)
 ```
 where `txId` is the hash of the payment transaction to verify. For the Bitcoin and Doge blockchain, numbers `inputIndex` and `outputIndex` can be supplemented to identify the sender and the recipient of the transaction, e.g.,
 ```
