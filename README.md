@@ -598,17 +598,21 @@ Note, however, that this query may fail for not so recent proposals as old gover
 
 ### FDC attestations
 
-Flare Data Connector (FDC) protocol enables importing and verifying data from other blockchains and networks. In order to obtain data attestation, the data is first submitted to the Flare's network. In the course of a FDC voting round, the data providers vote on data and provide attestation proofs. These proofs can be fetched and used as verifiable data on custom contracts on the Flare's network C-chain.
+Flare Data Connector (FDC) protocol enables importing and verifying data from other blockchains and networks. In order to obtain data attestation, the data is first submitted to the Flare's network. In the course of a FDC voting round, the data providers vote on data and provide attestation proofs. These proofs can be fetched and used as verifiable data in custom contracts on the Flare's network C-chain.
 
 There exist different attestation types. To submit an attestation request for an EVM transaction on a supported EVM network (e.g., Ethereum, but also Flare and Songbird), use
 ```
 let request = network.submitFdcAttestationRequestForEvmTransaction(wallet, FdcSourceNetwork.ETH, txId)
 ```
-where `txId` is the hash of the EVM transaction to verify. Similarly, an attestation request for payment on a supported blockchain (e.g., Ripple, but also Bitcoin and Doge) can be subbmited by
+where `txId` is the hash of the EVM transaction to verify. Similarly, an attestation request for payment on the Ripple blockchain can be subbmited by
 ```
 let request = network.submitFdcAttestationRequestForPayment(wallet, FdcSourceNetwork.XRP, txId),
 ```
-where `txId` is the hash of the payment transaction to verify. A request to check the validity of an `address` on Bitcoin, Doge, or Ripple blockchain can be submitted by
+where `txId` is the hash of the payment transaction to verify. For the Bitcoin and Doge blockchain, numbers `inputIndex` and `outputIndex` can be supplemented to identify the sender and the recipient of the transaction, e.g.,
+```
+let request = network.submitFdcAttestationRequestForPayment(wallet, FdcSourceNetwork.BTC, txId, inputIndex, outputIndex)
+```
+A request to check validity of an `address` on the Bitcoin, Doge, or Ripple blockchain can be submitted by
 ```
 let request = network.submitFdcAttestationRequestForAddressValidity(wallet, FdcSourceNetwork.BTC, address).
 ```

@@ -37,9 +37,6 @@ function execute() {
         privateKeys.split(",")
     )
 
-    runFdcTests(env)
-    return
-
     runBalanceTests(env)
     runWNatTests(env)
     runTransferCTests(env)
@@ -50,6 +47,7 @@ function execute() {
     runRNatTests(env)
     runSmartAccountTests(env)
     runPollingTests(env)
+    runFdcTests(env)
     runGenericContractTests(env)
     runTransferCPTests(env)
     runDelegationPTests(env)
