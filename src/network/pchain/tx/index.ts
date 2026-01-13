@@ -12,6 +12,7 @@ import { Delegator } from "./delegator"
 import { base58 } from "@scure/base"
 import { Transfer } from "./transfer"
 import { Validator } from "./validator"
+import { QR } from "../../qrcode"
 
 export class Transactions extends NetworkBased {
 
@@ -116,7 +117,8 @@ export class Transactions extends NetworkBased {
         let unsignedTxHex = ethers.hexlify(unsignedTx.toBytes())
 
         if (this._core.beforeTxSignature) {
-            let proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex })
+            let verificationQRCode = await QR.generateCodeForTxVerification(unsignedTxHex)
+            let proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex, verificationQRCode })
             if (!proceed) {
                 return null
             }

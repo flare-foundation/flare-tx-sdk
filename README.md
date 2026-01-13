@@ -232,9 +232,10 @@ network.setBeforeTxSignatureCallback(async (data: BeforeTxSignature) => { return
 ```
 The object of type `BeforeTxSignature` contains the properties:
 - `txType` the [code](src/network/txtype.ts) of the transaction type;
-- `unsignedTxHex` the unsigned transaction in the hexadecimal encoding.
+- `unsignedTxHex` the unsigned transaction in the hexadecimal encoding;
+- `verificationQRCode` the QR code in data URL format that can be used to verify the unsigned transaction using the Flare Transaction Verifier mobile app.
 
-The property `unsignedTxHex` can be used for transaction verification (see e.g. [Flare: Transaction verification library](https://github.com/flare-foundation/flare-tx-verifier-lib)).
+The property `unsignedTxHex` can be used to decode and verify the transaction (see e.g. [Flare: Transaction verification library](https://github.com/flare-foundation/flare-tx-verifier-lib)).
 
 Normally, the callback should return `true`, which grants permission to invoke the signature request on the wallet object. If it returns `false`, the transaction is not signed and submitted to the network.
 
