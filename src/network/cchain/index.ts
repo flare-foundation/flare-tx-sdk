@@ -210,6 +210,8 @@ export class CChain extends NetworkBased {
             return verification.verifyPayment(attestation)
         } else if (type == AttestationType.ADDRESS_VALIDITY) {
             return verification.verifyAddressValidity(attestation)
+        } else if (type == AttestationType.WEB2JSON) {
+            return verification.verifyWeb2Json(attestation)
         }
         throw new Error("Unsupported attestation type")
     }

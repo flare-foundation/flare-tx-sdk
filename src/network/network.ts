@@ -713,6 +713,44 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Submits Flare Data Connector (FDC) attestation request for Web2 Json API data.
+     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
+     * - the function `getCAddress` or `getPublicKey`, and
+     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
+     * @param url URL of the data source.
+     * @param httpMethod HTTP method to be used to fetch from URL source (GET, POST, PUT, PATCH, DELETE).
+     * @param headers Headers to be included to fetch from URL source. Use '{}' if no headers are needed.
+     * @param queryParams Query parameters to be included to fetch from URL source. Use '{}' if no query parameters are needed.
+     * @param body Request body to be included to fetch from URL source. Use '{}' if no request body is required.
+     * @param postProcessJq jq filter used to post-process the JSON response from the URL.
+     * @param abiSignature ABI signature of the struct used to encode the data after jq post-processing.     
+     * @returns The instance of type {@link FdcAttestationRequest} that specifies the attestation request data.
+     */
+    async submitFdcAttestationRequestForWeb2Json(
+        wallet: Wallet,
+        url: string,
+        httpMethod: string,
+        headers: string,
+        queryParams: string,
+        body: string,
+        postProcessJq: string,
+        abiSignature: string
+    ): Promise<FdcAttestationRequest> {
+        let cAddress = await this._getCAddress(wallet)
+        return this._cchain.tx.submitFdcAttestationRequestForWeb2Json(
+            wallet,
+            cAddress,
+            url,
+            httpMethod,
+            headers,
+            queryParams,
+            body,
+            postProcessJq,
+            abiSignature
+        )
+    }
+
+    /**
      * Determines if the Flare Data Connector (FDC) voting round is finalized.
      * @param votingRoundId A number that specifies the voting round id.
      * @returns The boolean indicating if the voting round is finalized.

@@ -6,7 +6,7 @@ export class FdcDataAvailability extends NetworkBased {
 
     private static ATTESTATION_NOT_FOUND_ERROR = "attestation request not found"
     private static ATTESTATION_NOT_FOUND_TIMEOUT_MS = 60000
-    private static ATTESTATION_NOT_FOUND_SLEEP_MS = 2000
+    private static ATTESTATION_NOT_FOUND_SLEEP_MS = 3000
 
     async getAttestation(request: string, roundId: number): Promise<FdcAttestation> {
         let requestData = {
@@ -34,7 +34,7 @@ export class FdcDataAvailability extends NetworkBased {
             }
             if (!json.error) {
                 if (!Number.isSafeInteger(json.response.lowestUsedTimestamp)) {
-                    json.response.lowestUsedTimestamp = BigInt("18446744073709551615")
+                    json.response.lowestUsedTimestamp = BigInt("0xffffffffffffffff")
                 }
                 return json
             }

@@ -3,7 +3,8 @@ import { ethers } from "ethers";
 export enum AttestationType {
     EVM_TRANSACTION = "EVMTransaction",
     PAYMENT = "Payment",
-    ADDRESS_VALIDITY = "AddressValidity"
+    ADDRESS_VALIDITY = "AddressValidity",
+    WEB2JSON = "Web2Json"
 }
 
 export class AttestationTypes {

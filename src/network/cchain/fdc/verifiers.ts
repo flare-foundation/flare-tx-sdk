@@ -10,7 +10,7 @@ export class FdcVerifiers extends NetworkBased {
         txId: string
     ): Promise<string> {
         let attestationType = AttestationTypes.getCode(AttestationType.EVM_TRANSACTION)
-        let sourceId = this._getSourceId(source)
+        let sourceId = this._getNetworkSourceId(source)
         let requestBody = {
             transactionHash: txId,
             requiredConfirmations: "1",
@@ -47,7 +47,7 @@ export class FdcVerifiers extends NetworkBased {
         recipientUtxo?: number | string
     ): Promise<string> {
         let attestationType = AttestationTypes.getCode(AttestationType.PAYMENT)
-        let sourceId = this._getSourceId(source)
+        let sourceId = this._getNetworkSourceId(source)
         let requestBody = {
             transactionId: txId,
             inUtxo: this._getUtxoParameter(senderUtxo),
@@ -93,7 +93,7 @@ export class FdcVerifiers extends NetworkBased {
         address: string
     ): Promise<string> {
         let attestationType = AttestationTypes.getCode(AttestationType.ADDRESS_VALIDITY)
-        let sourceId = this._getSourceId(source)
+        let sourceId = this._getNetworkSourceId(source)
         let requestBody = {
             addressStr: address
         }
@@ -119,7 +119,30 @@ export class FdcVerifiers extends NetworkBased {
         return this._prepareRequest(apiUrl, apiKey, attestationType, sourceId, requestBody)
     }
 
-    private _getSourceId(source: FdcSourceNetwork) {
+    async prepareWeb2JsonRequest(
+        url: string,
+        httpMethod: string,
+        headers: string,
+        queryParams: string,
+        body: string,
+        postProcessJq: string,
+        abiSignature: string
+    ): Promise<string> {
+        let attestationType = AttestationTypes.getCode(AttestationType.WEB2JSON)
+        let sourceId = ethers.zeroPadBytes(ethers.toUtf8Bytes("PublicWeb2"), 32)
+        let requestBody = { url, httpMethod, headers, queryParams, body, postProcessJq, abiSignature }
+        let apiUrl = `${this._core.const.api_FdcVerifiersBaseUrl}/verifier/web2/Web2Json/prepareRequest`
+        let apiKey = this._core.const.api_FdcVerifiersKey
+        return this._prepareRequest(
+            apiUrl,
+            apiKey,
+            attestationType,
+            sourceId,
+            requestBody
+        )
+    }
+
+    private _getNetworkSourceId(source: FdcSourceNetwork) {
         let prefix = ["coston", "costwo"].includes(this._core.const.hrp) ? "test" : ""
         return ethers.zeroPadBytes(ethers.toUtf8Bytes(`${prefix}${source}`), 32)
     }

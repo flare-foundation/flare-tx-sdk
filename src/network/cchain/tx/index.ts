@@ -279,6 +279,25 @@ export class Transactions extends NetworkBased {
         return { data, votingRoundId }
     }
 
+    async submitFdcAttestationRequestForWeb2Json(
+        wallet: Wallet,
+        cAddress: string,
+        url: string,
+        httpMethod: string,
+        headers: string,
+        queryParams: string,
+        body: string,
+        postProcessJq: string,
+        abiSignature: string
+    ): Promise<FdcAttestationRequest> {
+        let verifiers = new FdcVerifiers(this._core)
+        let data = await verifiers.prepareWeb2JsonRequest(
+            url, httpMethod, headers, queryParams, body, postProcessJq, abiSignature
+        )
+        let votingRoundId = await this._submitFdcAttestationRequest(wallet, cAddress, data)
+        return { data, votingRoundId }
+    }
+
     async _submitFdcAttestationRequest(wallet: Wallet, cAddress: string, request: string): Promise<number | null> {
         let hub = await this._registry.getFdcHub()
         let data = hub.requestAttestation(request)

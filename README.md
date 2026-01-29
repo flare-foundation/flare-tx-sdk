@@ -102,6 +102,7 @@ Submitting requests:
 let req1 = await network.submitFdcAttestationRequestForEvmTransaction(wallet, FdcSourceNetwork.ETH, txId)
 let req2 = await network.submitFdcAttestationRequestForPayment(wallet, FdcSourceNetwork.XRP, txId)
 let req3 = await network.submitFdcAttestationRequestForAddressValidity(wallet, FdcSourceNetwork.BTC, address)
+let req4 = await network.submitFdcAttestationRequestForWeb2Json(wallet, url, httpMethod, headers, queryParams, body, postProcessJq, abiSignature)
 ```
 
 Fetching attestation:
@@ -603,20 +604,30 @@ Flare Data Connector (FDC) protocol enables importing and verifying data from ot
 
 There exist different attestation types. To submit an attestation request for an EVM transaction on a supported EVM network (e.g., Ethereum, but also Flare and Songbird), use
 ```
-let request = network.submitFdcAttestationRequestForEvmTransaction(wallet, FdcSourceNetwork.ETH, txId)
+let request = await network.submitFdcAttestationRequestForEvmTransaction(
+    wallet, FdcSourceNetwork.ETH, txId)
 ```
 where `txId` is the hash of the EVM transaction to verify. Similarly, an attestation request for payment on the Ripple blockchain can be subbmited by
 ```
-let request = network.submitFdcAttestationRequestForPayment(wallet, FdcSourceNetwork.XRP, txId)
+let request = await network.submitFdcAttestationRequestForPayment(
+    wallet, FdcSourceNetwork.XRP, txId)
 ```
 where `txId` is the hash of the payment transaction to verify. For the Bitcoin and Doge blockchain, numbers `inputIndex` and `outputIndex` can be supplemented to identify the sender and the recipient of the transaction, e.g.,
 ```
-let request = network.submitFdcAttestationRequestForPayment(wallet, FdcSourceNetwork.BTC, txId, inputIndex, outputIndex)
+let request = await network.submitFdcAttestationRequestForPayment(
+    wallet, FdcSourceNetwork.BTC, txId, inputIndex, outputIndex)
 ```
 A request to check validity of an `address` on the Bitcoin, Doge, or Ripple blockchain can be submitted by
 ```
-let request = network.submitFdcAttestationRequestForAddressValidity(wallet, FdcSourceNetwork.BTC, address).
+let request = await network.submitFdcAttestationRequestForAddressValidity(
+    wallet, FdcSourceNetwork.BTC, address).
 ```
+It is also possible to submit a request for attestation of a Web2 Json API data. To achieve this, use
+```
+let request = await network.submitFdcAttestationRequestForWeb2Json(
+    wallet, url, httpMethod, headers, queryParams, body, postProcessJq, abiSignature)
+```
+where the input parameters specify the Web2 API endpoint, request data and ABI encoding of the Json API response.
 In all cases the resulting object `request` is of type [`FdcAttestationRequest`](src/network/iotype.ts) and has the following properties:
 - `data` The request data in hexadecimal encoding;
 - `votingRoundId` The id of the voting round in which the request has been submitted.

@@ -131,6 +131,37 @@ export function runFdcTests(env: TestEnvironment): void {
             assert.equal(verification, true, "verification failed")
         })
 
+        it("attestation for Web2Json", async function (t) {
+            let url = "https://swapi.info/api/people/3"
+            let httpMethod = "GET"
+            let headers = "{}"
+            let queryParams = "{}"
+            let body = "{}"
+            let postProcessJq = '{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length}'
+            let abiSignature = '{"components": [{"internalType": "string", "name": "name", "type": "string"},{"internalType": "uint256", "name": "height", "type": "uint256"},{"internalType": "uint256", "name": "mass", "type": "uint256"},{"internalType": "uint256", "name": "numberOfFilms", "type": "uint256"}], "name": "task", "type": "tuple"}'
+            let request = await network.submitFdcAttestationRequestForWeb2Json(
+                wallet,
+                url,
+                httpMethod,
+                headers,
+                queryParams,
+                body,
+                postProcessJq,
+                abiSignature
+            )
+            assert.equal(request.votingRoundId > 0, true)
+            return
+
+            while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
+                await env.sleep(3000)
+            }
+            let attestation = await network.getFdcAttestation(request)
+            console.log(attestation)
+
+            let verification = await network.verifyFdcAttestation(attestation)
+            assert.equal(verification, true, "verification failed")
+        })
+
     })
 
 }
