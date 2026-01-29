@@ -114,7 +114,7 @@ if (await network.isFdcVotingRoundFinalized(req.votingRoundId)) {
 
 Verifying attestation:
 ```
-let proved = verifyFdcAttestation(attestation)
+let proved = await verifyFdcAttestation(attestation)
 ```
 
 ### C-chain contracts
