@@ -19,8 +19,8 @@ export class FdcVerification extends EvmContract {
     }
 
     async verifyWeb2Json(attestation: FdcAttestation): Promise<boolean> {
-        let verification = this._getContract(["function verifyJsonApi(tuple(bytes32[] proof, tuple(bytes32 attestationType, bytes32 sourceId, uint64 votingRound, uint64 lowestUsedTimestamp, tuple(string url, string httpMethod, string headers, string queryParams, string body, string postProcessJq, string abiSignature) requestBody, tuple(bytes abiEncodedData) responseBody) response) calldata attestation) external view returns (bool _proved)"])
-        return verification.verifyJsonApi(attestation)
+        let verification = this._getContract(["function verifyWeb2Json(tuple(bytes32[] proof, tuple(bytes32 attestationType, bytes32 sourceId, uint64 votingRound, uint64 lowestUsedTimestamp, tuple(string url, string httpMethod, string headers, string queryParams, string body, string postProcessJq, string abiSignature) requestBody, tuple(bytes abiEncodedData) responseBody) response) calldata attestation) external view returns (bool _proved)"])
+        return verification.verifyWeb2Json(attestation)
     }
 
 }

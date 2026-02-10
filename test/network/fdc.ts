@@ -150,13 +150,12 @@ export function runFdcTests(env: TestEnvironment): void {
                 abiSignature
             )
             assert.equal(request.votingRoundId > 0, true)
-            return
 
             while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
                 await env.sleep(3000)
             }
             let attestation = await network.getFdcAttestation(request)
-            console.log(attestation)
+            assert.equal(url, attestation.response.requestBody.url, "invalid attestation")
 
             let verification = await network.verifyFdcAttestation(attestation)
             assert.equal(verification, true, "verification failed")

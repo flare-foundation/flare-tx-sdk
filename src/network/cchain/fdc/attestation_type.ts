@@ -20,7 +20,10 @@ export class AttestationTypes {
             return AttestationType.PAYMENT
         } else if (code == this.getCode(AttestationType.ADDRESS_VALIDITY)) {
             return AttestationType.ADDRESS_VALIDITY
+        } else if (code == this.getCode(AttestationType.WEB2JSON)) {
+            return AttestationType.WEB2JSON
         }
+        return null
     }
 
 }
