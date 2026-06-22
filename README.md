@@ -313,17 +313,18 @@ await network.getBalanceOnC(publicKeyOrCAddress)
 await network.getBalanceWrappedOnC(publicKeyOrCAddress)
 ```
 ```
-await network.getBalanceOnP(publicKey)
+await network.getBalanceOnP(publicKeyOrPAddress)
 ```
 ```
-await network.getBalanceNotImportedToC(publicKey)
+await network.getBalanceNotImportedToC(publicKeyOrPAddress)
 ```
 ```
-await network.getBalanceNotImportedToP(publicKey)
+await network.getBalanceNotImportedToP(publicKeyOrPAddress)
 ```
 ```
-await network.getBalanceStakedOnP(publicKey)
+await network.getBalanceStakedOnP(publicKeyOrPAddress)
 ```
+In the calls above, `publicKeyOrCAddress` is a public key or a C-chain address (in hexadecimal encoding), while `publicKeyOrPAddress` is a public key or a P-chain address (in bech32 encoding). In each case, if a public key is provided, the corresponding chain address is derived from it.
 
 ### Coin transfers
 
@@ -810,9 +811,9 @@ Moreover, to obtain an array of all stakes on the network, use
 ```
 let stakes = await network.getStakesOnP()
 ```
-The filtered array containing only stakes where the reward owner is identified by `publicKey` can be obtained by
+The filtered array containing only stakes where the reward owner is identified by `publicKeyOrPAddress` (a public key or a P-chain address) can be obtained by
 ```
-let stakes = await network.getStakesOnP(publicKey)
+let stakes = await network.getStakesOnP(publicKeyOrPAddress)
 ```
 
 #### Transferring funds from the P-chain to the C-chain

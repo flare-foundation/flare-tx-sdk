@@ -156,53 +156,58 @@ export class Network extends NetworkBased {
 
     /**
      * Returns balance on the P-chain.
-     * @param publicKey A public key in hexadecimal encoding.
-     * @returns The balance in wei corresponding to the public key.
+     * @param publicKeyOrAddress A public key in hexadecimal encoding or a P-chain address in bech32 encoding.
+     * @returns The balance in wei corresponding to the public key or address.
      */
-    async getBalanceOnP(publicKey: string): Promise<bigint> {
-        let pAddress = Account.getPAddress(publicKey, this._core.hrp)
+    async getBalanceOnP(publicKeyOrAddress: string): Promise<bigint> {
+        let pAddress = Account.isPAddress(publicKeyOrAddress, this._core.hrp) ?
+            Account.normalizePAddress(publicKeyOrAddress, this._core.hrp) : Account.getPAddress(publicKeyOrAddress, this._core.hrp)
         return this._pchain.getBalance(pAddress)
     }
 
     /**
      * Returns balance not imported to the C-chain.
-     * @param publicKey A public key in hexadecimal encoding.
-     * @returns The balance in wei corresponding to the public key.
+     * @param publicKeyOrAddress A public key in hexadecimal encoding or a P-chain address in bech32 encoding.
+     * @returns The balance in wei corresponding to the public key or address.
      */
-    async getBalanceNotImportedToC(publicKey: string): Promise<bigint> {
-        let pAddress = Account.getPAddress(publicKey, this._core.hrp)
+    async getBalanceNotImportedToC(publicKeyOrAddress: string): Promise<bigint> {
+        let pAddress = Account.isPAddress(publicKeyOrAddress, this._core.hrp) ?
+            Account.normalizePAddress(publicKeyOrAddress, this._core.hrp) : Account.getPAddress(publicKeyOrAddress, this._core.hrp)
         return this._cchain.getBalanceNotImportedToC(pAddress)
     }
 
     /**
      * Returns balance not imported to the P-chain.
-     * @param publicKey A public key in hexadecimal encoding.
-     * @returns The balance in wei corresponding to the public key.
+     * @param publicKeyOrAddress A public key in hexadecimal encoding or a P-chain address in bech32 encoding.
+     * @returns The balance in wei corresponding to the public key or address.
      */
-    async getBalanceNotImportedToP(publicKey: string): Promise<bigint> {
-        let pAddress = Account.getPAddress(publicKey, this._core.hrp)
+    async getBalanceNotImportedToP(publicKeyOrAddress: string): Promise<bigint> {
+        let pAddress = Account.isPAddress(publicKeyOrAddress, this._core.hrp) ?
+            Account.normalizePAddress(publicKeyOrAddress, this._core.hrp) : Account.getPAddress(publicKeyOrAddress, this._core.hrp)
         return this._pchain.getBalanceNotImportedToP(pAddress)
     }
 
     /**
      * Returns balance staked on the P-chain.
-     * @param publicKey A public key in hexadecimal encoding.
-     * @returns The balance in wei corresponding to the public key.
+     * @param publicKeyOrAddress A public key in hexadecimal encoding or a P-chain address in bech32 encoding.
+     * @returns The balance in wei corresponding to the public key or address.
      */
-    async getBalanceStakedOnP(publicKey: string): Promise<bigint> {
-        let pAddress = Account.getPAddress(publicKey, this._core.hrp)
+    async getBalanceStakedOnP(publicKeyOrAddress: string): Promise<bigint> {
+        let pAddress = Account.isPAddress(publicKeyOrAddress, this._core.hrp) ?
+            Account.normalizePAddress(publicKeyOrAddress, this._core.hrp) : Account.getPAddress(publicKeyOrAddress, this._core.hrp)
         return this._pchain.getStakedBalance(pAddress)
     }
 
     /**
      * Returns information about stakes on the P-chain.
-     * @param publicKey A public key in hexadecimal encoding (optional).
+     * @param publicKeyOrAddress A public key in hexadecimal encoding or a P-chain address in bech32 encoding (optional).
      * @returns The array of stakes on the P-chain
-     * (corresponding to the given public key if given).
+     * (corresponding to the given public key or address if given).
      */
-    async getStakesOnP(publicKey?: string): Promise<Array<Stake>> {
-        if (publicKey) {
-            let pAddress = Account.getPAddress(publicKey, this._core.hrp)
+    async getStakesOnP(publicKeyOrAddress?: string): Promise<Array<Stake>> {
+        if (publicKeyOrAddress) {
+            let pAddress = Account.isPAddress(publicKeyOrAddress, this._core.hrp) ?
+                Account.normalizePAddress(publicKeyOrAddress, this._core.hrp) : Account.getPAddress(publicKeyOrAddress, this._core.hrp)
             return this._pchain.getStakesOf(pAddress)
         } else {
             return this._pchain.getStakes()

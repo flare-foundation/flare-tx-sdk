@@ -11,7 +11,7 @@ import { EVMUnsignedTx as AvaxTx, messageHashFromUnsignedTx, utils as futils } f
 import { ContractRegistry } from "../contract/registry";
 import { GenericContract } from "../contract/generic";
 import { Constants } from "../../constants";
-import { FtsoRewardClaimWithProof, FoundationProposalSupport, FdcSourceNetwork, FdcAttestationRequest } from "src/network/iotype";
+import { FtsoRewardClaimWithProof, FoundationProposalSupport, FdcSourceNetwork, FdcAttestationRequest } from "../../iotype";
 import { base58 } from "@scure/base";
 import { SafeProxyFactory } from "../contract/safe_proxy_factory";
 import { Evm } from "./evm";

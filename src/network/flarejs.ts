@@ -1,5 +1,4 @@
 import { Context, evm, pvm, info } from "@flarenetwork/flarejs"
-import { FeeState } from "@flarenetwork/flarejs/dist/vms/pvm"
 
 export class Flarejs {
 
@@ -70,7 +69,7 @@ export class Flarejs {
         }
     }
 
-    async getFeeState(extraRel?: number): Promise<FeeState> {
+    async getFeeState(extraRel?: number): Promise<pvm.FeeState> {
         let feeState = await this.pvmApi.getFeeState()
         if (extraRel) {
             feeState.price = BigInt(Math.ceil(Number(feeState.price) * (1 + extraRel)))

@@ -1,4 +1,4 @@
-import { FoundationProposalInfo, FoundationProposalState, FoundationProposalSupport } from "src/network/iotype";
+import { FoundationProposalInfo, FoundationProposalState, FoundationProposalSupport } from "../../iotype";
 import { EvmContract } from "./evm_contract";
 
 export class PollingFoundation extends EvmContract {

@@ -1,4 +1,4 @@
-import { RNatAccountBalance, RNatProject, RNatProjectInfo } from "src/network/iotype";
+import { RNatAccountBalance, RNatProject, RNatProjectInfo } from "../../iotype";
 import { EvmContract } from "./evm_contract";
 
 export class RNat extends EvmContract {

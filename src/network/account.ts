@@ -44,4 +44,18 @@ export class Account {
     static isCAddress(address: string): boolean {
         return ethers.isAddress(address)
     }
+
+    static isPAddress(address: string, hrp: string): boolean {
+        let bech = address.startsWith("P-") ? address.slice(2) : address
+        try {
+            return futils.parseBech32(bech)[0] === hrp
+        } catch {
+            return false
+        }
+    }
+
+    static normalizePAddress(address: string, hrp: string): string {
+        let bech = address.startsWith("P-") ? address.slice(2) : address
+        return futils.formatBech32(hrp, futils.parseBech32(bech)[1])
+    }
 }

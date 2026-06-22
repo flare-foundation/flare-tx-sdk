@@ -1,4 +1,4 @@
-import { FdcAttestation } from "src/network/iotype";
+import { FdcAttestation } from "../../iotype";
 import { EvmContract } from "./evm_contract";
 
 export class FdcVerification extends EvmContract {
