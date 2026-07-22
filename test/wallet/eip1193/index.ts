@@ -73,7 +73,7 @@ async function execute() {
                 value: BigInt(1e15),
                 chainId: 16,
                 gasLimit: 21000,
-                maxFeePerGas: BigInt(50 * 1e9),
+                maxFeePerGas: BigInt(500 * 1e9),
                 maxPriorityFeePerGas: BigInt(0)
             })
             await wallet.signAndSubmitCTransaction(tx.unsignedSerialized)
@@ -91,7 +91,7 @@ async function execute() {
                 value: BigInt(1e15),
                 chainId: 114,
                 gasLimit: 21000,
-                maxFeePerGas: BigInt(50 * 1e9),
+                maxFeePerGas: BigInt(500 * 1e9),
                 maxPriorityFeePerGas: BigInt(0)
             })
             await wallet.signAndSubmitCTransaction(tx.unsignedSerialized)

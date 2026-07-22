@@ -15,31 +15,19 @@ export class Import extends NetworkBased {
         let utxos = utxosData.utxos
         let locktime = BigInt(0)
         let threshold = 1
+        let feeState = await this._core.flarejs.getFeeState(this._core.const.pvmBaseFeeExtraRel)
 
-        if (await this._core.flarejs.isEtnaForkActive()) {
-            let feeState = await this._core.flarejs.getFeeState(this._core.const.pvmBaseFeeExtraRel)
-
-            return this._core.flarejs.pvm.e.newImportTx(
-                {
-                    feeState,
-                    sourceChainId,
-                    toAddressesBytes,
-                    fromAddressesBytes,
-                    utxos,
-                    locktime,
-                    threshold
-                },
-                context
-            )
-        } else {
-            return this._core.flarejs.pvm.newImportTx(
-                context,
+        return this._core.flarejs.pvm.newImportTx(
+            {
+                feeState,
                 sourceChainId,
-                utxos,
                 toAddressesBytes,
                 fromAddressesBytes,
-                { locktime, threshold }
-            )
-        }
+                utxos,
+                locktime,
+                threshold
+            },
+            context
+        )
     }
 }

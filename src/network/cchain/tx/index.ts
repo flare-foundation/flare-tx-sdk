@@ -81,17 +81,6 @@ export class Transactions extends NetworkBased {
         await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.TRANSFER_NAT)
     }
 
-    async claimFlareDropReward(
-        wallet: Wallet, cAddress: string, rewardOwner: string, recipient: string, wrap: boolean
-    ): Promise<void> {
-        let flareDrop = await this._registry.getFlareDropDistribution()
-        let claimableMonths = await flareDrop.getClaimableMonths()
-        let lastClaimableMonth = claimableMonths[1]
-        let data = flareDrop.claim(rewardOwner, recipient, lastClaimableMonth, wrap)
-        let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, flareDrop.address, data)
-        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CLAIM_REWARD_FLAREDROP)
-    }
-
     async claimStakingReward(
         wallet: Wallet, cAddress: string, rewardOwner: string, recipient: string, wrap: boolean
     ): Promise<void> {

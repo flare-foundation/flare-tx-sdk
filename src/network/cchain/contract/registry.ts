@@ -3,7 +3,6 @@ import { EvmContract } from "./evm_contract";
 import { PChainStakeMirrorVerifier } from "./stake_verifier";
 import { WNat } from "./wnat";
 import { Utils } from "../../utils";
-import { DistributionToDelegators } from "./flaredrop";
 import { GenericRewardManager } from "./generic_reward_manager";
 import { RewardManager } from "./reward_manager";
 import { RNat } from "./rnat";
@@ -44,11 +43,6 @@ export class ContractRegistry extends EvmContract {
     async getRNat(): Promise<RNat> {
         let address = await this.getAddress("RNat")
         return new RNat(this._core, address)
-    }
-
-    async getFlareDropDistribution(): Promise<DistributionToDelegators> {
-        let address = await this.getAddress("DistributionToDelegators")
-        return new DistributionToDelegators(this._core, address)
     }
 
     async getValidatorRewardManager(): Promise<GenericRewardManager> {

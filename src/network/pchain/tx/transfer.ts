@@ -15,28 +15,17 @@ export class Transfer extends NetworkBased {
         let utxos = utxosData.utxos
         let output = TransferableOutput.fromNative(assetId, amount / BigInt(1e9), [recipientBytes])
         let outputs = [output]
+        let feeState = await this._core.flarejs.getFeeState(this._core.const.pvmBaseFeeExtraRel)
 
-        if (await this._core.flarejs.isEtnaForkActive()) {
-            let feeState = await this._core.flarejs.getFeeState(this._core.const.pvmBaseFeeExtraRel)
-
-            return this._core.flarejs.pvm.e.newBaseTx(
-                {
-                    feeState,
-                    fromAddressesBytes,
-                    utxos,
-                    outputs
-                },
-                context
-            )
-        } else {
-            return this._core.flarejs.pvm.newBaseTx(
-                context,
+        return this._core.flarejs.pvm.newBaseTx(
+            {
+                feeState,
                 fromAddressesBytes,
                 utxos,
-                outputs,
-                { locktime: BigInt(0), threshold: 1 }
-            )
-        }
+                outputs
+            },
+            context
+        )
     }
 
 }

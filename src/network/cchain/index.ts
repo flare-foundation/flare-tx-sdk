@@ -55,18 +55,6 @@ export class CChain extends NetworkBased {
         return balance * BigInt(1e9)
     }
 
-    async getClaimableFlareDropReward(address: string): Promise<bigint> {
-        let flaredrop = await this._registry.getFlareDropDistribution()
-        let start = await flaredrop.nextClaimableMonth(address)
-        let startEndMonths = await flaredrop.getClaimableMonths()
-        let end = startEndMonths[1]
-        let amount = BigInt(0)
-        for (let month = start; month <= end; month++) {
-            amount += await flaredrop.getClaimableAmountOf(address, month)
-        }
-        return amount
-    }
-
     async getClaimableStakingReward(address: string): Promise<bigint> {
         let manager = await this._registry.getValidatorRewardManager()
         let state = await manager.getStateOfRewards(address)

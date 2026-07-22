@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.6.0] - 2026-07-22
+
+### Added
+
+- Method getDefaultAllocatedFeeOnP returning the default fee reserved for P-chain transactions.
+
+### Changed
+
+- Upgraded @flarenetwork/flarejs to version 5.
+- Corrected documentation of the C-chain and P-chain base fee methods.
+
+### Removed
+
+- FlareDrop reward methods getClaimableFlareDropReward and claimFlareDropReward, and the associated CLAIM_REWARD_FLAREDROP transaction type.
+
+
 ## [1.5.2] - 2026-06-23
 
 ### Changed

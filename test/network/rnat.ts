@@ -62,16 +62,6 @@ export function runRNatTests(env: TestEnvironment): void {
         for (let wallet of wallets) {
             describe(wallet.getDescription(), async function () {
 
-                it("claim FlareDrop", async () => {
-                    let publicKey = await wallet.getPublicKey()
-                    let account = await network.getRNatAccount(publicKey)
-                    let startUnlockedBalance = await network.getUnlockedBalanceWrappedOnRNatAccount(publicKey)
-                    let reward = await network.getClaimableFlareDropReward(account)
-                    await network.claimFlareDropReward(wallet, account, account, true)
-                    let endUnlockedBalance = await network.getUnlockedBalanceWrappedOnRNatAccount(publicKey)
-                    assert.strictEqual(endUnlockedBalance - startUnlockedBalance, reward, "unmatching FlareDrop reward")                   
-                })
-
                 it("withdraw", async () => {
                     let publicKey = await wallet.getPublicKey()
                     let startUnlocked = await network.getUnlockedBalanceWrappedOnRNatAccount(publicKey)

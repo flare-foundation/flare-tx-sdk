@@ -60,13 +60,8 @@ export class Flarejs {
     }
 
     async getBaseTxFee(): Promise<bigint> {
-        if (await this.isEtnaForkActive()) {
-            let feeState = await this.pvmApi.getFeeState()
-            return feeState.price * BigInt(1e9)
-        } else {
-            await this._initContext()
-            return this._context.baseTxFee * BigInt(1e9)
-        }
+        let feeState = await this.pvmApi.getFeeState()
+        return feeState.price * BigInt(1e9)
     }
 
     async getFeeState(extraRel?: number): Promise<pvm.FeeState> {
@@ -75,11 +70,6 @@ export class Flarejs {
             feeState.price = BigInt(Math.ceil(Number(feeState.price) * (1 + extraRel)))
         }
         return feeState
-    }
-
-    async isEtnaForkActive(): Promise<boolean> {
-        let { etnaTime } = await this.infoApi.getUpgradesInfo();
-        return new Date() > new Date(etnaTime)
     }
 
 }

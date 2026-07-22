@@ -6,7 +6,6 @@ export class TxType {
     static readonly IMPORT_C = "import_c"
     static readonly WRAP_NAT = "wrap_nat"
     static readonly UNWRAP_NAT = "unwrap_nat"
-    static readonly CLAIM_REWARD_FLAREDROP = "claim_reward_flaredrop"
     static readonly CLAIM_REWARD_STAKING = "claim_reward_staking"
     static readonly CLAIM_REWARD_FTSO = "claim_reward_ftso"
     static readonly DELEGATE_FTSO = "delegate_ftso"
@@ -46,9 +45,6 @@ export class TxType {
             }
             case this.UNWRAP_NAT: {
                 return "Unwrapping to native coin"
-            }
-            case this.CLAIM_REWARD_FLAREDROP: {
-                return "FlareDrop reward claim"
             }
             case this.CLAIM_REWARD_STAKING: {
                 return "Staking reward claim"

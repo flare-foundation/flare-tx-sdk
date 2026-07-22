@@ -9,7 +9,6 @@ import { runFtsoDelegationTests } from "./delegateFtso";
 import { runGenericContractTests } from "./genericc";
 import { runTransferCPTests } from "./transfercp";
 import { runDelegationPTests } from "./delegationp";
-import { runFlareDropClaimTests } from "./claimFlaredrop";
 import { runStakingClaimTests } from "./claimStaking";
 import { runFtsoClaimTests } from "./claimFtso";
 import { runSmartAccountTests } from "./smartAccount";
@@ -40,7 +39,6 @@ function execute() {
     runBalanceTests(env)
     runWNatTests(env)
     runTransferCTests(env)
-    runFlareDropClaimTests(env)
     runStakingClaimTests(env)
     runFtsoClaimTests(env)
     runFtsoDelegationTests(env)

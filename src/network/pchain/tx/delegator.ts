@@ -22,29 +22,11 @@ export class Delegator extends NetworkBased {
         let rewardAddresses = [pAddressBytes]
         let locktime = BigInt(0)
         let threshold = 1
+        let feeState = await this._core.flarejs.getFeeState(this._core.const.pvmBaseFeeExtraRel)
 
-        if (await this._core.flarejs.isEtnaForkActive()) {
-            let feeState = await this._core.flarejs.getFeeState(this._core.const.pvmBaseFeeExtraRel)
-
-            return this._core.flarejs.pvm.e.newAddPermissionlessDelegatorTx(
-                {
-                    feeState,
-                    utxos,
-                    fromAddressesBytes,
-                    nodeId,
-                    subnetId,
-                    start,
-                    end,
-                    weight,
-                    rewardAddresses,
-                    locktime,
-                    threshold
-                },
-                context
-            )
-        } else {
-            return this._core.flarejs.pvm.newAddPermissionlessDelegatorTx(
-                context,
+        return this._core.flarejs.pvm.newAddPermissionlessDelegatorTx(
+            {
+                feeState,
                 utxos,
                 fromAddressesBytes,
                 nodeId,
@@ -53,9 +35,11 @@ export class Delegator extends NetworkBased {
                 end,
                 weight,
                 rewardAddresses,
-                { locktime, threshold }
-            )
-        }
+                locktime,
+                threshold
+            },
+            context
+        )
 
     }
 

@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "assert";
 import { TestEnvironment } from "./env";
-import { FdcSourceNetwork } from "../../src/network";
+import { FdcSourceNetwork, Network } from "../../src/network";
 
 export function runFdcTests(env: TestEnvironment): void {
     let network = env.network
@@ -15,7 +15,7 @@ export function runFdcTests(env: TestEnvironment): void {
                 return
             }
 
-            let tx = await getRecentTx("sgb")
+            let tx = await getSuitableTx("sgb")
             if (!tx) {
                 t.skip("no EVM transaction found")
                 return
@@ -28,9 +28,7 @@ export function runFdcTests(env: TestEnvironment): void {
             )
             assert.equal(request.votingRoundId > 0, true)
 
-            while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
-                await env.sleep(3000)
-            }
+            await waitForFdcFinalization(network, env, request.votingRoundId)
             let attestation = await network.getFdcAttestation(request)
             assert.equal(tx.block_number, attestation.response.responseBody.blockNumber, "invalid block number")
 
@@ -44,7 +42,7 @@ export function runFdcTests(env: TestEnvironment): void {
                 return
             }
 
-            let tx = await getRecentTx("doge")
+            let tx = await getSuitableTx("doge")
             if (!tx) {
                 t.skip("no payment transaction found")
                 return
@@ -56,10 +54,7 @@ export function runFdcTests(env: TestEnvironment): void {
                 txId
             )
 
-            return
-            while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
-                await env.sleep(3000)
-            }
+            await waitForFdcFinalization(network, env, request.votingRoundId)
             let attestation = await network.getFdcAttestation(request)
             assert.equal(tx.blockNumber, attestation.response.responseBody.blockNumber, "invalid block number")
 
@@ -73,7 +68,7 @@ export function runFdcTests(env: TestEnvironment): void {
                 return
             }
 
-            let tx = await getRecentTx("xrp")
+            let tx = await getSuitableTx("xrp")
             if (!tx) {
                 t.skip("no payment transaction found")
                 return
@@ -85,9 +80,7 @@ export function runFdcTests(env: TestEnvironment): void {
                 txId
             )
 
-            while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
-                await env.sleep(3000)
-            }
+            await waitForFdcFinalization(network, env, request.votingRoundId)
             let attestation = await network.getFdcAttestation(request)
             assert.equal(tx.blockNumber, attestation.response.responseBody.blockNumber, "invalid block number")
 
@@ -103,9 +96,7 @@ export function runFdcTests(env: TestEnvironment): void {
                 address
             )
 
-            while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
-                await env.sleep(3000)
-            }
+            await waitForFdcFinalization(network, env, request.votingRoundId)
             let attestation = await network.getFdcAttestation(request)
             assert.equal(attestation.response.responseBody.isValid, true, "invalid address")
 
@@ -121,9 +112,7 @@ export function runFdcTests(env: TestEnvironment): void {
                 address
             )
 
-            while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
-                await env.sleep(3000)
-            }
+            await waitForFdcFinalization(network, env, request.votingRoundId)
             let attestation = await network.getFdcAttestation(request)
             assert.equal(attestation.response.responseBody.isValid, true, "invalid address")
 
@@ -151,9 +140,7 @@ export function runFdcTests(env: TestEnvironment): void {
             )
             assert.equal(request.votingRoundId > 0, true)
 
-            while (!(await network.isFdcVotingRoundFinalized(request.votingRoundId))) {
-                await env.sleep(3000)
-            }
+            await waitForFdcFinalization(network, env, request.votingRoundId)
             let attestation = await network.getFdcAttestation(request)
             assert.equal(url, attestation.response.requestBody.url, "invalid attestation")
 
@@ -165,24 +152,54 @@ export function runFdcTests(env: TestEnvironment): void {
 
 }
 
-async function getRecentTx(network: string): Promise<any> {
+const FDC_FINALIZATION_TIMEOUT_MS = 300000
+const FDC_SKIP_MARGIN = 2
+const FDC_SKIP_LOOKAHEAD = 5
+
+async function waitForFdcFinalization(
+    network: Network,
+    env: TestEnvironment,
+    votingRoundId: number
+): Promise<void> {
+    let deadline = Date.now() + FDC_FINALIZATION_TIMEOUT_MS
+    while (true) {
+        if (await network.isFdcVotingRoundFinalized(votingRoundId)) {
+            return
+        }
+        for (let ahead = FDC_SKIP_MARGIN; ahead <= FDC_SKIP_LOOKAHEAD; ahead++) {
+            if (await network.isFdcVotingRoundFinalized(votingRoundId + ahead)) {
+                throw new Error(`FDC voting round ${votingRoundId} was skipped (round ${votingRoundId + ahead} finalized first); request was not attested`)
+            }
+        }
+        if (Date.now() >= deadline) {
+            throw new Error(`FDC voting round ${votingRoundId} was not finalized within ${FDC_FINALIZATION_TIMEOUT_MS} ms`)
+        }
+        await env.sleep(3000)
+    }
+}
+
+const INDEXER_BASE = "https://fdc-verifiers-testnet.flare.network"
+const INDEXER_HEADERS = {
+    "X-API-KEY": "00000000-0000-0000-0000-000000000000",
+    "Content-Type": "application/json",
+}
+
+async function getSuitableTx(network: string): Promise<any> {
     if (["doge", "xrp"].includes(network)) {
-        let limit = 100
+        let indexer = `${INDEXER_BASE}/verifier/${network}/api/indexer`
+        let rangeResponse = await fetch(`${indexer}/block-range`, { method: "GET", headers: INDEXER_HEADERS })
+        let last = Number((await rangeResponse.json()).data.last)
+        let window = 100
         let attempts = 100
         for (let i = 0; i < attempts; i++) {
+            let to = last - i * window
+            let from = to - window
             let response = await fetch(
-                `https://fdc-verifiers-testnet.flare.network/verifier/${network}/api/indexer/transaction?limit=${limit}&offset=${i * limit}`,
-                {
-                    method: "GET",
-                    headers: {
-                        "X-API-KEY": "00000000-0000-0000-0000-000000000000",
-                        "Content-Type": "application/json",
-                    }
-                }
+                `${indexer}/transaction?from=${from}&to=${to}&limit=100`,
+                { method: "GET", headers: INDEXER_HEADERS }
             )
-            let json = await response.json()
-            let txs = json.data.items
-            let payment = txs.find((tx: any) => tx.isNativePayment)
+            let txs = (await response.json()).data.items
+            let payment = txs?.find((tx: any) => tx.isNativePayment)
             if (payment) {
                 return payment
             }
@@ -198,8 +215,9 @@ async function getRecentTx(network: string): Promise<any> {
                 }
             }
         )
-        let json = await response.json()
-        return json.items && json.items.length > 0 ? json.items[0] : null
+        let items = (await response.json()).items ?? []
+        // explorer returns newest first, pick one with a few confirmations.
+        return items.find((tx: any) => Number(tx.confirmations) >= 5) ?? null
     } else {
         throw new Error("Unsupported network")
     }

@@ -4,7 +4,7 @@ This is the official Node.js Software Development Kit (SDK) for performing commo
 
 - [Retrieving account and balance information](#account-and-balance-1)
 - [Transferring native and wrapped coins](#coin-transfers-1)
-- [Claiming rewards from FlareDrop, staking, FTSO delegation and rNat projects](#reward-claims-1)
+- [Claiming rewards from staking, FTSO delegation and rNat projects](#reward-claims-1)
 - [Delegating to FTSO providers](#delegation-to-ftso-providers-1)
 - [Voting on Flare foundation proposals](#voting-on-flare-foundation-proposals)
 - [Managing FDC attestations](#fdc-attestations-1)
@@ -55,10 +55,10 @@ await network.unwrapToNative(wallet, Amount.wnats(1))
 
 ### Reward claims
 
-Claiming reward from FlareDrop:
+Claiming reward from staking:
 ```
-let amount = await network.getClaimableFlareDropReward(cAddress)
-await network.claimFlareDropReward(wallet)
+let amount = await network.getClaimableStakingReward(cAddress)
+await network.claimStakingReward(wallet)
 ```
 
 Claiming reward from staking:
@@ -356,20 +356,6 @@ await network.transferWrapped(wallet, amount)
 
 There are different types of rewards that can be claimed in the Flare's network.
 
-#### FlareDrop rewards
-
-FlareDrop is a distribution method for the remaining unreleased FLR tokens after the original airdrop. It is distributed monthly to those that wrap their FLR tokens.
-
-The amount of claimable reward for a given public key or C-chain address `publicKeyOrAddress` can be obtained by
-```
-let amount = await network.getClaimableFlareDropReward(publicKeyOrAddress)
-```
-To claim all claimable reward, use
-```
-await network.claimFlareDropReward(wallet, rewardOwner, recipient, wrap)
-```
-The only required input parameter is `wallet`. The parameter `rewardOwner` is the C-chain address of the reward owner and can be omitted if it is equal to the wallet's C-chain address. Similarly, `recipient` can be omitted if the reward is to be transferred to the wallet's C-chain address. The parameter `wrap` indicates if the reward is to be transferred to `recipient` as native coin (default) or as wrapped coin.
-
 #### Staking rewards
 
 [Staking on the P-chain](#staking-1) yields staking rewards on the C-chain.
@@ -473,17 +459,6 @@ The resulting object `balance` is of type [`RNatAccountBalance`](src/network/iot
 - `lockedBalance` The balance of locked wrapped coins in wei.
 
 The amount of rNat tokens equals the difference between received and withdrawn rNat rewards. The amount of wrapped coins on an rNat account can be larger than the amount of rNat tokens.
-
-For example, the amount of wrapped coins can be increased by [claiming the FlareDrop reward](#flaredrop-rewards) accrued from (vested) wrapped coins on the rNat account. To check the amount of unclaimed FlareDrop reward for the rNat account owned by `publicKeyOrAddress`, use
-```
-let rNatAccountAddress = await network.getRNatAccount(publicKeyOrAddress)
-let amount = await network.getClaimableFlareDropReward(rNatAccountAddress)
-```
-To claim the reward, use
-```
-await network.claimFlareDropReward(wallet, rNatAccountAddress, rNatAccountAddress, true)
-```
-where `rNatAccountAddress` is the C-chain address of the rNat account associated with the C-chain address of `wallet`. This operation transfers all claimable FlareDrop reward to the rNat account and increases its balance of wrapped coins.
 
 Finally, to withdraw funds from the rNat account, use
 ```
@@ -754,13 +729,13 @@ first generates an export transaction that exports `amount + allocatedFeeOnP` fr
 
 Note that the values appearing in the export and import transactions invoked by `transferToP` may differ from the described above if a certain `valueNotImportedToP` had previously not been imported to the P-chain due to the import transaction failure. The export transaction then exports `amount + allocatedFeeOnP - valueNotImportedToP` from the C-chain address or is skipped if this export value is not positive. The import transaction imports `max(amount, valueNotImportedToP)` to the P-chain address and the balance of funds not imported to the P-chain becomes zero.
 
-The value of `exportFeeOnC` is computed as the product of the `baseTxFeeOnC` and the size of the export transaction. The current value of the `baseTxFeeOnC` can be obtained by calling `await network.getBaseTxFeeOnC()`. The value of `importFeeOnP` is computed based on the size of the import transaction and the base fee on the P-chain, which can be obtained by calling `network.getBaseTxFeeOnP()`.
+The value of `exportFeeOnC` is computed as the product of `baseTxFeeOnC` and the size of the export transaction, where the current value of `baseTxFeeOnC` can be obtained by calling `await network.getBaseTxFeeOnC()`. The value of `importFeeOnP` is computed as the product of `baseTxFeeOnP` and the size of the import transaction, where the current value of `baseTxFeeOnP` can be obtained by calling `await network.getBaseTxFeeOnP()`. The parameter `allocatedFeeOnP` reserves funds to cover `importFeeOnP`; its default value can be obtained by calling `await network.getDefaultAllocatedFeeOnP()`.
 
 The export and import can be executed by individual calls as well, in order to have a separate call for each transaction. To export `amount` from the C-chain, use
 ```
 await network.exportFromC(wallet, amount, baseTxFeeOnC)
 ```
-The parameter `baseFeeTxOnC` is optional and can be used to override the automatically acquired base transaction fee from the C-chain. To import all exported funds from the C-chain to the P-chain, use
+The parameter `baseTxFeeOnC` is optional and can be used to override the automatically acquired base transaction fee from the C-chain. To import all exported funds from the C-chain to the P-chain, use
 ```
 await network.importToP(wallet)
 ```
@@ -822,7 +797,7 @@ The process of transferring funds from the P-chain to the C-chain consists of tw
 ```
 await network.transferToC(wallet, amount)
 ```
-first generates an export transaction that exports `amount` from the P-chain address and spends a fixed `exportFeeOnP`. After the export transaction is signed, submitted and confirmed, an import transaction is generated that imports `amount - importFeeOnC` to the C-chain address and spends a certain `importFeeOnC`. After the import transaction is signed, submitted and confirmed, the call is complete. The balance on the P-chain address is reduced by `amount + exportFeeOnP` and the balance on the C-chain address is increased by `amount - importFeeOnC`. In that sense the function `transferToC` is not symmetric to the function `transferToP` as the `importFee` is difficult to predict in advance.
+first generates an export transaction that exports `amount` from the P-chain address and spends a certain `exportFeeOnP`. After the export transaction is signed, submitted and confirmed, an import transaction is generated that imports `amount - importFeeOnC` to the C-chain address and spends a certain `importFeeOnC`. After the import transaction is signed, submitted and confirmed, the call is complete. The balance on the P-chain address is reduced by `amount + exportFeeOnP` and the balance on the C-chain address is increased by `amount - importFeeOnC`. In that sense the function `transferToC` is not symmetric to the function `transferToP` as the `importFee` is difficult to predict in advance.
 
 As a shorthand to transfer the entire balance from the P-chain address to the C-chain address, the `amount` parameter in the above call can be omitted, i.e., the call
 ```
@@ -832,7 +807,7 @@ is equivalent to the above with `amount = balanceOnP - exportFeeOnP`.
 
 Note that the values appearing in the export and import transactions invoked by `transferToC` may differ from the described above if a certain `valueNotImportedToC` had previously not been imported to the C-chain due to the import transaction failure. The export transaction then exports `amount - valueNotImportedToC` from the P-chain address or is skipped if this export value is not positive. The import transaction imports `max(amount, valueNotImportedToC) - exportFeeOnP` to the P-chain address and the balance of funds not imported to the P-chain becomes zero.
 
-The value of `exportFeeOnP` is fixed and can be obtained by calling `network.getDefaultTxFeeOnP()`. The value of `importFeeOnC` is computed as the product of the `baseTxFeeOnC` and the size of the export transaction. The current value of the `baseTxFeeOnC` can be obtained by calling `await network.getBaseTxFeeOnC()`.
+The value of `exportFeeOnP` is computed as the product of `baseTxFeeOnP` and the size of the export transaction, where the current value of `baseTxFeeOnP` can be obtained by calling `await network.getBaseTxFeeOnP()`. The amount reserved by default to cover it can be obtained by calling `await network.getDefaultAllocatedFeeOnP()`. The value of `importFeeOnC` is computed as the product of `baseTxFeeOnC` and the size of the import transaction, where the current value of `baseTxFeeOnC` can be obtained by calling `await network.getBaseTxFeeOnC()`.
 
 The export and import can be executed by individual calls as well, in order to have a separate call for each transaction. To export `amount` from the P-chain, use
 ```
@@ -840,9 +815,9 @@ await network.exportFromP(wallet, amount)
 ```
 To import all exported funds from the P-chain to the C-chain, use
 ```
-await network.importToP(wallet, baseTxFeeOnC)
+await network.importToC(wallet, baseTxFeeOnC)
 ```
-The parameter `baseFeeTxOnC` is optional and can be used to override the automatically acquired base transaction fee from the C-chain.
+The parameter `baseTxFeeOnC` is optional and can be used to override the automatically acquired base transaction fee from the C-chain.
 
 ### Transferring funds on the P-chain
 

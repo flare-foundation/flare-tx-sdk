@@ -247,17 +247,6 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns the amount of claimable reward from FlareDrop.
-     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
-     * @returns The reward in wei corresponding to the public key or address.
-     */
-    async getClaimableFlareDropReward(publicKeyOrAddress: string): Promise<bigint> {
-        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
-            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
-        return this._cchain.getClaimableFlareDropReward(cAddress)
-    }
-
-    /**
      * Returns the amount of claimable reward from staking.
      * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
      * @returns The reward in wei corresponding to the public key or address.
@@ -399,21 +388,6 @@ export class Network extends NetworkBased {
     async transferWrapped(wallet: Wallet, recipient: string, amount: bigint): Promise<void> {
         let cAddress = await this._getCAddress(wallet)
         await this._cchain.tx.transferWrapped(wallet, cAddress, recipient, amount)
-    }
-
-    /**
-     * Claims or wraps entire claimable reward from FlareDrop.
-     * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
-     * - the function `getCAddress` or `getPublicKey`, and
-     * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
-     * @param rewardOwner A C-chain address of the reward owner (optional, equal to the wallet's C-chain address by default).
-     * @param recipient A C-chain address of the reward recipient (optional, equal to the wallet's C-chain address by default).
-     * @param wrap A boolean indicating if the claimable amount is to be wrapped (optional, false by default).
-     * @remarks If the wallet's C-chain address is different from the `rewardOwner`, it must be approved by the reward owner.
-     */
-    async claimFlareDropReward(wallet: Wallet, rewardOwner?: string, recipient?: string, wrap?: boolean): Promise<void> {
-        let cAddress = await this._getCAddress(wallet)
-        await this._cchain.tx.claimFlareDropReward(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap ?? false)
     }
 
     /**
@@ -845,11 +819,7 @@ export class Network extends NetworkBased {
         this._shouldBeGweiInteger(amount)
 
         if (!allocatedFeeOnP) {
-            if (await this._core.flarejs.isEtnaForkActive()) {
-                allocatedFeeOnP = this._core.const.pvmAllocatedFee
-            } else {
-                allocatedFeeOnP = await this.getBaseTxFeeOnP()
-            }
+            allocatedFeeOnP = this._core.const.pvmAllocatedFee
         }
         this._shouldBeGweiInteger(allocatedFeeOnP)
 
@@ -1117,19 +1087,27 @@ export class Network extends NetworkBased {
     }
 
     /**
-     * Returns the current base transaction fee on the C-chain.
-     * @returns The base fee in wei.
+     * Returns the current base fee rate on the C-chain.
+     * @returns The base fee rate in wei per unit of transaction size.
      */
     async getBaseTxFeeOnC(): Promise<bigint> {
         return this._cchain.tx.getBaseFee()
     }
 
     /**
-     * Returns the base transaction fee on the P-chain.
-     * @returns The default fee in wei.
+     * Returns the current base fee rate on the P-chain.
+     * @returns The base fee rate in wei per unit of transaction size.
      */
     async getBaseTxFeeOnP(): Promise<bigint> {
         return this._pchain.tx.getBaseTxFee()
+    }
+
+    /**
+     * Returns the fee amount reserved by default to cover a P-chain transaction.
+     * @returns The allocated fee in wei.
+     */
+    async getDefaultAllocatedFeeOnP(): Promise<bigint> {
+        return this._core.const.pvmAllocatedFee
     }
 
     /**

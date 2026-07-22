@@ -30,54 +30,29 @@ export class Validator extends NetworkBased {
         let threshold = 1
         let publicKey = futils.hexToBuffer(popBLSPublicKey)
         let signature = futils.hexToBuffer(popBLSSignature)
+        let feeState = await this._core.flarejs.getFeeState(this._core.const.pvmBaseFeeExtraRel)
 
-        if (await this._core.flarejs.isEtnaForkActive()) {
-            let feeState = await this._core.flarejs.getFeeState(this._core.const.pvmBaseFeeExtraRel)
-
-            return this._core.flarejs.pvm.e.newAddPermissionlessValidatorTx(
-                {
-                    feeState,
-                    fromAddressesBytes,
-                    subnetId,
-                    nodeId,
-                    start,
-                    end,
-                    weight,
-                    rewardAddresses,
-                    delegatorRewardsOwner,
-                    changeAddressesBytes,
-                    utxos,
-                    shares,
-                    threshold,
-                    locktime,
-                    publicKey,
-                    signature
-                },
-                context
-            )
-
-        } else {
-            return this._core.flarejs.pvm.newAddPermissionlessValidatorTx(
-                context,
-                utxos,
+        return this._core.flarejs.pvm.newAddPermissionlessValidatorTx(
+            {
+                feeState,
                 fromAddressesBytes,
-                nodeId,
                 subnetId,
+                nodeId,
                 start,
                 end,
                 weight,
                 rewardAddresses,
                 delegatorRewardsOwner,
+                changeAddressesBytes,
+                utxos,
                 shares,
-                {
-                    changeAddresses: changeAddressesBytes,
-                },
                 threshold,
                 locktime,
                 publicKey,
                 signature
-            )
-        }
+            },
+            context
+        )
     }
 
 }
