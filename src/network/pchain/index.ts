@@ -89,7 +89,7 @@ export class PChain extends NetworkBased {
             }
             if (delegators) {
                 for (let delegator of delegators) {
-                    stakes.push(await this._parseStake(delegator, StakeType.VALIDATOR))
+                    stakes.push(await this._parseStake(delegator, StakeType.DELEGATOR))
                 }
             }
         }
@@ -99,7 +99,7 @@ export class PChain extends NetworkBased {
     private async _parseStake(stake: any, type: StakeType): Promise<Stake> {
         let txId = stake.txID as string
         let pAddress: string
-        let rewardOwner = stake.validationRewardOwner ?? stake.delegationRewardOwner
+        let rewardOwner = stake.validationRewardOwner ?? stake.delegationRewardOwner ?? stake.rewardOwner
         if (rewardOwner &&
             rewardOwner.addresses &&
             rewardOwner.addresses.length > 0) {

@@ -1,4 +1,5 @@
 import QRCode from 'qrcode'
+import { ethers } from 'ethers'
 
 export class QR {
 
@@ -11,12 +12,12 @@ export class QR {
         let compressionStream = new CompressionStream("gzip")
         let compressedStream = new ReadableStream({
             start(controller) {
-                controller.enqueue(Buffer.from(hex.slice(2), "hex"))
+                controller.enqueue(ethers.getBytes(hex))
                 controller.close()
             },
         }).pipeThrough(compressionStream)
-        let decompressedValue = await new Response(compressedStream).arrayBuffer()
-        return Buffer.from(decompressedValue).toString("base64")
+        let compressedValue = await new Response(compressedStream).arrayBuffer()
+        return ethers.encodeBase64(new Uint8Array(compressedValue))
     }
 
 }

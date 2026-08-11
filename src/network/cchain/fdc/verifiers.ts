@@ -170,7 +170,13 @@ export class FdcVerifiers extends NetworkBased {
                 body: JSON.stringify(requestData),
             }
         )
-        let json = await response.json()
+        let json: any
+        try {
+            json = await response.json()
+        } catch {
+            throw new Error(`Failed to prepare FDC attestation request: `
+                + `the verifier service at ${apiUrl} responded with status ${response.status}`)
+        }
         if (!json.abiEncodedRequest) {
             let message = "Failed to prepare FDC attestation request"
             let info = []
@@ -184,7 +190,7 @@ export class FdcVerifiers extends NetworkBased {
                 info.push(json.message)
             }
             if (info.length > 0) {
-                message += `: ${info.join(", ")})`
+                message += `: ${info.join(", ")}`
             }
             throw new Error(message)
         }

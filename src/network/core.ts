@@ -37,6 +37,7 @@ export class NetworkCore {
         this.const.rpc = rpc
         this.flarejs = this._getFlarejs(rpc)
         this.ethers = this._getEthers(this.const.rpc)
+        this._cChainId = undefined
     }
 
     private _getFlarejs(rpc: string): Flarejs {

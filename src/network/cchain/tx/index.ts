@@ -12,7 +12,6 @@ import { ContractRegistry } from "../contract/registry";
 import { GenericContract } from "../contract/generic";
 import { Constants } from "../../constants";
 import { FtsoRewardClaimWithProof, FoundationProposalSupport, FdcSourceNetwork, FdcAttestationRequest } from "../../iotype";
-import { base58 } from "@scure/base";
 import { SafeProxyFactory } from "../contract/safe_proxy_factory";
 import { Evm } from "./evm";
 import { FdcVerifiers } from "../fdc/verifiers";
@@ -197,11 +196,20 @@ export class Transactions extends NetworkBased {
         let proxyFactory = new SafeProxyFactory(this._core, this._core.const.address_SafeProxyFactory)
         let singleton = this._core.const.address_SafeSingleton
         let fallbackHandler = this._core.const.address_SafeFallbackHandler
-        let saltNonce = BigInt(Math.floor(Math.random() * 1e6))
+        let saltNonce = BigInt(ethers.hexlify(ethers.randomBytes(32)))
         let data = proxyFactory.createProxy(singleton, owners, threshold, fallbackHandler, saltNonce)
         let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, proxyFactory.address, data)
         let receipt = await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.CREATE_SAFE_SMART_ACCOUNT)
-        return receipt ? receipt.logs[0].address : null
+        if (!receipt) {
+            return null
+        }
+        let topic = ethers.id("ProxyCreation(address,address)")
+        let log = receipt.logs.find(l =>
+            l.address.toLowerCase() === proxyFactory.address.toLowerCase() && l.topics[0] === topic)
+        if (!log) {
+            return null
+        }
+        return ethers.getAddress(ethers.dataSlice(log.topics[1], 12))
     }
 
     async castVoteForFoundationProposal(
@@ -314,6 +322,9 @@ export class Transactions extends NetworkBased {
         ...params: any[]
     ): Promise<void> {
         let contractAddress = Account.isCAddress(contract) ? contract : await this._registry.getAddress(contract)
+        if (Utils.isZeroHex(contractAddress)) {
+            throw new Error("Unidentifiable contract address")
+        }
         let generic = new GenericContract(this._core, contractAddress)
         let data = generic.getData(abi, method, ...params)
         let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, generic.address, data, value)
@@ -445,7 +456,7 @@ export class Transactions extends NetworkBased {
         if (this._core.beforeTxSubmission) {
             let signedTxHex = ethers.hexlify(tx)
             let txHash = ethers.sha256(signedTxHex)
-            let txId = base58.encode(futils.addChecksum(ethers.getBytes(txHash)))
+            let txId = futils.base58.encode(futils.addChecksum(ethers.getBytes(txHash)))
             let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId })
             if (!proceed) {
                 return

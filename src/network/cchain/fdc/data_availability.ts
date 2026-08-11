@@ -33,6 +33,10 @@ export class FdcDataAvailability extends NetworkBased {
                 throw new Error(`Failed to parse response from FDC data availability service: ${e}`)
             }
             if (!json.error) {
+                if (!json.response) {
+                    throw new Error(`Failed to obtain FDC attestation: `
+                        + `unexpected response from the data availability service (status ${response.status})`)
+                }
                 if (!Number.isSafeInteger(json.response.lowestUsedTimestamp)) {
                     json.response.lowestUsedTimestamp = BigInt("0xffffffffffffffff")
                 }

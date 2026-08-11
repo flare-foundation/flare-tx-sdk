@@ -81,7 +81,7 @@ export class Evm extends NetworkBased {
             return Transaction.from({ to: account, value: BigInt(0), data: approveData, ...params })
         } else {
             approvals = approvals.map(a => Utils.removeHexPrefix(a.toLowerCase()))
-            approvals.sort((a, b) => parseInt(a, 16) - parseInt(b, 16))
+            approvals.sort((a, b) => a < b ? -1 : a > b ? 1 : 0)
             let signatures = Utils.addHexPrefix(approvals.map(a => `${"0".repeat(24)}${a}${"0".repeat(64)}01`).join(""))
             let executeData = proxy.execTransaction(
                 recipient,

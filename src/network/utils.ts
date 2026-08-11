@@ -15,9 +15,10 @@ export class Utils {
     static min(...values: bigint[]): bigint {
         let m = undefined
         for (let value of values) {
-            if (!m) {
-                m = value
-            } else if (value && value < m) {
+            if (value === undefined || value === null) {
+                continue
+            }
+            if (m === undefined || value < m) {
                 m = value
             }
         }
@@ -27,9 +28,10 @@ export class Utils {
     static max(...values: bigint[]): bigint {
         let m = undefined
         for (let value of values) {
-            if (!m) {
-                m = value
-            } else if (value && value > m) {
+            if (value === undefined || value === null) {
+                continue
+            }
+            if (m === undefined || value > m) {
                 m = value
             }
         }

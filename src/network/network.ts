@@ -704,6 +704,8 @@ export class Network extends NetworkBased {
      * @param postProcessJq jq filter used to post-process the JSON response from the URL.
      * @param abiSignature ABI signature of the struct used to encode the data after jq post-processing.     
      * @returns The instance of type {@link FdcAttestationRequest} that specifies the attestation request data.
+     * @remarks The request parameters are submitted to the network as public data. They should not
+     * contain secrets, such as API keys in `headers`.
      */
     async submitFdcAttestationRequestForWeb2Json(
         wallet: Wallet,
@@ -920,7 +922,9 @@ export class Network extends NetworkBased {
      * If amount is not provided, the entire P-chain balance of the wallet is transferred.
      */
     async transferOnP(wallet: Wallet, recipient: string, amount?: bigint): Promise<void> {
-        this._shouldBeGweiInteger(amount)
+        if (amount) {
+            this._shouldBeGweiInteger(amount)
+        }
         let account = await this._getAccount(wallet)
         await this._pchain.tx.transfer(wallet, account, recipient, amount)
     }
@@ -973,7 +977,7 @@ export class Network extends NetworkBased {
     ): Promise<void> {
         this._shouldBeGweiInteger(amount)
         if (!startTime) {
-            startTime = BigInt(Date.now())
+            startTime = BigInt(Math.floor(Date.now() / 1000) + 60)
         }
         if (!endTime) {
             let validators = await this._pchain.getValidators()

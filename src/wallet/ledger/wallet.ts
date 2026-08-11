@@ -129,7 +129,8 @@ export class FlrLedgerWallet extends LedgerWallet {
         if (!payload.compressed_pk) {
             throw new Error("Failed to get public key on ledger (no public key in response)")
         }
-        return "0x" + response.compressed_pk.toString("hex")
+        this._publicKey = "0x" + payload.compressed_pk.toString("hex")
+        return this._publicKey
     }
 
     /**
@@ -193,7 +194,8 @@ export class EthLedgerWallet extends LedgerWallet {
         if (!payload.publicKey) {
             throw new Error("Failed to get public key on ledger (no public key in response)")
         }
-        return this._prefixedHex(response.publicKey)
+        this._publicKey = this._prefixedHex(payload.publicKey)
+        return this._publicKey
     }
 
     /**

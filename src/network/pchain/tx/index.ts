@@ -9,7 +9,6 @@ import { Signature } from "../../sign"
 import { ethers } from "ethers"
 import { messageHashFromUnsignedTx, pvmSerial, TypeSymbols, UnsignedTx, utils as futils } from "@flarenetwork/flarejs"
 import { Delegator } from "./delegator"
-import { base58 } from "@scure/base"
 import { Transfer } from "./transfer"
 import { Validator } from "./validator"
 import { QR } from "../../qrcode"
@@ -41,7 +40,11 @@ export class Transactions extends NetworkBased {
             let response = await this._core.flarejs.pvmApi.getBalance({ addresses: [`P-${account.pAddress}`] })
             let balance = response.balance * BigInt(1e9)
             let fee = this._core.const.pvmAllocatedFee
-            unsignedTx = await this._transfer.getTx(account.pAddress, recipient, balance - fee)
+            let amountToTransfer = balance - fee
+            if (amountToTransfer <= BigInt(0)) {
+                throw new Error("The balance on the P-chain is too low to cover the transaction fee")
+            }
+            unsignedTx = await this._transfer.getTx(account.pAddress, recipient, amountToTransfer)
         }
         await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.TRANSFER_PASSET)
     }
@@ -141,7 +144,7 @@ export class Transactions extends NetworkBased {
         if (this._core.beforeTxSubmission) {
             let signedTxHex = ethers.hexlify(tx)
             let txHash = ethers.sha256(signedTxHex)
-            let txId = base58.encode(futils.addChecksum(ethers.getBytes(txHash)))
+            let txId = futils.base58.encode(futils.addChecksum(ethers.getBytes(txHash)))
             let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId })
             if (!proceed) {
                 return

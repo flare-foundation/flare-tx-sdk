@@ -603,7 +603,7 @@ It is also possible to submit a request for attestation of a Web2 Json API data.
 let request = await network.submitFdcAttestationRequestForWeb2Json(
     wallet, url, httpMethod, headers, queryParams, body, postProcessJq, abiSignature)
 ```
-where the input parameters specify the Web2 API endpoint, request data and ABI encoding of the Json API response.
+where the input parameters specify the Web2 API endpoint, request data and ABI encoding of the Json API response. Note that these parameters are submitted to the network as public data, hence they should not contain secrets, such as API keys in `headers`.
 In all cases the resulting object `request` is of type [`FdcAttestationRequest`](src/network/iotype.ts) and has the following properties:
 - `data` The request data in hexadecimal encoding;
 - `votingRoundId` The id of the voting round in which the request has been submitted.

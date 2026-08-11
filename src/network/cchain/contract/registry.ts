@@ -26,6 +26,9 @@ export class ContractRegistry extends EvmContract {
                 address = contract.address
             }
         }
+        if (Utils.isZeroHex(address)) {
+            throw new Error(`The address of the contract named ${contractName} cannot be resolved`)
+        }
         return address
     }
 
