@@ -435,6 +435,12 @@ The amount of claimable reward for a given project with `projectId` and a user p
 ```
 let amount = await network.getClaimableRNatReward(projectId, publicKeyOrAddress)
 ```
+To get the list of all rNat projects together with the claimable rewards of a user in a single call, use
+```
+let projects = await network.getRNatProjectsAndClaimableRewards(publicKeyOrAddress)
+```
+which returns an array of objects of type [`RNatProjectAndClaimableReward`](src/network/iotype.ts) with the same properties as `RNatProject` and the additional property `claimableReward` specifying the claimable reward in wei. All values are read from the same block.
+
 To claim all claimable rNat rewards, use
 ```
 await network.claimRNatReward(wallet, projectIds)

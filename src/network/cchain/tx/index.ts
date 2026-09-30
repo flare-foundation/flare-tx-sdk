@@ -37,16 +37,17 @@ export class Transactions extends NetworkBased {
     ): Promise<void> {
         let evm = new Evm(this._core)
         let gasLimit: bigint
+        let amountUndefined = amount === undefined || amount === null
         if (wallet.smartAccount) {
             gasLimit = undefined
-            if (!amount) {
+            if (amountUndefined) {
                 amount = await this._core.ethers.getBalance(wallet.smartAccount)
             }
         } else {
             gasLimit = this._core.const.evmTransferGasLimit
         }
         let unsignedTx = await evm.getTx(cAddress, wallet.smartAccount, recipient, undefined, amount, gasLimit)
-        if (!wallet.smartAccount && !amount) {
+        if (!wallet.smartAccount && amountUndefined) {
             let balance = await this._core.ethers.getBalance(cAddress)
             amount = balance - gasLimit * unsignedTx.maxFeePerGas
             if (amount < 0) {

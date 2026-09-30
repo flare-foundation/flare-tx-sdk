@@ -9,11 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Method getDefaultAllocatedFeeOnP returning the default fee reserved for P-chain transactions.
+- Method getRNatProjectsAndClaimableRewards returning rNat projects together with the claimable rewards of an owner.
 
 ### Changed
 
 - Upgraded @flarenetwork/flarejs to version 5.
 - Corrected documentation of the C-chain and P-chain base fee methods.
+- Stricter input validation: amounts, times and shares must be bigint values, and invalid inputs throw an error before any transaction is signed.
 
 ### Removed
 

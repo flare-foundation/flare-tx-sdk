@@ -34,7 +34,7 @@ export class Transactions extends NetworkBased {
         wallet: Wallet, account: Account, recipient: string, amount?: bigint
     ): Promise<void> {
         let unsignedTx: UnsignedTx
-        if (amount) {
+        if (amount !== undefined && amount !== null) {
             unsignedTx = await this._transfer.getTx(account.pAddress, recipient, amount)
         } else {
             let response = await this._core.flarejs.pvmApi.getBalance({ addresses: [`P-${account.pAddress}`] })

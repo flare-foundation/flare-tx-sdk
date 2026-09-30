@@ -1,5 +1,5 @@
 import { Account } from "../account"
-import { FtsoDelegate, FtsoRewardState, FoundationProposalInfo, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, StakeLimits, FoundationProposalState, FdcAttestationRequest, FdcAttestation, } from "../iotype"
+import { FtsoDelegate, FtsoRewardState, FoundationProposalInfo, RNatAccountBalance, RNatProject, RNatProjectAndClaimableReward, RNatProjectInfo, SafeSmartAccount, StakeLimits, FoundationProposalState, FdcAttestationRequest, FdcAttestation, } from "../iotype"
 import { FlareContract } from "../contract"
 import { NetworkCore, NetworkBased } from "../core"
 import { Utils } from "../utils"
@@ -100,6 +100,11 @@ export class CChain extends NetworkBased {
     async getRNatProjects(): Promise<Array<RNatProject>> {
         let rnat = await this._registry.getRNat()
         return rnat.getProjectsBasicInfo()
+    }
+
+    async getRNatProjectsAndClaimableRewards(owner: string): Promise<Array<RNatProjectAndClaimableReward>> {
+        let rnat = await this._registry.getRNat()
+        return rnat.getProjectsBasicInfoAndClaimableRewards(owner)
     }
 
     async getRNatProjectInfo(projectId: number): Promise<RNatProjectInfo> {

@@ -5,7 +5,7 @@ import { NetworkCore, NetworkBased } from "./core"
 import { PChain } from "./pchain"
 import { AfterTxConfirmationCallback, AfterTxSubmissionCallback, BeforeTxSignatureCallback, BeforeTxSubmissionCallback } from "./callback"
 import { Constants } from "./constants"
-import { Balance, FdcAttestation, FdcAttestationRequest, FdcSourceNetwork, FoundationProposalInfo, FoundationProposalSupport, FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectInfo, SafeSmartAccount, Stake, StakeLimits } from "./iotype"
+import { Balance, FdcAttestation, FdcAttestationRequest, FdcSourceNetwork, FoundationProposalInfo, FoundationProposalSupport, FtsoDelegate, FtsoRewardClaimWithProof, FtsoRewardState, RNatAccountBalance, RNatProject, RNatProjectAndClaimableReward, RNatProjectInfo, SafeSmartAccount, Stake, StakeLimits } from "./iotype"
 import { FlareContract } from "./contract"
 import { Utils } from "./utils"
 
@@ -303,6 +303,20 @@ export class Network extends NetworkBased {
     }
 
     /**
+     * Returns rNat projects together with the claimable rNat reward for each project.
+     * All values are read atomically in a single call against the same block.
+     * @param publicKeyOrAddress A public key or a C-chain address in hexadecimal encoding.
+     * @returns The array of objects of type {@link RNatProjectAndClaimableReward} that contains basic
+     * information about the rNat projects and the reward in wei claimable by the address specified
+     * by `publicKeyOrAddress`.
+     */
+    async getRNatProjectsAndClaimableRewards(publicKeyOrAddress: string): Promise<Array<RNatProjectAndClaimableReward>> {
+        let cAddress = Account.isCAddress(publicKeyOrAddress) ?
+            publicKeyOrAddress : Account.getCAddress(publicKeyOrAddress)
+        return this._cchain.getRNatProjectsAndClaimableRewards(cAddress)
+    }
+
+    /**
      * Returns rNat project information.
      * @param projectId A project id number.
      * @returns The object of type {@link RNatProjectInfo} that contains detailed information
@@ -333,6 +347,8 @@ export class Network extends NetworkBased {
      * @param amount An amount in wei to be wrapped on the C-chain.
      */
     async transferNative(wallet: Wallet, recipient: string, amount: bigint): Promise<void> {
+        this._shouldBeBigInt("amount", amount)
+        this._shouldBeNonnegativeInteger("amount", amount)
         let cAddress = await this._getCAddress(wallet)
         await this._cchain.tx.transfer(wallet, cAddress, recipient, amount)
     }
@@ -359,6 +375,8 @@ export class Network extends NetworkBased {
      * @param amount An amount in wei to be wrapped on the C-chain.
      */
     async wrapNative(wallet: Wallet, amount: bigint): Promise<void> {
+        this._shouldBeBigInt("amount", amount)
+        this._shouldBeNonnegativeInteger("amount", amount)
         let cAddress = await this._getCAddress(wallet)
         await this._cchain.tx.wrap(wallet, cAddress, amount)
     }
@@ -372,8 +390,14 @@ export class Network extends NetworkBased {
      * If the amount is not given, all wrapped funds are unwrapped.
      */
     async unwrapToNative(wallet: Wallet, amount?: bigint): Promise<void> {
+        let amountDefined = this._isBigInt("amount", amount)
+        if (amountDefined) {
+            this._shouldBeNonnegativeInteger("amount", amount)
+        }
         let cAddress = await this._getCAddress(wallet)
-        amount = amount ?? await this.getBalanceWrappedOnC(wallet.smartAccount ?? cAddress)
+        if (!amountDefined) {
+            amount = await this.getBalanceWrappedOnC(wallet.smartAccount ?? cAddress)
+        }
         await this._cchain.tx.unwrap(wallet, cAddress, amount)
     }
 
@@ -386,6 +410,8 @@ export class Network extends NetworkBased {
      * @param amount An amount in wei to be wrapped on the C-chain.
      */
     async transferWrapped(wallet: Wallet, recipient: string, amount: bigint): Promise<void> {
+        this._shouldBeBigInt("amount", amount)
+        this._shouldBeNonnegativeInteger("amount", amount)
         let cAddress = await this._getCAddress(wallet)
         await this._cchain.tx.transferWrapped(wallet, cAddress, recipient, amount)
     }
@@ -436,6 +462,14 @@ export class Network extends NetworkBased {
      * @param projectIds An array of project ids to claim for.
      */
     async claimRNatReward(wallet: Wallet, projectIds: Array<number>): Promise<void> {
+        if (!Array.isArray(projectIds) || projectIds.length == 0) {
+            throw new Error("The parameter projectIds should be a nonempty array")
+        }
+        for (let projectId of projectIds) {
+            if (!Number.isSafeInteger(projectId) || projectId < 0) {
+                throw new Error("The parameter projectIds should contain only nonnegative integers")
+            }
+        }
         let cAddress = await this._getCAddress(wallet)
         return this._cchain.tx.claimRNatReward(wallet, cAddress, projectIds)
     }
@@ -450,8 +484,12 @@ export class Network extends NetworkBased {
      * @param wrap A boolean indicating if the withdrawn amount is to be wrapped (optional, false by default).
      */
     async withdrawFromRNatAccount(wallet: Wallet, amount?: bigint, wrap?: boolean): Promise<void> {
+        let amountDefined = this._isBigInt("amount", amount)
+        if (amountDefined) {
+            this._shouldBeNonnegativeInteger("amount", amount)
+        }
         let cAddress = await this._getCAddress(wallet)
-        if (!amount) {
+        if (!amountDefined) {
             let balance = await this._cchain.getRNatAccountBalance(cAddress)
             amount = balance.wNatBalance - balance.lockedBalance
         }
@@ -494,6 +532,18 @@ export class Network extends NetworkBased {
         owners: Array<string>,
         threshold: bigint
     ): Promise<string> {
+        if (!Array.isArray(owners) || owners.length == 0) {
+            throw new Error("The parameter owners should be a nonempty array")
+        }
+        owners.forEach((owner, i) => this._shouldBeCAddress(`owners[${i}]`, owner))
+        owners = owners.map(owner => Account.normalizedCAddress(owner))
+        if (new Set(owners).size !== owners.length) {
+            throw new Error("The parameter owners should not contain duplicate addresses")
+        }
+        this._shouldBeBigInt("threshold", threshold)
+        if (threshold < BigInt(1) || threshold > BigInt(owners.length)) {
+            throw new Error(`Invalid threshold value, must be between 1 and ${owners.length}`)
+        }
         let cAddress = await this._getCAddress(wallet)
         return this._cchain.tx.createSafeSmartAccount(wallet, cAddress, owners, threshold)
     }
@@ -802,6 +852,11 @@ export class Network extends NetworkBased {
         value: bigint,
         ...params: any[]
     ): Promise<void> {
+        if (this._isBigInt("value", value)) {
+            this._shouldBeNonnegativeInteger("value", value)
+        } else {
+            value = BigInt(0)
+        }
         let cAddress = await this._getCAddress(wallet)
         await this._cchain.tx.invokeContractMethod(wallet, cAddress, contract, abi, method, value, ...params)
     }
@@ -818,12 +873,15 @@ export class Network extends NetworkBased {
      * If the amount is not provided, the default fee allocation value is used.
      */
     async transferToP(wallet: Wallet, amount: bigint, allocatedFeeOnP?: bigint): Promise<void> {
-        this._shouldBeGweiInteger(amount)
+        this._shouldBeBigInt("amount", amount)
+        this._shouldBePositiveInteger("amount", amount)
+        this._shouldBeGweiInteger("amount", amount)
 
-        if (!allocatedFeeOnP) {
+        if (!this._isBigInt("allocatedFeeOnP", allocatedFeeOnP)) {
             allocatedFeeOnP = this._core.const.pvmAllocatedFee
         }
-        this._shouldBeGweiInteger(allocatedFeeOnP)
+        this._shouldBePositiveInteger("allocatedFeeOnP", allocatedFeeOnP)
+        this._shouldBeGweiInteger("allocatedFeeOnP", allocatedFeeOnP)
 
         let account = await this._getAccount(wallet)
 
@@ -855,11 +913,16 @@ export class Network extends NetworkBased {
      * If the amount is not given, all available balance on the P-chain is transferred.
      */
     async transferToC(wallet: Wallet, amount?: bigint): Promise<void> {
+        let amountDefined = this._isBigInt("amount", amount)
+        if (amountDefined) {
+            this._shouldBePositiveInteger("amount", amount)
+            this._shouldBeGweiInteger("amount", amount)
+        }
+
         let account = await this._getAccount(wallet)
 
         let amountToExport: bigint
-        if (amount) {
-            this._shouldBeGweiInteger(amount)
+        if (amountDefined) {
             let notImportedToC = await this._cchain.getBalanceNotImportedToC(account.pAddress)
             amountToExport = amount - notImportedToC
         } else {
@@ -872,7 +935,7 @@ export class Network extends NetworkBased {
         }
 
         let notImportedToC = await this._cchain.getBalanceNotImportedToC(account.pAddress)
-        if (amount && notImportedToC < amount) {
+        if (amountDefined && notImportedToC < amount) {
             throw new Error("The balance exported from P-chain is not sufficient to transfer the required amount to C-chain")
         }
         if (notImportedToC > BigInt(0)) {
@@ -889,9 +952,12 @@ export class Network extends NetworkBased {
      * @param baseFee A base C-chain transaction fee in wei to be used for transaction (optional).
      */
     async exportFromC(wallet: Wallet, amount: bigint, baseFee?: bigint): Promise<void> {
-        this._shouldBeGweiInteger(amount)
-        if (baseFee) {
-            this._shouldBeGweiInteger(baseFee)
+        this._shouldBeBigInt("amount", amount)
+        this._shouldBePositiveInteger("amount", amount)
+        this._shouldBeGweiInteger("amount", amount)
+        if (this._isBigInt("baseFee", baseFee)) {
+            this._shouldBePositiveInteger("baseFee", baseFee)
+            this._shouldBeGweiInteger("baseFee", baseFee)
         }
         let account = await this._getAccount(wallet)
         await this._cchain.tx.exportFromC(wallet, account, amount, baseFee)
@@ -905,8 +971,9 @@ export class Network extends NetworkBased {
      * @param baseFee A base C-chain transaction fee in wei to be used for transaction (optional).
      */
     async importToC(wallet: Wallet, baseFee?: bigint): Promise<void> {
-        if (baseFee) {
-            this._shouldBeGweiInteger(baseFee)
+        if (this._isBigInt("baseFee", baseFee)) {
+            this._shouldBePositiveInteger("baseFee", baseFee)
+            this._shouldBeGweiInteger("baseFee", baseFee)
         }
         let account = await this._getAccount(wallet)
         await this._cchain.tx.importToC(wallet, account, baseFee)
@@ -922,8 +989,9 @@ export class Network extends NetworkBased {
      * If amount is not provided, the entire P-chain balance of the wallet is transferred.
      */
     async transferOnP(wallet: Wallet, recipient: string, amount?: bigint): Promise<void> {
-        if (amount) {
-            this._shouldBeGweiInteger(amount)
+        if (this._isBigInt("amount", amount)) {
+            this._shouldBePositiveInteger("amount", amount)
+            this._shouldBeGweiInteger("amount", amount)
         }
         let account = await this._getAccount(wallet)
         await this._pchain.tx.transfer(wallet, account, recipient, amount)
@@ -937,7 +1005,9 @@ export class Network extends NetworkBased {
      * @param amount An amount in wei to be exported.
      */
     async exportFromP(wallet: Wallet, amount: bigint): Promise<void> {
-        this._shouldBeGweiInteger(amount)
+        this._shouldBeBigInt("amount", amount)
+        this._shouldBePositiveInteger("amount", amount)
+        this._shouldBeGweiInteger("amount", amount)
         let account = await this._getAccount(wallet)
         await this._pchain.tx.exportFromP(wallet, account, amount)
     }
@@ -961,7 +1031,7 @@ export class Network extends NetworkBased {
      * @param amount The amount in wei to be delegated.
      * @param nodeId The code of the validator's node to delegate to.
      * @param startTime The seconds from the Unix epoch marking the start of the delegation.
-     * If the value is not provided, it is set to be equal to the current time.
+     * If the value is not provided, it is set to the current time plus 60 seconds.
      * @param endTime The seconds from the Unix epoch marking the end of the delegation.
      * If the value is not provided, it is set to be equal to the validator's end time.
      * @param allocatedFeeOnP An amount in wei specifying the allocated fee for import to and delegate on
@@ -975,11 +1045,14 @@ export class Network extends NetworkBased {
         endTime?: bigint,
         allocatedFeeOnP?: bigint
     ): Promise<void> {
-        this._shouldBeGweiInteger(amount)
-        if (!startTime) {
+        this._shouldBeBigInt("amount", amount)
+        this._shouldBePositiveInteger("amount", amount)
+        this._shouldBeGweiInteger("amount", amount)
+        if (!this._isBigInt("startTime", startTime)) {
             startTime = BigInt(Math.floor(Date.now() / 1000) + 60)
         }
-        if (!endTime) {
+        this._shouldBePositiveInteger("startTime", startTime)
+        if (!this._isBigInt("endTime", endTime)) {
             let validators = await this._pchain.getValidators()
             let validator = validators.find(v => v.nodeId === nodeId)
             if (!validator) {
@@ -987,14 +1060,21 @@ export class Network extends NetworkBased {
             }
             endTime = validator.endTime
         }
-        if (!allocatedFeeOnP) {
+        this._shouldBePositiveInteger("endTime", endTime)
+        if (endTime <= startTime) {
+            throw new Error("The delegation end time must be after the start time")
+        }
+        if (!this._isBigInt("allocatedFeeOnP", allocatedFeeOnP)) {
             allocatedFeeOnP = this._core.const.pvmAllocatedFee
         }
+        this._shouldBePositiveInteger("allocatedFeeOnP", allocatedFeeOnP)
+        this._shouldBeGweiInteger("allocatedFeeOnP", allocatedFeeOnP)
+
         let account = await this._getAccount(wallet)
 
         let balanceOnP = await this._pchain.getBalance(account.pAddress)
         if (balanceOnP < amount + allocatedFeeOnP) {
-            await this.transferToP(wallet, amount - balanceOnP, allocatedFeeOnP)
+            await this.transferToP(wallet, amount - balanceOnP + allocatedFeeOnP, allocatedFeeOnP)
         }
 
         await this._pchain.tx.delegateOnP(wallet, account, amount, nodeId, startTime, endTime)
@@ -1024,7 +1104,20 @@ export class Network extends NetworkBased {
         popBLSPublicKey: string,
         popBLSSignature: string
     ): Promise<void> {
-        this._shouldBeGweiInteger(amount)
+        this._shouldBeBigInt("amount", amount)
+        this._shouldBePositiveInteger("amount", amount)
+        this._shouldBeGweiInteger("amount", amount)
+        this._shouldBeBigInt("startTime", startTime)
+        this._shouldBePositiveInteger("startTime", startTime)
+        this._shouldBeBigInt("endTime", endTime)
+        this._shouldBePositiveInteger("endTime", endTime)
+        if (endTime <= startTime) {
+            throw new Error("The staking end time must be after the start time")
+        }
+        this._shouldBeBigInt("delegationFee", delegationFee)
+        if (delegationFee < BigInt(0) || delegationFee > BigInt(10000)) {
+            throw new Error("The parameter delegationFee must be a value between 0 and 10000")
+        }
         let account = await this._getAccount(wallet)
         await this._pchain.tx.addValidatorOnP(
             wallet,
@@ -1059,12 +1152,35 @@ export class Network extends NetworkBased {
         delegate2?: string,
         shareBP2?: bigint
     ): Promise<void> {
+        this._shouldBeCAddress("delegate1", delegate1)
+        this._shouldBeBigInt("shareBP1", shareBP1)
+        this._shouldBePositiveInteger("shareBP1", shareBP1)
+        if (shareBP1 > BigInt(10000)) {
+            throw new Error("The parameter shareBP1 should not be larger than 10000")
+        }
+        let shareBP2Defined = this._isBigInt("shareBP2", shareBP2)
+        if (delegate2 && !shareBP2Defined) {
+            throw new Error("The parameter delegate2 is defined but the parameter shareBP2 is not")
+        }
+        if (shareBP2Defined) {
+            if (!delegate2) {
+                throw new Error("The parameter shareBP2 is defined but the parameter delegate2 is not")
+            }
+            this._shouldBeCAddress("delegate2", delegate2)
+            if (Account.normalizedCAddress(delegate1) === Account.normalizedCAddress(delegate2)) {
+                throw new Error("The parameters delegate1 and delegate2 should be different addresses")
+            }
+            this._shouldBePositiveInteger("shareBP2", shareBP2)
+            if (shareBP1 + shareBP2 > BigInt(10000)) {
+                throw new Error("The sum of parameters shareBP1 and shareBP2 should not be larger than 10000")
+            }
+        }
         let cAddress = await this._getCAddress(wallet)
         let delegates = new Array<string>()
         let sharesBP = new Array<bigint>()
         delegates.push(delegate1)
         sharesBP.push(shareBP1)
-        if (delegate2 && shareBP2) {
+        if (delegate2 && shareBP2Defined) {
             delegates.push(delegate2)
             sharesBP.push(shareBP2)
         }
@@ -1186,9 +1302,43 @@ export class Network extends NetworkBased {
         }
     }
 
-    private _shouldBeGweiInteger(amount: bigint): void {
-        if (amount % BigInt(1e9) != BigInt(0)) {
-            throw Error("The input wei amount should be a multiple of 1e9 (an integer in gwei units)")
+    private _isBigInt(name: string, value?: bigint): boolean {
+        if (typeof value === "bigint") {
+            return true
+        } else if (value === undefined || value === null) {
+            return false
+        } else {
+            throw new Error(`The parameter ${name} should be a bigint value or undefined`)
+        }
+    }
+
+    private _shouldBeBigInt(name: string, value: bigint): void {
+        if (typeof value !== "bigint") {
+            throw new Error(`The parameter ${name} should be a bigint value`)
+        }
+    }
+
+    private _shouldBeCAddress(name: string, value: string): void {
+        if (typeof value !== "string" || !Account.isCAddress(value)) {
+            throw new Error(`The parameter ${name} should be a C-chain address in hexadecimal encoding`)
+        }
+    }
+
+    private _shouldBeGweiInteger(name: string, value: bigint): void {
+        if (value % BigInt(1e9) !== BigInt(0)) {
+            throw new Error(`The wei value of the parameter ${name} should be a multiple of 1e9 (an integer in gwei units)`)
+        }
+    }
+
+    private _shouldBePositiveInteger(name: string, value: bigint): void {
+        if (value <= BigInt(0)) {
+            throw new Error(`The parameter ${name} should be a positive integer`)
+        }
+    }
+
+    private _shouldBeNonnegativeInteger(name: string, value: bigint): void {
+        if (value < BigInt(0)) {
+            throw new Error(`The parameter ${name} should be a nonnegative integer`)
         }
     }
 

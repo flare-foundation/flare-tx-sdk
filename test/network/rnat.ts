@@ -32,6 +32,19 @@ export function runRNatTests(env: TestEnvironment): void {
             await network.getClaimableRNatReward(projects[0].id, env.getCAddress(0))
         })
 
+        it("projects and claimable rewards", async () => {
+            let cAddress = env.getCAddress(0)
+            let result = await network.getRNatProjectsAndClaimableRewards(cAddress)
+            assert.strictEqual(result.length, projects.length, "unmatching number of projects")
+            for (let i = 0; i < result.length; i++) {
+                assert.strictEqual(result[i].id, projects[i].id, "unmatching project id")
+                assert.strictEqual(result[i].name, projects[i].name, "unmatching project name")
+                assert.strictEqual(result[i].claimingDisabled, projects[i].claimingDisabled, "unmatching claiming info")
+                let reward = await network.getClaimableRNatReward(projects[i].id, cAddress)
+                assert.strictEqual(result[i].claimableReward, reward, "unmatching claimable reward")
+            }
+        })
+
         for (let wallet of wallets) {
             describe(wallet.getDescription(), async function () {
 

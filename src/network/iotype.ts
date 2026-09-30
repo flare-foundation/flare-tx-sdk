@@ -21,6 +21,13 @@ export type RNatProject = {
 }
 
 /**
+ * The type used for returning basic RNat project information together with the claimable reward
+ */
+export type RNatProjectAndClaimableReward = RNatProject & {
+    claimableReward: bigint // reward in wei claimable by the owner
+}
+
+/**
  * The type used for returning detailed RNat project information
  */
 export type RNatProjectInfo = {

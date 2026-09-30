@@ -21,12 +21,18 @@
   "author": "Flare Network",
   "license": "MIT",
   "dependencies": {
-    "@flarenetwork/flarejs": "5.1.0-rc.0",
+    "@flarenetwork/flarejs": "5.2.0-rc.0",
     "ethers": "^6.17.0",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
+    "solc": "0.8.37",
     "tsx": "^4.23.1",
     "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "solc": {
+      "tmp": "^0.2.7"
+    }
   }
 }
