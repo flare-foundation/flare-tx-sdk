@@ -12,6 +12,8 @@ export class EIP1193Core {
     protected _provider: EIP1193Provider
     protected _onAccountChange: AccountChangedListener
     protected _accounts: Array<string>
+    protected _accountsRequest: Promise<void>
+    protected _listening: boolean
 
     setAccountChangedListener(listener: AccountChangedListener): void {
         this._onAccountChange = listener
@@ -28,20 +30,42 @@ export class EIP1193Core {
     }
 
     protected async _updateAccounts(): Promise<void> {
-        if (!this._accounts) {
-            let result = await this._provider.request({
-                method: "eth_requestAccounts",
-                params: []
-            })
-            this._accounts = result as Array<string>
+        if (this._accounts && this._accounts.length > 0) {
+            return
+        }
+        // concurrent calls share a single pending request
+        if (!this._accountsRequest) {
+            this._accountsRequest = this._requestAccounts()
+        }
+        try {
+            await this._accountsRequest
+        } finally {
+            this._accountsRequest = undefined
+        }
+    }
+
+    protected async _requestAccounts(): Promise<void> {
+        let result = await this._provider.request({
+            method: "eth_requestAccounts",
+            params: []
+        })
+        // the listener is not notified on the initial connection, only on reconnection
+        this._setAccounts(result as Array<string>, this._accounts !== undefined)
+        // registered after the initial connection, so that its accountsChanged event is not reported
+        if (!this._listening) {
+            this._listening = true
             this._provider.on("accountsChanged", accounts => {
-                let previousAccount = this._getFirstAccountOrNull()
-                this._accounts = accounts as Array<string>
-                let currentAccount = this._getFirstAccountOrNull()
-                if (previousAccount === null || !this._equalHex(previousAccount, currentAccount)) {
-                    this._onAccountChange(currentAccount)
-                }
+                this._setAccounts(accounts as Array<string>, true)
             })
+        }
+    }
+
+    protected _setAccounts(accounts: Array<string>, notify: boolean): void {
+        let previousAccount = this._getFirstAccountOrNull()
+        this._accounts = accounts ?? []
+        let currentAccount = this._getFirstAccountOrNull()
+        if (notify && this._onAccountChange && !this._equalHex(previousAccount, currentAccount)) {
+            this._onAccountChange(currentAccount)
         }
     }
 

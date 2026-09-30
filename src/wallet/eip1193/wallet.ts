@@ -68,7 +68,8 @@ export class EIP1193Wallet extends EIP1193Based implements Wallet {
         let data = txObj.data
         let maxPriorityFeePerGas = this._valueToHex(txObj.maxPriorityFeePerGas)
         let maxFeePerGas = this._valueToHex(txObj.maxFeePerGas)
-        let transaction = { to, from, gas, value, data, maxPriorityFeePerGas, maxFeePerGas }
+        let chainId = this._valueToHex(txObj.chainId)
+        let transaction = { to, from, gas, value, data, maxPriorityFeePerGas, maxFeePerGas, chainId }
         let sendTransactionRequest = {
             method: "eth_sendTransaction",
             params: [transaction]

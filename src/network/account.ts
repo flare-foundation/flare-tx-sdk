@@ -46,9 +46,13 @@ export class Account {
     }
 
     static isPAddress(address: string, hrp: string): boolean {
+        if (typeof address !== "string") {
+            return false
+        }
         let bech = address.startsWith("P-") ? address.slice(2) : address
         try {
-            return futils.parseBech32(bech)[0] === hrp
+            let [prefix, bytes] = futils.parseBech32(bech)
+            return prefix === hrp && bytes.length === 20
         } catch {
             return false
         }

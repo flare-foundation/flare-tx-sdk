@@ -66,12 +66,12 @@ export class PChain extends NetworkBased {
 
     async getMinDelegatorStake(): Promise<bigint> {
         let minStake = await this._core.flarejs.pvmApi.getMinStake()
-        return minStake.minDelegatorStake * BigInt(1e9)
+        return BigInt(minStake.minDelegatorStake) * BigInt(1e9)
     }
 
     async getMinValidatorStake(): Promise<bigint> {
         let minStake = await this._core.flarejs.pvmApi.getMinStake()
-        return minStake.minValidatorStake * BigInt(1e9)
+        return BigInt(minStake.minValidatorStake) * BigInt(1e9)
     }
 
     private async _getCurrentStakes(includeDelegators: boolean, nodeId?: string): Promise<Array<Stake>> {

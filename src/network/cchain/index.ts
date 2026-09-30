@@ -179,7 +179,10 @@ export class CChain extends NetworkBased {
         return polling.hasVoted(proposalId, voter)
     }
 
-    async isFdcVotingRoundFinalized(votingRoundId: number): Promise<boolean> {
+    async isFdcVotingRoundFinalized(votingRoundId: number | null): Promise<boolean> {
+        if (votingRoundId === null || votingRoundId === undefined) {
+            throw new Error("The FDC attestation request was not submitted (voting round id is not defined)")
+        }
         let relay = await this._registry.getRelay()
         return relay.isFinalized(200, votingRoundId)
     }

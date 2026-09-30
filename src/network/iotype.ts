@@ -148,7 +148,7 @@ export enum FdcSourceNetwork {
  */
 export type FdcAttestationRequest = {
     data: string
-    votingRoundId: number
+    votingRoundId: number | null // null if the request was not submitted (e.g., only approved by a smart account owner)
 }
 
 /**

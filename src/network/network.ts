@@ -785,8 +785,9 @@ export class Network extends NetworkBased {
      * Determines if the Flare Data Connector (FDC) voting round is finalized.
      * @param votingRoundId A number that specifies the voting round id.
      * @returns The boolean indicating if the voting round is finalized.
+     * @remarks An error is thrown if `votingRoundId` is null, i.e., the attestation request was not submitted.
      */
-    async isFdcVotingRoundFinalized(votingRoundId: number): Promise<boolean> {
+    async isFdcVotingRoundFinalized(votingRoundId: number | null): Promise<boolean> {
         return this._cchain.isFdcVotingRoundFinalized(votingRoundId)
     }
 
@@ -989,6 +990,10 @@ export class Network extends NetworkBased {
      * If amount is not provided, the entire P-chain balance of the wallet is transferred.
      */
     async transferOnP(wallet: Wallet, recipient: string, amount?: bigint): Promise<void> {
+        if (typeof recipient !== "string" || !Account.isPAddress(recipient, this._core.hrp)) {
+            throw new Error(`The parameter recipient should be a P-chain address in bech32 encoding with prefix ${this._core.hrp}`)
+        }
+        recipient = Account.normalizePAddress(recipient, this._core.hrp)
         if (this._isBigInt("amount", amount)) {
             this._shouldBePositiveInteger("amount", amount)
             this._shouldBeGweiInteger("amount", amount)

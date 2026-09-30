@@ -28,18 +28,17 @@ export class FdcDataAvailability extends NetworkBased {
             )
             let json: any
             try {
-                json = await response.json()
+                json = Utils.parseJsonWithBigInts(await response.text())
             } catch (e) {
                 throw new Error(`Failed to parse response from FDC data availability service: ${e}`)
             }
             if (!json.error) {
-                if (!json.response) {
+                let timestamp = json.response?.lowestUsedTimestamp
+                if (typeof timestamp !== "number" && typeof timestamp !== "bigint") {
                     throw new Error(`Failed to obtain FDC attestation: `
                         + `unexpected response from the data availability service (status ${response.status})`)
                 }
-                if (!Number.isSafeInteger(json.response.lowestUsedTimestamp)) {
-                    json.response.lowestUsedTimestamp = BigInt("0xffffffffffffffff")
-                }
+                json.response.lowestUsedTimestamp = BigInt(json.response.lowestUsedTimestamp)
                 return json
             }
             if (json.error == FdcDataAvailability.ATTESTATION_NOT_FOUND_ERROR) {

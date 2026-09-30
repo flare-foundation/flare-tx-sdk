@@ -612,13 +612,13 @@ let request = await network.submitFdcAttestationRequestForWeb2Json(
 where the input parameters specify the Web2 API endpoint, request data and ABI encoding of the Json API response. Note that these parameters are submitted to the network as public data, hence they should not contain secrets, such as API keys in `headers`.
 In all cases the resulting object `request` is of type [`FdcAttestationRequest`](src/network/iotype.ts) and has the following properties:
 - `data` The request data in hexadecimal encoding;
-- `votingRoundId` The id of the voting round in which the request has been submitted.
+- `votingRoundId` The id of the voting round in which the request has been submitted, or `null` if the request has not been submitted (e.g., the transaction was cancelled by a callback or, in the case of a [smart account](#smart-account), it only approved the request).
 
 Once the attestation request is submitted, it is necessary to wait for the voting round to finalize. To check if the voting round is finalized, use
 ```
 let finalized = await network.isFdcVotingRoundFinalized(request.votingRoundId)
 ```
-When `finalized` is `true`, it is possible to obtain attestation proof from the FDC Data Availability service, using
+If `request.votingRoundId` is `null`, the request has not been submitted and the call throws an error. When `finalized` is `true`, it is possible to obtain attestation proof from the FDC Data Availability service, using
 ```
 let attestation = await network.getFdcAttestation(request)
 ```
@@ -631,6 +631,8 @@ The object `attestation` is of type [FdcAttestation](src/network/iotype.ts) and 
     - `requestBody` Detailed info about the attestation request;
     - `responseBody` Detailed info about the attestation response;
 - `proof` An array corresponding to the attestation proof.
+
+Integer values in `requestBody` and `responseBody` are represented as numbers, except for those outside the safe integer range (e.g., large amounts in wei), which are represented as `BigInt`.
 
 The validity of the attestation proof can be checked using
 ```

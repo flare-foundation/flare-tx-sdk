@@ -2,7 +2,7 @@ import { EIP1193Wallet } from "./wallet";
 import { EIP1193Based, EIP1193Core } from "./core";
 import { EIP1193Provider } from "./provider";
 
-export type OnWalletChange = (wallet: EIP1193Wallet) => void
+export type OnWalletChange = (wallet: EIP1193Wallet | null) => void
 
 /**
  * The class that controls SDK-compatible wallets representing EIP-1193 accounts.
@@ -20,7 +20,7 @@ export class EIP1193WalletController extends EIP1193Based {
         this._wallets = {};
         core.setAccountChangedListener((account: string): void => {
             if (this._onWalletChange) {
-                this._onWalletChange(this._getWallet(account))
+                this._onWalletChange(account ? this._getWallet(account) : null)
             }
         })
     }
@@ -44,14 +44,17 @@ export class EIP1193WalletController extends EIP1193Based {
      */
     async getActiveWallet(): Promise<EIP1193Wallet | null> {
         let account = await this._core.getActiveAccount()
-        this._updateWallets([account])
-        return this._wallets[account]
+        if (!account) {
+            return null
+        }
+        return this._getWallet(account)
     }
 
     /**
      * Registers a listener that is called whenever the active account is changed.
-     * @param listener A void function that receives an object of class {@link EIP1193Wallet} as input.
-     * @remark The object received by `listener` is the wallet corresponding to the new active account.
+     * @param listener A void function that receives an object of class {@link EIP1193Wallet} or null as input.
+     * @remark The object received by `listener` is the wallet corresponding to the new active account,
+     * or null if no account is connected.
      * @remark If `listener` is null, the previous listener is unregistered.
      */
     onWalletChange(listener: OnWalletChange | null): void {

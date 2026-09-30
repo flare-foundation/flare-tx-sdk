@@ -303,7 +303,11 @@ export class Transactions extends NetworkBased {
         let fee = await conf.getRequestFee(request)
         let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, hub.address, data, fee)
         let receipt = await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.SUBMIT_ATTESTATION_REQUEST)
-        if (receipt) {
+        // The request is submitted only if the hub emitted the event (e.g., not when a smart account only approved it).
+        let topic = ethers.id("AttestationRequest(bytes,uint256)")
+        let submitted = receipt && receipt.logs.some(l =>
+            l.address.toLowerCase() === hub.address.toLowerCase() && l.topics[0] === topic)
+        if (submitted) {
             let block = await receipt.getBlock()
             let fsm = await this._registry.getFlareSystemManager()
             let votingStart = Number(await fsm.firstVotingRoundStartTs())
