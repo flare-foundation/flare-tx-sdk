@@ -1,7 +1,7 @@
 export type BeforeTxSignature = { 
     txType: string,
     unsignedTxHex: string,
-    verificationQRCode: string // data URL encoded image of a QR code that can be used for transaction verification
+    verificationQRCode: string | null // data URL encoded image of a QR code that can be used for transaction verification (null if the transaction could not be encoded)
 }
 export type BeforeTxSignatureCallback = ((data: BeforeTxSignature) => Promise<boolean>) | null
 

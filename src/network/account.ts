@@ -42,7 +42,7 @@ export class Account {
     }
 
     static isCAddress(address: string): boolean {
-        return ethers.isAddress(address)
+        return typeof address === "string" && /^0x[0-9a-fA-F]{40}$/.test(address) && ethers.isAddress(address)
     }
 
     static isPAddress(address: string, hrp: string): boolean {

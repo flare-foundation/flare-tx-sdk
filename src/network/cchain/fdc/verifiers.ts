@@ -5,6 +5,8 @@ import { AttestationType, AttestationTypes } from "./attestation_type";
 
 export class FdcVerifiers extends NetworkBased {
 
+    private static REQUEST_TIMEOUT_MS = 20000
+
     async prepareEvmTransactionRequest(
         source: FdcSourceNetwork,
         txId: string
@@ -168,6 +170,7 @@ export class FdcVerifiers extends NetworkBased {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify(requestData),
+                signal: AbortSignal.timeout(FdcVerifiers.REQUEST_TIMEOUT_MS)
             }
         )
         let json: any

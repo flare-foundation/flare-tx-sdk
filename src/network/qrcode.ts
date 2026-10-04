@@ -3,9 +3,14 @@ import { ethers } from 'ethers'
 
 export class QR {
 
-    static async generateCodeForTxVerification(unsignedTxHex: string): Promise<string> {
+    static async generateCodeForTxVerification(unsignedTxHex: string): Promise<string | null> {
         let text = await QR._compressGZip(unsignedTxHex)
-        return QRCode.toDataURL(text, { errorCorrectionLevel: "L" })
+        try {
+            return await QRCode.toDataURL(text, { errorCorrectionLevel: "L" })
+        } catch {
+            // the transaction could not be encoded in a QR code (e.g., it is too large)
+            return null
+        }
     }
 
     private static async _compressGZip(hex: string): Promise<string> {

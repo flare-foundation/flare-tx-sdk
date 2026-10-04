@@ -14,6 +14,7 @@ async function execute() {
         accounts = JSON.parse(readFileSync(TEST_ACCOUNTS_FILE).toString())
     } else {
         console.info(`To execute tests provide json file ${TEST_ACCOUNTS_FILE} with a list of accounts, each containing 'private_key' and 'address' field.`)
+        process.exitCode = 1
         return
     }
 

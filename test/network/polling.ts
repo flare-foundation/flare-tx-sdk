@@ -59,7 +59,7 @@ export function runPollingTests(env: TestEnvironment): void {
                 t.skip("Found no pending or acitve proposal")
                 return
             }
-            await network.getVotePowerForFoundationProposal(env.getCAddress(0), proposalId)
+            await network.getVoteDelegateForFoundationProposal(env.getCAddress(0), proposalId)
         })
 
         it("has voted", async (t) => {

@@ -16,7 +16,7 @@ export class Network extends NetworkBased {
 
     /**
      * Network constructor.
-     * @param constants Network constants of class {@link Cosntants}.
+     * @param constants Network constants of class {@link Constants}.
      */
     constructor(constants: Constants) {
         super(new NetworkCore(constants))
@@ -224,7 +224,7 @@ export class Network extends NetworkBased {
 
     /**
      * Returns information about stakes on the P-chain corresponding to a specific validator.
-     * @param nodeId The code of a validator's node. (optional).
+     * @param nodeId The code of a validator's node.
      * @returns The array of stakes on the P-chain (corresponding to the given node if given).
      */
     async getValidatorStakesOnP(nodeId: string): Promise<Array<Stake>> {
@@ -344,7 +344,7 @@ export class Network extends NetworkBased {
      * - the function `getCAddress` or `getPublicKey`, and
      * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
      * @param recipient A C-chain address of the transfer recipient.
-     * @param amount An amount in wei to be wrapped on the C-chain.
+     * @param amount An amount in wei to be transferred on the C-chain.
      */
     async transferNative(wallet: Wallet, recipient: string, amount: bigint): Promise<void> {
         this._shouldBeBigInt("amount", amount)
@@ -407,7 +407,7 @@ export class Network extends NetworkBased {
      * - the function `getCAddress` or `getPublicKey`, and
      * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
      * @param recipient A C-chain address of the transfer recipient.
-     * @param amount An amount in wei to be wrapped on the C-chain.
+     * @param amount An amount in wei to be transferred on the C-chain.
      */
     async transferWrapped(wallet: Wallet, recipient: string, amount: bigint): Promise<void> {
         this._shouldBeBigInt("amount", amount)
@@ -427,8 +427,11 @@ export class Network extends NetworkBased {
      * @remarks If the wallet's C-chain address is different from the `rewardOwner`, it must be approved by the reward owner.
      */
     async claimStakingReward(wallet: Wallet, rewardOwner?: string, recipient?: string, wrap?: boolean): Promise<void> {
+        if (!this._isBoolean("wrap", wrap)) {
+            wrap = false
+        }
         let cAddress = await this._getCAddress(wallet)
-        await this._cchain.tx.claimStakingReward(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap ?? false)
+        await this._cchain.tx.claimStakingReward(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap)
     }
 
     /**
@@ -449,8 +452,11 @@ export class Network extends NetworkBased {
         wrap?: boolean,
         proofs?: Array<FtsoRewardClaimWithProof>
     ): Promise<void> {
+        if (!this._isBoolean("wrap", wrap)) {
+            wrap = false
+        }
         let cAddress = await this._getCAddress(wallet)
-        await this._cchain.tx.claimFtsoReward(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap ?? false, proofs ?? [])
+        await this._cchain.tx.claimFtsoReward(wallet, cAddress, rewardOwner ?? cAddress, recipient ?? cAddress, wrap, proofs ?? [])
     }
 
     /**
@@ -484,16 +490,19 @@ export class Network extends NetworkBased {
      * @param wrap A boolean indicating if the withdrawn amount is to be wrapped (optional, false by default).
      */
     async withdrawFromRNatAccount(wallet: Wallet, amount?: bigint, wrap?: boolean): Promise<void> {
+        if (!this._isBoolean("wrap", wrap)) {
+            wrap = false
+        }
         let amountDefined = this._isBigInt("amount", amount)
         if (amountDefined) {
             this._shouldBeNonnegativeInteger("amount", amount)
         }
         let cAddress = await this._getCAddress(wallet)
         if (!amountDefined) {
-            let balance = await this._cchain.getRNatAccountBalance(cAddress)
+            let balance = await this._cchain.getRNatAccountBalance(wallet.smartAccount ?? cAddress)
             amount = balance.wNatBalance - balance.lockedBalance
         }
-        return this._cchain.tx.withdrawFromRNatAccount(wallet, cAddress, amount, wrap ?? false)
+        return this._cchain.tx.withdrawFromRNatAccount(wallet, cAddress, amount, wrap)
     }
 
     /**
@@ -501,12 +510,15 @@ export class Network extends NetworkBased {
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getCAddress` or `getPublicKey`, and
      * - the function `signCTransaction`, `signAndSubmitCTransaction` or `signDigest`.
-     @param wrap A boolean indicating if the withdrawn amount is to be wrapped (optional, false by default).
-     @remarks If some tokens are still locked, only 50% of them will be withdrawn, the rest will be burned as a penalty.
+     * @param wrap A boolean indicating if the withdrawn amount is to be wrapped (optional, false by default).
+     * @remarks If some tokens are still locked, only 50% of them will be withdrawn, the rest will be burned as a penalty.
      */
     async withdrawAllFromRNatAccount(wallet: Wallet, wrap?: boolean): Promise<void> {
+        if (!this._isBoolean("wrap", wrap)) {
+            wrap = false
+        }
         let cAddress = await this._getCAddress(wallet)
-        return this._cchain.tx.withdrawAllFromRNatAccount(wallet, cAddress, wrap ?? false)
+        return this._cchain.tx.withdrawAllFromRNatAccount(wallet, cAddress, wrap)
     }
 
     /**
@@ -842,7 +854,7 @@ export class Network extends NetworkBased {
      * @param contract Contract address or a Flare network name.
      * @param abi Application binary interface corresponding to contract or method.
      * @param method Name of the method.
-     * @param value Native coin value to send in the transaction.
+     * @param value Native coin value in wei to send in the transaction (optional, 0 by default).
      * @param params Parameters of the method.
      */
     async invokeContractMethodOnC(
@@ -885,11 +897,17 @@ export class Network extends NetworkBased {
         this._shouldBeGweiInteger("allocatedFeeOnP", allocatedFeeOnP)
 
         let account = await this._getAccount(wallet)
+        await this._transferToP(wallet, account, amount, allocatedFeeOnP)
+    }
 
+    private async _transferToP(wallet: Wallet, account: Account, amount: bigint, allocatedFeeOnP: bigint): Promise<boolean> {
         let notImportedToP = await this._pchain.getBalanceNotImportedToP(account.pAddress)
         if (notImportedToP < amount + allocatedFeeOnP) {
             let amountToExport = amount + allocatedFeeOnP - notImportedToP
-            await this._cchain.tx.exportFromC(wallet, account, amountToExport)
+            let exported = await this._cchain.tx.exportFromC(wallet, account, amountToExport)
+            if (!exported) {
+                return false
+            }
             notImportedToP = await this._pchain.getBalanceNotImportedToP(account.pAddress)
         }
 
@@ -897,9 +915,7 @@ export class Network extends NetworkBased {
             throw new Error("The balance exported from C-chain is not sufficient to transfer the required amount to P-chain")
         }
 
-        if (notImportedToP > 0) {
-            await this._pchain.tx.importToP(wallet, account)
-        }
+        return this._pchain.tx.importToP(wallet, account)
     }
 
     /**
@@ -932,7 +948,10 @@ export class Network extends NetworkBased {
             amountToExport = balance - exportFee
         }
         if (amountToExport > BigInt(0)) {
-            await this._pchain.tx.exportFromP(wallet, account, amountToExport)
+            let exported = await this._pchain.tx.exportFromP(wallet, account, amountToExport)
+            if (!exported) {
+                return
+            }
         }
 
         let notImportedToC = await this._cchain.getBalanceNotImportedToC(account.pAddress)
@@ -1079,7 +1098,11 @@ export class Network extends NetworkBased {
 
         let balanceOnP = await this._pchain.getBalance(account.pAddress)
         if (balanceOnP < amount + allocatedFeeOnP) {
-            await this.transferToP(wallet, amount - balanceOnP + allocatedFeeOnP, allocatedFeeOnP)
+            let amountToTransfer = balanceOnP < amount ? amount - balanceOnP : allocatedFeeOnP
+            let transferred = await this._transferToP(wallet, account, amountToTransfer, allocatedFeeOnP)
+            if (!transferred) {
+                return
+            }
         }
 
         await this._pchain.tx.delegateOnP(wallet, account, amount, nodeId, startTime, endTime)
@@ -1090,10 +1113,10 @@ export class Network extends NetworkBased {
      * @param wallet An instance of the class implementing the interface {@link Wallet} that contains:
      * - the function `getPublicKey`, and
      * - the function `signPTransaction`, `signDigest` or `signEthMessage`.
-     * @param amount The amount in wei to be delegated.
+     * @param amount The amount in wei to be staked.
      * @param nodeId The code of the validator's node.
-     * @param startTime The seconds from the Unix epoch marking the start of the delegation.
-     * @param endTime The seconds from the Unix epoch marking the end of the delegation.
+     * @param startTime The seconds from the Unix epoch marking the start of the validation.
+     * @param endTime The seconds from the Unix epoch marking the end of the validation.
      * @param delegationFee The percentage in base points that corresponds to the fee the validator charges
      * to delegators.
      * @param popBLSPublicKey The public key in hexadecimal notation for the proof of possesion of the BLS key.
@@ -1146,7 +1169,7 @@ export class Network extends NetworkBased {
      * @param shareBP1 A share of vote power in base points to delegate to the first delegate.
      * @param delegate2 A C-chain address representing the second FTSO delegate (optional).
      * @param shareBP2 A share of vote power in base points to delegate to the second delegate (optional).
-     * @remark The shares are specified in units between 0 and 10000 with a unit representing 0.01%.
+     * @remark The shares are specified in units between 1 and 10000 with a unit representing 0.01%.
      * The sum of `shareBP1` and `shareBP2` should not be larger than 10000.
      * The transaction invoked by this call undelegates all previous delegations.
      */
@@ -1320,6 +1343,16 @@ export class Network extends NetworkBased {
     private _shouldBeBigInt(name: string, value: bigint): void {
         if (typeof value !== "bigint") {
             throw new Error(`The parameter ${name} should be a bigint value`)
+        }
+    }
+
+    private _isBoolean(name: string, value?: boolean): boolean {
+        if (typeof value === "boolean") {
+            return true
+        } else if (value === undefined || value === null) {
+            return false
+        } else {
+            throw new Error(`The parameter ${name} should be a boolean value or undefined`)
         }
     }
 

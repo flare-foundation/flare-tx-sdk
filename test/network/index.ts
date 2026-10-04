@@ -28,6 +28,7 @@ function execute() {
         console.info("To execute tests provide three private keys for test accounts.")
         console.info("Option 1: npm run test {comma,separated,private_keys}")
         console.info(`Option 2: add file ${TEST_KEYS_FILE} that contains a comma separated list of private keys`)
+        process.exitCode = 1
         return
     }
 

@@ -61,12 +61,6 @@ let amount = await network.getClaimableStakingReward(cAddress)
 await network.claimStakingReward(wallet)
 ```
 
-Claiming reward from staking:
-```
-let amount = await network.getClaimableStakingReward(cAddress)
-await network.claimStakingReward(wallet)
-```
-
 Claiming reward from FTSO delegation:
 ```
 let amount = await network.getClaimableFtsoReward(cAddress)
@@ -234,7 +228,7 @@ network.setBeforeTxSignatureCallback(async (data: BeforeTxSignature) => { return
 The object of type `BeforeTxSignature` contains the properties:
 - `txType` the [code](src/network/txtype.ts) of the transaction type;
 - `unsignedTxHex` the unsigned transaction in the hexadecimal encoding;
-- `verificationQRCode` the QR code in data URL format that can be used to verify the unsigned transaction using the Flare Transaction Verifier mobile app.
+- `verificationQRCode` the QR code in data URL format that can be used to verify the unsigned transaction using the Flare Transaction Verifier mobile app, or `null` if the transaction could not be encoded in a QR code (e.g., because it is too large).
 
 The property `unsignedTxHex` can be used to decode and verify the transaction (see e.g. [Flare: Transaction verification library](https://github.com/flare-foundation/flare-tx-verifier-lib)).
 
@@ -376,7 +370,7 @@ Running an FTSO provider, [delegation to FTSO providers](#delegation-to-ftso-pro
 
 The amount of claimable reward for a given public key or C-chain address `publicKeyOrAddress` can be obtained by
 ```
-let amount = await network.getClaimableFTSOReward(publicKeyOrAddress)
+let amount = await network.getClaimableFtsoReward(publicKeyOrAddress)
 ```
 To claim all claimable weight based reward (i.e. reward resulting in delegation to FTSO providers and staking), use
 ```
@@ -445,7 +439,10 @@ To claim all claimable rNat rewards, use
 ```
 await network.claimRNatReward(wallet, projectIds)
 ```
-where `projectIds` is an array of project ids for which the reward is being claimed. The claimed rewards are deposited as wrapped coins to the dedicated rNat account, which is associated with the wallet's C-chain address (rNat account owner).
+where `projectIds` is an array of project ids for which the reward is being claimed. The claimed rewards are deposited as wrapped coins to the dedicated rNat account, which is associated with the wallet's C-chain address (rNat account owner). The C-chain address of the rNat account owned by `publicKeyOrAddress` can be obtained by
+```
+let rNatAccountAddress = await network.getRNatAccount(publicKeyOrAddress)
+```
 
 The wrapped coins on the rNat account are vested. To get the amount of unlocked wrapped coins, use
 ```
@@ -669,7 +666,11 @@ A new smart account can be created by
 ```
 let smartAccountAddress = await network.createSafeSmartAccount(wallet, owners, threshold)
 ```
-where `owners` is an array of C-chain addresses in hexadecimal encoding representing the owners of the smart account, and `threshold` is an integer between 1 and the length of `owners` representing the smart account threshold. If the wallet's C-chain address is not included in `owners`, the wallet's account is only the creator of the smart account and does not participate in its operation. The result `smartAccountAddress` is the C-chain address of the smart account in hexadecimal encoding.
+where `owners` is an array of C-chain addresses in hexadecimal encoding representing the owners of the smart account, and `threshold` is an integer between 1 and the length of `owners` representing the smart account threshold. If the wallet's C-chain address is not included in `owners`, the wallet's account is only the creator of the smart account and does not participate in its operation. The result `smartAccountAddress` is the C-chain address of the smart account in hexadecimal encoding. The owners and the threshold of an existing smart account can be obtained by
+```
+let smartAccount = await network.getSafeSmartAccount(smartAccountAddress)
+```
+where the result is of type [`SafeSmartAccount`](src/network/iotype.ts).
 
 A smart account can be used in any C-chain operation supported by this SDK. To demonstrate the concept and basic workflow, the following example shows how this functionality can be used to wrap a certain `amount` of native coins on a smart account and how to transfer these wrapped coins from the smart account to a certain `address`.
 
@@ -786,7 +787,7 @@ let stakes = await network.getValidatorsOnP()
 ```
 For obtaining all stakes corresponding to a specific validator, use
 ```
-let stakes = await network.getValidatorStakes(nodeId)
+let stakes = await network.getValidatorStakesOnP(nodeId)
 ```
 The resulting array contains all stakes (of type `validator` and `delegator`) to the validator's `nodeId`.
 

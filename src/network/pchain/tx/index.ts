@@ -49,14 +49,14 @@ export class Transactions extends NetworkBased {
         await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.TRANSFER_PASSET)
     }
 
-    async exportFromP(wallet: Wallet, account: Account, amount: bigint): Promise<void> {
+    async exportFromP(wallet: Wallet, account: Account, amount: bigint): Promise<boolean> {
         let unsignedTx = await this._export.getTx(account.pAddress, amount)
-        await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.EXPORT_P)
+        return this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.EXPORT_P)
     }
 
-    async importToP(wallet: Wallet, account: Account): Promise<void> {
+    async importToP(wallet: Wallet, account: Account): Promise<boolean> {
         let unsignedTx = await this._import.getTx(account.pAddress)
-        await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.IMPORT_P)
+        return this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.IMPORT_P)
     }
 
     async delegateOnP(
@@ -116,14 +116,14 @@ export class Transactions extends NetworkBased {
         account: Account,
         unsignedTx: UnsignedTx,
         txType: string
-    ): Promise<void> {
+    ): Promise<boolean> {
         let unsignedTxHex = ethers.hexlify(unsignedTx.toBytes())
 
         if (this._core.beforeTxSignature) {
             let verificationQRCode = await QR.generateCodeForTxVerification(unsignedTxHex)
             let proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex, verificationQRCode })
             if (!proceed) {
-                return null
+                return false
             }
         }
 
@@ -147,7 +147,7 @@ export class Transactions extends NetworkBased {
             let txId = futils.base58.encode(futils.addChecksum(ethers.getBytes(txHash)))
             let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId })
             if (!proceed) {
-                return
+                return false
             }
         }
 
@@ -157,7 +157,7 @@ export class Transactions extends NetworkBased {
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
             if (!proceed) {
-                return
+                return false
             }
         }
 
@@ -178,6 +178,7 @@ export class Transactions extends NetworkBased {
         if (status !== "Committed") {
             throw new Error(`Transaction ${txType} with id ${txId} not confirmed (status is ${status})`)
         }
+        return true
     }
 
 }

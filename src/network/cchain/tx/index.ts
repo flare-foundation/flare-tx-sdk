@@ -78,7 +78,7 @@ export class Transactions extends NetworkBased {
         let wnat = await this._registry.getWNat()
         let data = wnat.transfer(recipient, amount)
         let unsignedTx = await this._evm.getTx(cAddress, wallet.smartAccount, wnat.address, data)
-        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.TRANSFER_NAT)
+        await this._signAndSubmitEvmTx(wallet, cAddress, unsignedTx, TxType.TRANSFER_WNAT)
     }
 
     async claimStakingReward(
@@ -341,20 +341,20 @@ export class Transactions extends NetworkBased {
         account: Account,
         amount: bigint,
         baseFee?: bigint
-    ): Promise<void> {
+    ): Promise<boolean> {
         baseFee = baseFee ?? await this.getBaseFee()
         let unsignedTx = await this._export.getTx(account.cAddress, account.pAddress, amount, baseFee)
-        await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.EXPORT_C)
+        return this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.EXPORT_C)
     }
 
     async importToC(
         wallet: Wallet,
         account: Account,
         baseFee?: bigint
-    ): Promise<void> {
+    ): Promise<boolean> {
         baseFee = baseFee ?? await this.getBaseFee()
         let unsignedTx = await this._import.getTx(account.cAddress, account.pAddress, baseFee)
-        await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.IMPORT_C)
+        return this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.IMPORT_C)
     }
 
     async getBaseFee(): Promise<bigint> {
@@ -382,7 +382,8 @@ export class Transactions extends NetworkBased {
         }
 
         let txId: string
-        if (wallet.signAndSubmitCTransaction) {
+        let submittedByWallet = !!wallet.signAndSubmitCTransaction
+        if (submittedByWallet) {
             txId = await wallet.signAndSubmitCTransaction(unsignedTxHex)
             if (!ethers.isHexString(txId) || ethers.dataLength(txId) !== 32) {
                 throw new Error(`The function 'signAndSubmitCTransaction' returned an invalid transaction id (${txId})`)
@@ -412,9 +413,22 @@ export class Transactions extends NetworkBased {
             }
         }
 
-        let receipt = await this._core.ethers.waitForTransaction(
-            txId, null, this._core.const.txConfirmationTimeout)
+        let receipt: TransactionReceipt | null
+        try {
+            receipt = await this._core.ethers.waitForTransaction(
+                txId, null, this._core.const.txConfirmationTimeout)
+        } catch (e) {
+            if (ethers.isError(e, "TIMEOUT")) {
+                receipt = null
+            } else {
+                throw e
+            }
+        }
         if (receipt) {
+            if (submittedByWallet &&
+                (receipt.from !== cAddress || (receipt.to ?? null) !== (unsignedTx.to ?? null))) {
+                throw new Error(`The transaction ${txId} returned by 'signAndSubmitCTransaction' does not match the requested transaction`)
+            }
             let txStatus = receipt.status == 1 ? true : false
             if (this._core.afterTxConfirmation) {
                 await this._core.afterTxConfirmation({ txType, txId, txStatus })
@@ -433,14 +447,14 @@ export class Transactions extends NetworkBased {
         account: Account,
         unsignedTx: AvaxTx,
         txType: string
-    ): Promise<void> {
+    ): Promise<boolean> {
         let unsignedTxHex = ethers.hexlify(unsignedTx.toBytes())
 
         if (this._core.beforeTxSignature) {
             let verificationQRCode = await QR.generateCodeForTxVerification(unsignedTxHex)
             let proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex, verificationQRCode })
             if (!proceed) {
-                return
+                return false
             }
         }
 
@@ -464,7 +478,7 @@ export class Transactions extends NetworkBased {
             let txId = futils.base58.encode(futils.addChecksum(ethers.getBytes(txHash)))
             let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId })
             if (!proceed) {
-                return
+                return false
             }
         }
 
@@ -474,7 +488,7 @@ export class Transactions extends NetworkBased {
         if (this._core.afterTxSubmission) {
             let proceed = await this._core.afterTxSubmission({ txType, txId })
             if (!proceed) {
-                return
+                return false
             }
         }
 
@@ -495,6 +509,7 @@ export class Transactions extends NetworkBased {
         if (status !== "Accepted") {
             throw new Error(`Transaction ${txType} with id ${txId} not confirmed (status is ${status})`)
         }
+        return true
     }
 
 }

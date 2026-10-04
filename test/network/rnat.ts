@@ -49,15 +49,16 @@ export function runRNatTests(env: TestEnvironment): void {
             describe(wallet.getDescription(), async function () {
 
                 it("claim reward", async (t) => {
-                    let projectId = projects.find(x => !x.claimingDisabled).id
-                    if (!projectId && projectId !== 0) {
+                    let project = projects.find(x => !x.claimingDisabled)
+                    if (!project) {
                         t.skip("No RNat project with claiming enabled")
                         return
                     }
+                    let projectId = project.id
                     let publicKey = await wallet.getPublicKey()
                     let cAddress = network.getCAddress(publicKey)
                     await network.claimRNatReward(wallet, [projectId])
-                    let reward = await network.getClaimableRNatReward(projects[0].id, cAddress)
+                    let reward = await network.getClaimableRNatReward(projectId, cAddress)
                     assert.strictEqual(reward, BigInt(0), "reward not claimed in full")
                 })
             })

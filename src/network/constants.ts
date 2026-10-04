@@ -130,12 +130,10 @@ export class Constants {
     }
 
     static fromJson(json: string): Constants {
-        let constants = JSON.parse(json) as Constants
-        let dummy = new Constants()
-        for (let t in constants) {
-            if (typeof dummy[t] === "bigint") {
-                constants[t] = BigInt(constants[t])
-            }
+        let parsed = JSON.parse(json)
+        let constants = new Constants()
+        for (let t in parsed) {
+            constants[t] = typeof constants[t] === "bigint" ? BigInt(parsed[t]) : parsed[t]
         }
         return constants
     }
@@ -178,7 +176,7 @@ export class Constants {
     }
 
     /**
-     * Default constants for the canary Flare network.
+     * Default constants for the test Flare network.
      */
     static readonly COSTON2 = this._coston2()
 
