@@ -1055,7 +1055,7 @@ export class Network extends NetworkBased {
      * @param amount The amount in wei to be delegated.
      * @param nodeId The code of the validator's node to delegate to.
      * @param startTime The seconds from the Unix epoch marking the start of the delegation.
-     * If the value is not provided, it is set to the current time plus 60 seconds.
+     * If the value is not provided, it is set to the current time plus 5 minutes.
      * @param endTime The seconds from the Unix epoch marking the end of the delegation.
      * If the value is not provided, it is set to be equal to the validator's end time.
      * @param allocatedFeeOnP An amount in wei specifying the allocated fee for import to and delegate on
@@ -1073,7 +1073,7 @@ export class Network extends NetworkBased {
         this._shouldBePositiveInteger("amount", amount)
         this._shouldBeGweiInteger("amount", amount)
         if (!this._isBigInt("startTime", startTime)) {
-            startTime = BigInt(Math.floor(Date.now() / 1000) + 60)
+            startTime = BigInt(Math.floor(Date.now() / 1000) + 5 * 60)
         }
         this._shouldBePositiveInteger("startTime", startTime)
         if (!this._isBigInt("endTime", endTime)) {
