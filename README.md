@@ -482,7 +482,7 @@ The account's vote power corresponding to the balance of the wrapped tokens can 
 
 The status of current delegations can be obtained by
 ```
-let delegations = await network.getFtsoDelegatesOf(publicKey)
+let delegations = await network.getFtsoDelegatesOf(publicKeyOrAddress)
 ```
 The result is an array of objects of type [`FtsoDelegate`](src/network/iotype.ts) with properties:
 - `address` The C-chain address of the delegate;
