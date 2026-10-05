@@ -14,14 +14,21 @@
     "url": "https://github.com/flare-foundation/flare-tx-sdk"
   },
   "scripts": {
-    "build": "rm -rf dist/ && npx tsc -b && cp -r ./build/src ./dist && rm -rf build",
-    "test": "tsc --noEmit && npx tsx test/network",
-    "test_eip1193": "tsc --noEmit && npx tsx test/wallet/eip1193"
+    "build": "rm -rf dist/ && tsc -b && cp -r ./build/src ./dist && rm -rf build",
+    "typecheck": "tsc --noEmit",
+    "lint:check": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format:check": "biome format .",
+    "format:fix": "biome format --write .",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "test": "tsc --noEmit && tsx test/network",
+    "test_eip1193": "tsc --noEmit && tsx test/wallet/eip1193"
   },
   "author": "Flare Network",
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": ">=24.0.0"
   },
   "dependencies": {
     "@flarenetwork/flarejs": "5.2.0",
@@ -29,13 +36,10 @@
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.9",
     "solc": "0.8.37",
     "tsx": "^4.23.1",
     "typescript": "^7.0.2"
   },
-  "overrides": {
-    "solc": {
-      "tmp": "^0.2.7"
-    }
-  }
+  "packageManager": "pnpm@11.24.0+sha512.bd27e345e976dcb0be0b7a1228217b049a817e21b1f355c90dbe7dc46671895a8bc1e6d06c24554505ea93ea0b45f489a27ec1bfbc8de6a9659fca0f16fa0000"
 }

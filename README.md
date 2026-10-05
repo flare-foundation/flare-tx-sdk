@@ -1,3 +1,7 @@
+<div align="center">
+  <a href="https://flare.network/" target="blank"> <img src="https://content.flare.network/Flare-2.svg" width="300" alt="Flare Logo" /> </a>
+</div>
+
 # Flare: Transaction SDK
 
 This is the official Node.js Software Development Kit (SDK) for performing common actions on Flare's networks:
@@ -17,8 +21,8 @@ The SDK is designed to simplify blockchain interactions and offer future-proof s
 ## Quick start
 
 To install the library in a Node.js project, run
-```
-npm install @flarenetwork/flare-tx-sdk
+```bash
+pnpm add @flarenetwork/flare-tx-sdk
 ```
 
 The following is a brief overview of the available actions. Suppose
@@ -28,27 +32,27 @@ The following is a brief overview of the available actions. Suppose
 ### Account and balance
 
 Deriving addresses from the wallet's public key:
-```
+```typescript
 let publicKey = await wallet.getPublicKey()
 let cAddress = network.getCAddress(publicKey)
 let pAddress = network.getPAddress(publicKey)
 ```
 
 Overview of the wallet's balance:
-```
+```typescript
 let balance = await network.getBalance(publicKey)
 ```
 
 ### Coin transfers
 
 Transferring native and wrapped native coin:
-```
+```typescript
 await network.transferNative(wallet, Amount.nats(1))
 await network.transferWrapped(wallet, Amount.wnats(1))
 ```
 
 Wrapping and unwrapping:
-```
+```typescript
 await network.wrapNative(wallet, Amount.nats(1))
 await network.unwrapToNative(wallet, Amount.wnats(1))
 ```
@@ -56,19 +60,19 @@ await network.unwrapToNative(wallet, Amount.wnats(1))
 ### Reward claims
 
 Claiming reward from staking:
-```
+```typescript
 let amount = await network.getClaimableStakingReward(cAddress)
 await network.claimStakingReward(wallet)
 ```
 
 Claiming reward from FTSO delegation:
-```
+```typescript
 let amount = await network.getClaimableFtsoReward(cAddress)
 await network.claimFtsoReward(wallet)
 ```
 
 Claiming reward from a rNat project and withdrawing from rNat account:
-```
+```typescript
 let amount = await network.getClaimableRNatReward(projectId, cAddress)
 await network.claimRNatReward(wallet, [projectId])
 
@@ -79,20 +83,20 @@ await network.withdrawFromRNatAccount(wallet)
 ### Delegation to FTSO providers
 
 Delegating:
-```
+```typescript
 let share = Amount.percentages(50)
 await network.delegateToFtso(wallet, address1, share, address2, share)
 ```
 
 Delegation information:
-```
+```typescript
 let delegates = await network.getFtsoDelegatesOf(cAddress)
 ```
 
 ### FDC attestations
 
 Submitting requests:
-```
+```typescript
 let req1 = await network.submitFdcAttestationRequestForEvmTransaction(wallet, FdcSourceNetwork.ETH, txId)
 let req2 = await network.submitFdcAttestationRequestForPayment(wallet, FdcSourceNetwork.XRP, txId)
 let req3 = await network.submitFdcAttestationRequestForAddressValidity(wallet, FdcSourceNetwork.BTC, address)
@@ -100,38 +104,38 @@ let req4 = await network.submitFdcAttestationRequestForWeb2Json(wallet, url, htt
 ```
 
 Fetching attestation:
-```
+```typescript
 if (await network.isFdcVotingRoundFinalized(req.votingRoundId)) {
     let attestation = await network.getFdcAttestation(req)
 }
 ```
 
 Verifying attestation:
-```
+```typescript
 let proved = await verifyFdcAttestation(attestation)
 ```
 
 ### C-chain contracts
 
 Calling contract methods:
-```
+```typescript
 let result = await network.invokeContractCallOnC(address, abi, method, params)
 ```
 
 Executing contract methods:
-```
+```typescript
 await network.invokeContractMethodOnC(wallet, address, abi, method, value, params)
 ```
 
 ### Staking
 
 Delegating on the P-chain:
-```
+```typescript
 await network.delegateOnP(wallet, amount, nodeId, startTime, endTime)
 ```
 
 Transferring funds back to the C-chain when the delegation ends:
-```
+```typescript
 await network.transferToC(wallet)
 ```
 
@@ -142,11 +146,11 @@ In order to generate and sign transactions on the C-chain and P-chain, a suitabl
 The SDK provides proxies to facilitate the integration of standard wallets, such as Web3 based wallets (EIP-1193 standard), Ledger, and Trezor. Details are specified in [Standard wallets](#standard-wallets).
 
 In general, for transaction generation, the wallet should implement the function
-```
+```typescript
 getPublicKey(): Promise<string>
 ```
 that returns the public key of the wallet in the hexadecimal encoding. This function is required for P-chain related operations. For generating C-chain transaction only, it is sufficient that the wallet implements the function
-```
+```typescript
 getCAddress(): Promise<string>
 ```
 that returns the C-chain address in the hexadecimal encoding. This function is not required if the function `getPublicKey` is available.
@@ -156,25 +160,25 @@ Moreover, in order to execute transactions, the wallet should implement one or m
 The functions that can be used for signing are the following.
 
 - The function for signing a C-chain (EVM) transaction (recommended for C-chain related operations):
-    ```
+    ```typescript
     signCTransaction(tx: string): Promise<string>
     ```
     The input `tx` is a hex encoded EIP 1559 (type 2) EVM transaction.
 
 - The function for signing a P-chain transaction (recommended for P-chain related operations):
-    ```
+    ```typescript
     signPTransaction(tx: string): Promise<string>
     ```
     The input `tx` is a hex encoded P-chain transaction.
 
 - The function for signing the digest of a message (generally applicable):
-    ```
+    ```typescript
     signDigest(digest: string): Promise<string>
     ```
     The input `digest` is a hex encoded digest of a hash function.
 
 - The function for signing a message with ETH prefix (applicable for P-chain operations):
-    ```
+    ```typescript
     signEthMessage(message: string): Promise<string>
     ```
     The input `message` is a UTF8 string.
@@ -182,7 +186,7 @@ The functions that can be used for signing are the following.
 Each of the above functions should return the signature in hexadecimal encoding.
 
 Alternatively, for C-chain related operations, when signing and submitting of a C-chain (EVM) transaction are inseparable, the wallet can implement the function
-```
+```typescript
 signAndSubmitCTransaction(tx: string): Promise<string>
 ```
 The input `tx` is a hex encoded EIP 1559 (type 2) EVM transaction. If the wallet implements this function, it is considered as the default function for signing C-chain transactions. The function should return the transaction id in hexadecimal encoding.
@@ -193,23 +197,23 @@ A wallet can also be marked to act as an operation signer in a multisig process 
 
 The queries and actions on the network are executed using the [`Network`](src/network/index.ts) object.
 - The Flare network:
-    ```
+    ```typescript
     let network = Network.FLARE
     ```
 - The Songbird network:
-    ```
+    ```typescript
     let network = Network.SONGBIRD
     ```
 - The Coston network (test network for Songbird):
-    ```
+    ```typescript
     let network = Network.COSTON
     ```
 - The Coston2 network (test network for Flare):
-    ```
+    ```typescript
     let network = Network.COSTON2
     ```
 - For a custom network or a `Network` object with custom settings, first create a suitable [`Constants`](src/network/constants.ts) object `constants` and then use:
-    ```
+    ```typescript
     let network = new Network(constants)
     ```
 
@@ -222,7 +226,7 @@ The first three callbacks return a `Boolean` and can be used to stop the transac
 ### Before transaction signature
 
 If set, the function of type `BeforeTxSignatureCallback` is called prior to each signature request on the wallet object. To set the callback, use
-```
+```typescript
 network.setBeforeTxSignatureCallback(async (data: BeforeTxSignature) => { return true })
 ```
 The object of type `BeforeTxSignature` contains the properties:
@@ -237,7 +241,7 @@ Normally, the callback should return `true`, which grants permission to invoke t
 ### Before transaction submission
 
 If set, the function of type `BeforeTxSubmissionCallback` is called prior to the submission of each transaction. To set the callback, use
-```
+```typescript
 network.setBeforeTxSubmissionCallback(async (data: BeforeTxSubmission) => { return true })
 ```
 The object of type `BeforeTxSubmission` contains the properties:
@@ -252,7 +256,7 @@ When the function `signAndSubmitCTransaction` is used as the wallet's signing fu
 ### After transaction submission
 
 If set, the function of type `AfterTxSubmissionCallback` is called immediately after the submission of each transaction to the network. To set the callback, use
-```
+```typescript
 network.setAfterTxSubmissionCallback(async (data: AfterTxSubmission) => { return true })
 ```
 The object of type `AfterTxSubmission` contains the properties:
@@ -264,7 +268,7 @@ Normally, the callback should return `true`, which signals that the confirmation
 ### After transaction confirmation
 
 If set, the function of type `AfterTxConfirmationCallback` is called immediately after the confirmation of each transaction to the network. To set the callback, use
-```
+```typescript
 network.setAfterTxConfirmationCallback(async (data: AfterTxConfirmation) => { // use data })
 ```
 The object of type `AfterTxConfirmation` contains the properties:
@@ -279,14 +283,14 @@ The object of type `AfterTxConfirmation` contains the properties:
 The network uses two different chains for performing operations. Most of the operations are executed on the standard EVM chain, which is called the C-chain (contract chain). The chain for staking is called the P-chain.
 
 The address of a given wallet on the C-chain differs from the address of the same wallet on the P-chain, but both addresses are derived from the same public key. Therefore, the wallet implementation must enable public key retrieval, from which the associated C-chain and P-chain addresses are derived. For a given `wallet`, they can be obtained by
-```
+```typescript
 let publicKey = await wallet.getPublicKey()
 let cAddress = network.getCAddress(publicKey)
 let pAddress = network.getPAddress(publicKey)
 ```
 
 The information on wallet balance can be obtained by
-```
+```typescript
 let balance = await network.getBalance(publicKey)
 ```
 The resulting object `balance` is of type [`Balance`](src/network/iotype.ts) and has the following properties:
@@ -300,22 +304,22 @@ The resulting object `balance` is of type [`Balance`](src/network/iotype.ts) and
 Here and hereafter, all monetary amounts are considered in the Wei units and represented as `BigInt`.
 
 Separately, the balance information can be obtained by
-```
+```typescript
 await network.getBalanceOnC(publicKeyOrCAddress)
 ```
-```
+```typescript
 await network.getBalanceWrappedOnC(publicKeyOrCAddress)
 ```
-```
+```typescript
 await network.getBalanceOnP(publicKeyOrPAddress)
 ```
-```
+```typescript
 await network.getBalanceNotImportedToC(publicKeyOrPAddress)
 ```
-```
+```typescript
 await network.getBalanceNotImportedToP(publicKeyOrPAddress)
 ```
-```
+```typescript
 await network.getBalanceStakedOnP(publicKeyOrPAddress)
 ```
 In the calls above, `publicKeyOrCAddress` is a public key or a C-chain address (in hexadecimal encoding), while `publicKeyOrPAddress` is a public key or a P-chain address (in bech32 encoding). In each case, if a public key is provided, the corresponding chain address is derived from it.
@@ -323,26 +327,26 @@ In the calls above, `publicKeyOrCAddress` is a public key or a C-chain address (
 ### Coin transfers
 
 The native coin of the C-chain can be transferred using
-```
+```typescript
 await network.transferNative(wallet, recipient, amount)
 ```
 to the C-chain address specified by `recipient`. To transfer the entire native coin balance, use
-```
+```typescript
 await network.transferAllNative(wallet, recipient)
 ```
 
 The native coin on the C-chain can be wrapped to an ERC20 token WNat, which represents the wrapped native token. The exchange is in ratio 1:1 and can be performed by
-```
+```typescript
 await network.wrapNative(wallet, amount)
 ```
 
 The wrapped coin can be exchanged back to the native coin by calling
-```
+```typescript
 await network.unwrapToNative(wallet, amount)
 ```
 
 The wrapped coin can be transferred by the ERC20 standard using
-```
+```typescript
 await network.transferWrapped(wallet, amount)
 ```
 
@@ -355,11 +359,11 @@ There are different types of rewards that can be claimed in the Flare's network.
 [Staking on the P-chain](#staking-1) yields staking rewards on the C-chain.
 
 The amount of claimable reward for a given public key or C-chain address `publicKeyOrAddress` can be obtained by
-```
+```typescript
 let amount = await network.getClaimableStakingReward(publicKeyOrAddress)
 ```
 To claim all claimable reward, use
-```
+```typescript
 await network.claimStakingReward(wallet, rewardOwner, recipient, wrap)
 ```
 The only required input parameter is `wallet`. The parameter `rewardOwner` is the C-chain address of the reward owner and can be omitted if it is equal to the wallet's C-chain address. Similarly, `recipient` can be omitted if the reward is to be transferred to the wallet's C-chain address. The parameter `wrap` indicates if the reward is to be transferred to `recipient` as native coin (default) or as wrapped coin.
@@ -369,17 +373,17 @@ The only required input parameter is `wallet`. The parameter `rewardOwner` is th
 Running an FTSO provider, [delegation to FTSO providers](#delegation-to-ftso-providers-1), or even just staking yields FTSO rewards.
 
 The amount of claimable reward for a given public key or C-chain address `publicKeyOrAddress` can be obtained by
-```
+```typescript
 let amount = await network.getClaimableFtsoReward(publicKeyOrAddress)
 ```
 To claim all claimable weight based reward (i.e. reward resulting in delegation to FTSO providers and staking), use
-```
+```typescript
 await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap)
 ```
 The only required input parameter is `wallet`. The parameter `rewardOwner` is the C-chain address of the reward owner and can be omitted if it is equal to the wallet's C-chain address. Similarly, `recipient` can be omitted if the reward is to be transferred to the wallet's C-chain address. The parameter `wrap` indicates if the reward is to be transferred to `recipient` as native coin (default) or as wrapped coin.
 
 To get a more detailed overview of the reward state, use
-```
+```typescript
 let states = await network.getStateOfFtsoRewards(publicKeyOrAddress)
 ```
 The resulting object `states` is an array of array states. An array state is an array of claimable rewards for a specific reward epoch. It can be empty or it consists of objects of type [`FtsoRewardState`](src/network/iotype.ts) with properties:
@@ -390,7 +394,7 @@ The resulting object `states` is an array of array states. An array state is an 
 - `initialised` The flag indicating if the reward can be claimed without providing proofs.
 
 The rewards that are not initialised can be claimed using Merkle proofs available in [Flare System Protocol Reward Distribution repository](https://github.com/flare-foundation/fsp-rewards/) by
-```
+```typescript
 await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap, proofs)
 ```
 where `proofs` is an array of objects of type [`FtsoRewardClaimWithProof`](src/network/iotype.ts) with properties:
@@ -402,7 +406,7 @@ where `proofs` is an array of objects of type [`FtsoRewardClaimWithProof`](src/n
 Participation in Flare's networks rNat projects yields rewards in the form of rNat tokens. On claiming, rNat tokens are backed up by wrapped coins deposited to the owner's unique rNat account, where they are vested. The owner can eventually withdraw the wrapped coins from the rNat account to its own account.
 
 The list of all rNat projects can be obtained by
-```
+```typescript
 let projects = await network.getRNatProjects()
 ```
 which returns an array of objects of type [`RNatProject`](src/network/iotype.ts) with properties:
@@ -410,7 +414,7 @@ which returns an array of objects of type [`RNatProject`](src/network/iotype.ts)
 - `name` The name of the project;
 - `claimingDisabled` The flag indicating if claiming of the rewards on the project is disabled.
 To get more detailed information on a particular project, use
-```
+```typescript
 let projectInfo = await network.getRNatProjectInfo(projectId)
 ```
 The resulting object `projectInfo` is of type [`RNatProjectInfo`](src/network/iotype.ts) with properties:
@@ -426,34 +430,34 @@ The resulting object `projectInfo` is of type [`RNatProjectInfo`](src/network/io
 - `monthsWithRewards` The array of months with claimable rewards.
 
 The amount of claimable reward for a given project with `projectId` and a user participating in the project identified by a given public key or C-chain address `publicKeyOrAddress` can be obtained by
-```
+```typescript
 let amount = await network.getClaimableRNatReward(projectId, publicKeyOrAddress)
 ```
 To get the list of all rNat projects together with the claimable rewards of a user in a single call, use
-```
+```typescript
 let projects = await network.getRNatProjectsAndClaimableRewards(publicKeyOrAddress)
 ```
 which returns an array of objects of type [`RNatProjectAndClaimableReward`](src/network/iotype.ts) with the same properties as `RNatProject` and the additional property `claimableReward` specifying the claimable reward in wei. All values are read from the same block.
 
 To claim all claimable rNat rewards, use
-```
+```typescript
 await network.claimRNatReward(wallet, projectIds)
 ```
 where `projectIds` is an array of project ids for which the reward is being claimed. The claimed rewards are deposited as wrapped coins to the dedicated rNat account, which is associated with the wallet's C-chain address (rNat account owner). The C-chain address of the rNat account owned by `publicKeyOrAddress` can be obtained by
-```
+```typescript
 let rNatAccountAddress = await network.getRNatAccount(publicKeyOrAddress)
 ```
 
 The wrapped coins on the rNat account are vested. To get the amount of unlocked wrapped coins, use
-```
+```typescript
 let unlockedBalance = await network.getUnlockedBalanceWrappedOnRNatAccount(publicKeyOrAddress)
 ```
 where `publicKeyOrAddress` is the public key or C-chain address of the rNat account owner. The amount of locked wrapped coins can be obtained by
-```
+```typescript
 let lockedBalance = await network.getLockedBalanceWrappedOnRNatAccount(publicKeyOrAddress)
 ```
 Full information on the rNat account balance can be obtained by
-```
+```typescript
 let balance = await network.getRNatAccountBalance(publicKeyOrAddress)
 ```
 The resulting object `balance` is of type [`RNatAccountBalance`](src/network/iotype.ts) with properties:
@@ -464,13 +468,13 @@ The resulting object `balance` is of type [`RNatAccountBalance`](src/network/iot
 The amount of rNat tokens equals the difference between received and withdrawn rNat rewards. The amount of wrapped coins on an rNat account can be larger than the amount of rNat tokens.
 
 Finally, to withdraw funds from the rNat account, use
-```
+```typescript
 await network.withdrawFromRNatAccount(wallet, amount, wrap)
 ```
 where `amount` is the amount of unlocked wrapped coins to withdraw and `wrap` is a flag indicating if the `amount` is to be transferred as native coin (`false`) or wrapped (`true`). Both, `amount` and `wrap` are optional parameters. By default, `amount` is equal to the amount of all unlocked wrapped balance and `wrap` is equal to `false`.
 
 It is also possible to withdraw all funds from the rNat account, including locked and unlocked balance. To achieve this, use
-```
+```typescript
 await network.withdrawAllFromRNatAccount(wallet, wrap)
 ```
 but note that the actual withdrawn amount is reduced as a penalty to withdrawing locked balance. The flag `wrap` is again optional and is by default equal to `false`.
@@ -481,7 +485,7 @@ but note that the actual withdrawn amount is reduced as a penalty to withdrawing
 The account's vote power corresponding to the balance of the wrapped tokens can be delegated to one or two FTSO providers to earn delegation reward. The amount of delegated vote power is specified in percentages. The vote power can be delegated to one or two FTSO providers.
 
 The status of current delegations can be obtained by
-```
+```typescript
 let delegations = await network.getFtsoDelegatesOf(publicKeyOrAddress)
 ```
 The result is an array of objects of type [`FtsoDelegate`](src/network/iotype.ts) with properties:
@@ -491,17 +495,17 @@ The result is an array of objects of type [`FtsoDelegate`](src/network/iotype.ts
 The shares are expressed in the base point units, a unit corresponds to 0.01%.
 
 To delegate vote power to one provider, use
-```
+```typescript
 await network.delegateToFtso(wallet, providerAddress, shareBP)
 ```
 To delegate vote power to two providers, use
-```
+```typescript
 await network.delegateToFtso(wallet, provider1Address, share1BP, provider2Address, share2BP)
 ```
 The sum of `share1BP` and `share2BP` should be less than 10000, i.e., 100%.
 
 To undelegate all vote power, use
-```
+```typescript
 await network.undelegateFromFtso(wallet)
 ```
 
@@ -510,13 +514,13 @@ await network.undelegateFromFtso(wallet)
 Participants in the Flare's networks can vote on proposals issued by the Flare Foundation organization. The governance vote power depends on the amount of wrapped coins and the staking amount of the voter at a particular block related to the proposal (vote power block). A voter can also decide to delegate all the vote power to a different voter.
 
 To obtain Flare Foundation proposals, use
-```
+```typescript
 let proposalIds = await network.getFoundationProposalIds()
 ```
 which returns an array of proposal ids. Note that this includes recent proposals, but it is not a complete list of all historical proposals. To get the latter, go the the [Flare Portal](https://portal.flare.network/voting) and check the proposals list.
 
 To obtain detailed information about a proposal with id `proposalId`, use
-```
+```typescript
 let proposalInfo = await network.getFoundationProposalInfo(proposalId)
 ```
 which returns an object of type [`FoundationProposalInfo`](src/network/iotype.ts) with properties:
@@ -542,36 +546,36 @@ which returns an object of type [`FoundationProposalInfo`](src/network/iotype.ts
 - `circulatingSupply` The circulating supply at vote power block.
 
 A vote for a proposal with id `proposalId` can be cast when the state of the proposal is `ACTIVE`. To check if a voter identified by `publicKeyOrAddress` has cast a vote, use
-```
+```typescript
 await network.hasCastVoteForFoundationProposal(publicKeyOrAddress, proposalId)
 ```
 A vote can be cast by
-```
+```typescript
 await network.castVoteForFoundationProposal(wallet, proposalId, support)
 ```
 where support is either `FoundationProposalSupport.AGAINST` (`0`) or `FoundationProposalSupport.FOR` (`1`).
 
 The governance vote power can be delegated to a different voter identified by the C-chain address `delegate` by
-```
+```typescript
 await network.delegateGovernanceVotePower(wallet, delegate)
 ```
 and undelegated by
-```
+```typescript
 await network.undelegateGovernanceVotePower(wallet)
 ```
 
 To check the current governance vote power of a voter identified by `publicKeyOrAddress`, use
-```
+```typescript
 let votePower = await network.getCurrentGovernanceVotePower(publicKeyOrAddress)
 ```
 where the resulting `votePower` is the sum of the voter's own vote power and the vote power that is currently delegated to the voter. To obtain the current vote delegate for a given `publicKeyOrAddress`, use
-```
+```typescript
 let delegate = await network.getCurrentGovernanceVoteDelegate(publicKeyOrAddress)
 ```
 If `delegate` is zero address, this indicates that there is no delegate. If `delegate` is not zero address, the vote power of the delegator is zero.
 
 It is also possible to obtain the vote power and the delegate of a given account identified by `publicKeyOrAddress` as it has been effective in the voting for a particular proposal with id `proposalId`. In that case, use
- ```
+ ```typescript
 let votePower = await network.getVotePowerForFoundationProposal(publicKeyOrAddress, proposalId)
 let delegate = await network.getVoteDelegateForFoundationProposal(publicKeyOrAddress, proposalId)
  ```
@@ -582,27 +586,27 @@ Note, however, that this query may fail for not so recent proposals as old gover
 Flare Data Connector (FDC) protocol enables importing and verifying data from other blockchains and networks. In order to obtain data attestation, the data is first submitted to the Flare's network. In the course of a FDC voting round, the data providers vote on data and provide attestation proofs. These proofs can be fetched and used as verifiable data in custom contracts on the Flare's network C-chain.
 
 There exist different attestation types. To submit an attestation request for an EVM transaction on a supported EVM network (e.g., Ethereum, but also Flare and Songbird), use
-```
+```typescript
 let request = await network.submitFdcAttestationRequestForEvmTransaction(
     wallet, FdcSourceNetwork.ETH, txId)
 ```
 where `txId` is the hash of the EVM transaction to verify. Similarly, an attestation request for payment on the Ripple blockchain can be subbmited by
-```
+```typescript
 let request = await network.submitFdcAttestationRequestForPayment(
     wallet, FdcSourceNetwork.XRP, txId)
 ```
 where `txId` is the hash of the payment transaction to verify. For the Bitcoin and Doge blockchain, numbers `inputIndex` and `outputIndex` can be supplemented to identify the sender and the recipient of the transaction, e.g.,
-```
+```typescript
 let request = await network.submitFdcAttestationRequestForPayment(
     wallet, FdcSourceNetwork.BTC, txId, inputIndex, outputIndex)
 ```
 A request to check validity of an `address` on the Bitcoin, Doge, or Ripple blockchain can be submitted by
-```
+```typescript
 let request = await network.submitFdcAttestationRequestForAddressValidity(
     wallet, FdcSourceNetwork.BTC, address).
 ```
 It is also possible to submit a request for attestation of a Web2 Json API data. To achieve this, use
-```
+```typescript
 let request = await network.submitFdcAttestationRequestForWeb2Json(
     wallet, url, httpMethod, headers, queryParams, body, postProcessJq, abiSignature)
 ```
@@ -612,11 +616,11 @@ In all cases the resulting object `request` is of type [`FdcAttestationRequest`]
 - `votingRoundId` The id of the voting round in which the request has been submitted, or `null` if the request has not been submitted (e.g., the transaction was cancelled by a callback or, in the case of a [smart account](#smart-account), it only approved the request).
 
 Once the attestation request is submitted, it is necessary to wait for the voting round to finalize. To check if the voting round is finalized, use
-```
+```typescript
 let finalized = await network.isFdcVotingRoundFinalized(request.votingRoundId)
 ```
 If `request.votingRoundId` is `null`, the request has not been submitted and the call throws an error. When `finalized` is `true`, it is possible to obtain attestation proof from the FDC Data Availability service, using
-```
+```typescript
 let attestation = await network.getFdcAttestation(request)
 ```
 The object `attestation` is of type [FdcAttestation](src/network/iotype.ts) and has the following properties:
@@ -632,7 +636,7 @@ The object `attestation` is of type [FdcAttestation](src/network/iotype.ts) and 
 Integer values in `requestBody` and `responseBody` are represented as numbers, except for those outside the safe integer range (e.g., large amounts in wei), which are represented as `BigInt`.
 
 The validity of the attestation proof can be checked using
-```
+```typescript
 let proved = await network.verifyFdcAttestation(attestation)
 ```
 If `proved` is `true`, the attestation is valid and the same response is expected on-chain by calling a suitable function on the Flare's network contract `FdcVerification`.
@@ -642,19 +646,19 @@ If `proved` is `true`, the attestation is valid and the same response is expecte
 The C-chain is a standard EVM blockchain populated by the official Flare contracts, as well as other contracts deployed by the community. To interact with any of these contracts, it is sufficient to know the contract `address` and its application binary interface `abi`.
 
 To call a contract method with the name `method` with the purpose of obtaining information from the contract, use
-```
+```typescript
 let result = await network.invokeContractCallOnC(address, abi, method, params)
 ```
 where `params` is a sequence of parameters that the method accepts as inputs.
 
 Similarly, to invoke a transaction method, use
-```
+```typescript
 await network.invokeContractMethodOnC(wallet, address, abi, method, value, params)
 ```
 where `value` is the amount of native tokens to send in transaction when the calling method is marked as `payable`.
 
 For the official Flare contracts, the input `address` can be replaced by the contract's name. The list of these contracts is returned by
-```
+```typescript
 await network.getFlareContracts()
 ```
 
@@ -663,11 +667,11 @@ await network.getFlareContracts()
 A Safe smart account is a smart contract on the C-chain operated by selected owners. The smart account can be used to execute standard operations on the C-chain provided that the actions are approved by a sufficient number of owners (smart account threshold).
 
 A new smart account can be created by
-```
+```typescript
 let smartAccountAddress = await network.createSafeSmartAccount(wallet, owners, threshold)
 ```
 where `owners` is an array of C-chain addresses in hexadecimal encoding representing the owners of the smart account, and `threshold` is an integer between 1 and the length of `owners` representing the smart account threshold. If the wallet's C-chain address is not included in `owners`, the wallet's account is only the creator of the smart account and does not participate in its operation. The result `smartAccountAddress` is the C-chain address of the smart account in hexadecimal encoding. The owners and the threshold of an existing smart account can be obtained by
-```
+```typescript
 let smartAccount = await network.getSafeSmartAccount(smartAccountAddress)
 ```
 where the result is of type [`SafeSmartAccount`](src/network/iotype.ts).
@@ -675,17 +679,17 @@ where the result is of type [`SafeSmartAccount`](src/network/iotype.ts).
 A smart account can be used in any C-chain operation supported by this SDK. To demonstrate the concept and basic workflow, the following example shows how this functionality can be used to wrap a certain `amount` of native coins on a smart account and how to transfer these wrapped coins from the smart account to a certain `address`.
 
 First, let us deposit funds to the smart account:
-```
+```typescript
 await network.transferNative(wallet, smartAccountAddress, amount)
 ```
 Suppose the smart account has 3 or more owners and threshold equal to 3. Moreover, let `wallet1`, `wallet2`, `wallet3` be three wallets that represent three different owners. To make them operate with the smart account, the owners set
-```
+```typescript
 wallet1.smartAccount = smartAccountAddress
 wallet2.smartAccount = smartAccountAddress
 wallet3.smartAccount = smartAccountAddress
 ```
 To wrap native coins on the smart account, the owners execute
-```
+```typescript
 await network.wrapNative(wallet1, amount)
 await network.wrapNative(wallet2, amount)
 await network.wrapNative(wallet3, amount)
@@ -693,14 +697,14 @@ await network.wrapNative(wallet3, amount)
 All three calls induce a transaction to the smart account. In the first two calls this is a transaction with which two owners approve the wrapping. In the third call this is a transaction with which another owner approves and also executes the operation, i.e., the balance of wrapped coins on the smart account has been increased by `amount`. Note that it is important that all three calls have identical inputs and no other operation on the same smart account interrupt the sequence of their execution.
 
 Finally, the three owners agree to transfer wrapped coins from the smart account to `address`, which is achieved similarly as above by
-```
+```typescript
 await network.transferWrapped(wallet1, address, amount)
 await network.transferWrapped(wallet2, address, amount)
 await network.transferWrapped(wallet3, address, amount)
 ```
 
 To use the wallets in a regular way again, the relation to the smart account must be cleared:
-```
+```typescript
 wallet1.smartAccount = undefined
 wallet2.smartAccount = undefined
 wallet3.smartAccount = undefined
@@ -731,7 +735,7 @@ sequenceDiagram
 #### Transferring funds from the C-chain to the P-chain
 
 The process of transferring funds from the C-chain to the P-chain consists of two transactions: export from the C-chain and import to the P-chain. The call
-```
+```typescript
 await network.transferToP(wallet, amount, allocatedFeeOnP)
 ```
 first generates an export transaction that exports `amount + allocatedFeeOnP` from the C-chain address and spends a certain `exportFeeOnC`. The input parameter `allocatedFeeOnP` is optional and is set to a default value if omitted. After the export transaction is signed, submitted and confirmed, an import transaction is generated that imports `amount + allocatedFeeOnP - importFeeOnP` to the P-chain address and spends a certain `importFeeOnP`. After the import transaction is signed, submitted and confirmed, the call is complete. The balance on the C-chain address is reduced by `amount + exportFeeOnC + allocatedFeeOnP` and the balance on the P-chain address is increased by `amount + allocatedFeeOnP - importFeeOnP`.
@@ -741,18 +745,18 @@ Note that the values appearing in the export and import transactions invoked by 
 The value of `exportFeeOnC` is computed as the product of `baseTxFeeOnC` and the size of the export transaction, where the current value of `baseTxFeeOnC` can be obtained by calling `await network.getBaseTxFeeOnC()`. The value of `importFeeOnP` is computed as the product of `baseTxFeeOnP` and the size of the import transaction, where the current value of `baseTxFeeOnP` can be obtained by calling `await network.getBaseTxFeeOnP()`. The parameter `allocatedFeeOnP` reserves funds to cover `importFeeOnP`; its default value can be obtained by calling `await network.getDefaultAllocatedFeeOnP()`.
 
 The export and import can be executed by individual calls as well, in order to have a separate call for each transaction. To export `amount` from the C-chain, use
-```
+```typescript
 await network.exportFromC(wallet, amount, baseTxFeeOnC)
 ```
 The parameter `baseTxFeeOnC` is optional and can be used to override the automatically acquired base transaction fee from the C-chain. To import all exported funds from the C-chain to the P-chain, use
-```
+```typescript
 await network.importToP(wallet)
 ```
 
 #### Delegation on the P-chain
 
 The delegation on the P-chain can be executed by
-```
+```typescript
 await network.delegateOnP(wallet, amount, nodeId, startTime, endTime, allocatedFeeOnP)
 ```
 where `amount` is the amount to delegate, `nodeId` is the validator code of the form `NodeID-...`, and `startTime` and `endTime` are times given by the number of seconds from the Unix epoch. The input parameter `allocatedFeeOnP` is optional and is used to reserve funds for transaction fees. A delegation transaction is invoked. After the transaction is signed, submitted and confirmed, the balance on the P-chain address is reduced by `amount + fee` and the staked balance on P is increased by `amount`. After the delegation is complete, the staked amount is returned to the P-chain address.
@@ -762,7 +766,7 @@ If `amount + allocatedFeeOnP` is greater than `availableOnP` at the time of the 
 #### Adding a validator on the P-chain
 
 To add a validator on the P-chain, use
-```
+```typescript
 await network.addValidatorOnP(wallet, amount, nodeId, startTime, endTime, delegationFee, popBLSPublicKey, popBLSSignature)
 ```
 where `amount` is the amount to be staked, `nodeId` is the validator code of the form `NodeID-...`, `startTime` and `endTime` are times given by the number of seconds from the Unix epoch, `delegationFee` is the fee percentage in base points (1% is 100 base points) to be charged to delegators, and `popBLSPublicKey` and `popBLSSignature` determine the proof of possession of a validator node. A transaction for adding a validator is invoked. After the transaction is signed, submitted and confirmed, the balance on the P-chain address is reduced by `amount + fee` and the staked balance on P is increased by `amount`. After the staking period is complete, the staked amount is returned to the P-chain address.
@@ -782,34 +786,34 @@ The functions for reviewing the current stakes on the P-chain return an array of
 - `delegationFee` If stake is of type `validator`, the percentage in base points that determines the validator's fee charged to the delegators.
 
 To get the array of all stakes of type `validator`, use
-```
+```typescript
 let stakes = await network.getValidatorsOnP()
 ```
 For obtaining all stakes corresponding to a specific validator, use
-```
+```typescript
 let stakes = await network.getValidatorStakesOnP(nodeId)
 ```
 The resulting array contains all stakes (of type `validator` and `delegator`) to the validator's `nodeId`.
 
 Moreover, to obtain an array of all stakes on the network, use
-```
+```typescript
 let stakes = await network.getStakesOnP()
 ```
 The filtered array containing only stakes where the reward owner is identified by `publicKeyOrPAddress` (a public key or a P-chain address) can be obtained by
-```
+```typescript
 let stakes = await network.getStakesOnP(publicKeyOrPAddress)
 ```
 
 #### Transferring funds from the P-chain to the C-chain
 
 The process of transferring funds from the P-chain to the C-chain consists of two transactions: export from the P-chain and import to the C-chain. The call
-```
+```typescript
 await network.transferToC(wallet, amount)
 ```
 first generates an export transaction that exports `amount` from the P-chain address and spends a certain `exportFeeOnP`. After the export transaction is signed, submitted and confirmed, an import transaction is generated that imports `amount - importFeeOnC` to the C-chain address and spends a certain `importFeeOnC`. After the import transaction is signed, submitted and confirmed, the call is complete. The balance on the P-chain address is reduced by `amount + exportFeeOnP` and the balance on the C-chain address is increased by `amount - importFeeOnC`. In that sense the function `transferToC` is not symmetric to the function `transferToP` as the `importFee` is difficult to predict in advance.
 
 As a shorthand to transfer the entire balance from the P-chain address to the C-chain address, the `amount` parameter in the above call can be omitted, i.e., the call
-```
+```typescript
 await network.transferToC(wallet)
 ```
 is equivalent to the above with `amount = balanceOnP - exportFeeOnP`.
@@ -819,11 +823,11 @@ Note that the values appearing in the export and import transactions invoked by 
 The value of `exportFeeOnP` is computed as the product of `baseTxFeeOnP` and the size of the export transaction, where the current value of `baseTxFeeOnP` can be obtained by calling `await network.getBaseTxFeeOnP()`. The amount reserved by default to cover it can be obtained by calling `await network.getDefaultAllocatedFeeOnP()`. The value of `importFeeOnC` is computed as the product of `baseTxFeeOnC` and the size of the import transaction, where the current value of `baseTxFeeOnC` can be obtained by calling `await network.getBaseTxFeeOnC()`.
 
 The export and import can be executed by individual calls as well, in order to have a separate call for each transaction. To export `amount` from the P-chain, use
-```
+```typescript
 await network.exportFromP(wallet, amount)
 ```
 To import all exported funds from the P-chain to the C-chain, use
-```
+```typescript
 await network.importToC(wallet, baseTxFeeOnC)
 ```
 The parameter `baseTxFeeOnC` is optional and can be used to override the automatically acquired base transaction fee from the C-chain.
@@ -831,7 +835,7 @@ The parameter `baseTxFeeOnC` is optional and can be used to override the automat
 ### Transferring funds on the P-chain
 
 It is also possible to transfer funds between addresses on the P-chain. Use
-```
+```typescript
 await network.transferOnP(wallet, recipient, amount)
 ```
 where `recipient` is the recipient P-chain address in bech32 encoding and `amount` is the amount in weis to be transferred. If `amount` is not provided, the entire wallet's P-chain balance is transferred.
@@ -846,19 +850,19 @@ As explained in [Wallet implementation](#wallet-implementation), for generating 
 The [EIP-1193 standard](https://eips.ethereum.org/EIPS/eip-1193) specifies an API for signing and submitting EVM transactions. This standard is followed by common Web3 wallets such as MetaMask, WalletConnect, Coinbase Wallet, etc. The crucial ingredient of these wallets is the EIP-1193 provider object.
 
 To set up SDK-compatible wallets that communicate with the EIP-1193 provider, first extract `provider` object from the Web3 wallet framework, and then use
-```
+```typescript
 let controller = new EIP1193WalletController(provider)
 ```
 to instantiate [`EIP1193WalletController`](./src/wallet/eip1193/controller.ts) for managing SDK-compatible wallets. In particular, use
-```
+```typescript
 let wallet = await controller.getActiveWallet()
 ```
 to obtain the SDK-compatible wallet associated with the currently active account in the Web3 wallet framework, and
-```
+```typescript
 let wallets = await controller.getWallets()
 ```
 to obtain a list of the SDK-compatible wallets that correspond to all available accounts. In a Web3 wallet framework, a user can dynamically change the active account. To be notified of this, assign a listener to `controller`:
-```
+```typescript
 controller.onWalletChange((wallet: EIP1193Wallet) => { // use changed wallet })
 ```
 
@@ -874,15 +878,15 @@ The class [`EIP1193Wallet`](./src/wallet/eip1193/wallet.ts) implements the follo
 For signing on a Ledger device, an SDK-compatible wallet can be obtained by using [@zondax/ledger-flare](https://www.npmjs.com/package/@zondax/ledger-flare), the official Zondax Ledger client library for the Flare's networks, or [@ledgerhq/hw-app-eth](https://www.npmjs.com/package/@ledgerhq/hw-app-eth), the standard Ledger client library for the Ethereum network.
 
 First, setup `flrApp` (an instance of [`FlareApp`](https://github.com/Zondax/ledger-flare-js/blob/main/src/index.ts) to be used for signing with Flare app on Ledger device or `null`) and `ethApp` (an instance of [`Eth`](https://github.com/LedgerHQ/ledger-live/blob/develop/libs/ledgerjs/packages/hw-app-eth/src/Eth.ts) to be used for signing with Ethereum app on Ledger device or `null`). Then, instantiate [`LedgerWalletController`](./src/wallet/ledger/controller.ts):
-```
+```typescript
 let controller = new LedgerWalletController(flrApp, ethApp)
 ```
 To obtain an SDK-compatible wallet, provide a [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) path of the account (e.g., `let bip44Path = m/44'/60'/0'/0/0`) and use
-```
+```typescript
 let wallet = await controller.getWallet(bip44Path)
 ```
 The controller detects the currently active app on the Ledger device and provides a suitable wallet. Alternatively, provide a second input argument (`"Flare Network"` or `"Ethereum"`) to explicitly specify the wallet type. Currently active app can be obtained by using
-```
+```typescript
 let app = await controller.getActiveApp()
 ```
 
@@ -906,11 +910,11 @@ An instance of `EthLedgerWallet` connects to the Ethereum app and implements the
 For signing on a Trezor device, an SDK-compatible wallet can be obtained by using the official Trezor libraries [Trezor Connect SDKs](https://connect.trezor.io/9/).
 
 To obtain SDK-compatible wallets, initialize `TrezorConnect` object and use it to create an object of class [`TrezorWalletController`](./src/wallet/trezor/controller.ts):
-```
+```typescript
 let controller = new TrezorWalletController(TrezorConnect)
 ```
 Then, provide a [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) path of the account (e.g., `let bip44Path = m/44'/60'/0'/0/0`) and use
-```
+```typescript
 let wallet = await controller.getWallet(bip44Path)
 ```
 

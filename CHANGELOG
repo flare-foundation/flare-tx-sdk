@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Default start time of a P-chain delegation is 5 minutes after the current time.
 - The verificationQRCode property passed to the BeforeTxSignature callback is null when the transaction could not be encoded in a QR code.
 - C-chain addresses must be given in hexadecimal encoding with the 0x prefix.
+- Node.js version 24 or newer is required.
 
 ### Fixed
 

@@ -1,34 +1,33 @@
 import { describe, it } from "node:test";
-import assert from "assert";
-import { TestEnvironment } from "./env";
+import assert from "node:assert";
+import type { TestEnvironment } from "./env";
 import { Amount } from "../../src";
 
 export function runWNatTests(env: TestEnvironment): void {
-    describe("WNat tests", function () {
-        let network = env.network
-        let wallets = env.getEvmWallets()
+  describe("WNat tests", () => {
+    const network = env.network;
+    const wallets = env.getEvmWallets();
 
-        let testAmount = Amount.nats(1)
+    const testAmount = Amount.nats(1);
 
-        for (let wallet of wallets) {
-            describe(wallet.getDescription(), async function () {
+    for (const wallet of wallets) {
+      describe(wallet.getDescription(), async () => {
+        it("wrap native", async () => {
+          const publicKey = await wallet.getPublicKey();
+          const startBalance = await network.getBalanceWrappedOnC(publicKey);
+          await network.wrapNative(wallet, testAmount);
+          const balance = await network.getBalanceWrappedOnC(publicKey);
+          assert.strictEqual(balance, startBalance + testAmount);
+        });
 
-                it("wrap native", async () => {
-                    let publicKey = await wallet.getPublicKey()
-                    let startBalance = await network.getBalanceWrappedOnC(publicKey)
-                    await network.wrapNative(wallet, testAmount)
-                    let balance = await network.getBalanceWrappedOnC(publicKey)
-                    assert.strictEqual(balance, startBalance + testAmount)
-                })
-
-                it("unwrap to native", async () => {
-                    let publicKey = await wallet.getPublicKey()
-                    let startBalance = await network.getBalanceWrappedOnC(publicKey)
-                    await network.unwrapToNative(wallet, testAmount)
-                    let balance = await network.getBalanceWrappedOnC(publicKey)
-                    assert.strictEqual(balance, startBalance - testAmount)
-                })
-            })
-        }
-    })
+        it("unwrap to native", async () => {
+          const publicKey = await wallet.getPublicKey();
+          const startBalance = await network.getBalanceWrappedOnC(publicKey);
+          await network.unwrapToNative(wallet, testAmount);
+          const balance = await network.getBalanceWrappedOnC(publicKey);
+          assert.strictEqual(balance, startBalance - testAmount);
+        });
+      });
+    }
+  });
 }
