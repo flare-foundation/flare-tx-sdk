@@ -18,39 +18,36 @@ import { runAddValidatorOnPTests } from "./validatorp";
 import { runFdcTests } from "./fdc";
 
 function execute() {
-    const TEST_KEYS_FILE = path.join("test", "keys", "keys.txt")
-    let privateKeys: string
-    if (process.argv.length > 2) {
-        privateKeys = process.argv[2]
-    } else if (existsSync(TEST_KEYS_FILE)) {
-        privateKeys = readFileSync(TEST_KEYS_FILE).toString()
-    } else {
-        console.info("To execute tests provide three private keys for test accounts.")
-        console.info("Option 1: npm run test {comma,separated,private_keys}")
-        console.info(`Option 2: add file ${TEST_KEYS_FILE} that contains a comma separated list of private keys`)
-        process.exitCode = 1
-        return
-    }
+  const TEST_KEYS_FILE = path.join("test", "keys", "keys.txt");
+  let privateKeys: string;
+  if (process.argv.length > 2) {
+    privateKeys = process.argv[2];
+  } else if (existsSync(TEST_KEYS_FILE)) {
+    privateKeys = readFileSync(TEST_KEYS_FILE).toString();
+  } else {
+    console.info("To execute tests provide three private keys for test accounts.");
+    console.info("Option 1: pnpm test {comma,separated,private_keys}");
+    console.info(`Option 2: add file ${TEST_KEYS_FILE} that contains a comma separated list of private keys`);
+    process.exitCode = 1;
+    return;
+  }
 
-    let env = new TestEnvironment(
-        Network.COSTON2,
-        privateKeys.split(",")
-    )
+  const env = new TestEnvironment(Network.COSTON2, privateKeys.split(","));
 
-    runBalanceTests(env)
-    runWNatTests(env)
-    runTransferCTests(env)
-    runStakingClaimTests(env)
-    runFtsoClaimTests(env)
-    runFtsoDelegationTests(env)
-    runRNatTests(env)
-    runSmartAccountTests(env)
-    runPollingTests(env)
-    runFdcTests(env)
-    runGenericContractTests(env)
-    runTransferCPTests(env)
-    runDelegationPTests(env)
-    runAddValidatorOnPTests(env)
+  runBalanceTests(env);
+  runWNatTests(env);
+  runTransferCTests(env);
+  runStakingClaimTests(env);
+  runFtsoClaimTests(env);
+  runFtsoDelegationTests(env);
+  runRNatTests(env);
+  runSmartAccountTests(env);
+  runPollingTests(env);
+  runFdcTests(env);
+  runGenericContractTests(env);
+  runTransferCPTests(env);
+  runDelegationPTests(env);
+  runAddValidatorOnPTests(env);
 }
 
-execute()
+execute();

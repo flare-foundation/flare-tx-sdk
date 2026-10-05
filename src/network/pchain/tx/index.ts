@@ -1,184 +1,203 @@
-import { Wallet } from "../../../wallet"
-import { Account } from "../../account"
-import { NetworkCore, NetworkBased } from "../../core"
-import { TxType } from "../../txtype"
-import { Export } from "./export"
-import { Import } from "./import"
-import { Utils } from "../../utils"
-import { Signature } from "../../sign"
-import { ethers } from "ethers"
-import { messageHashFromUnsignedTx, pvmSerial, TypeSymbols, UnsignedTx, utils as futils } from "@flarenetwork/flarejs"
-import { Delegator } from "./delegator"
-import { Transfer } from "./transfer"
-import { Validator } from "./validator"
-import { QR } from "../../qrcode"
+import type { Wallet } from "../../../wallet";
+import { Account } from "../../account";
+import { type NetworkCore, NetworkBased } from "../../core";
+import { TxType } from "../../txtype";
+import { Export } from "./export";
+import { Import } from "./import";
+import { Utils } from "../../utils";
+import { Signature } from "../../sign";
+import { ethers } from "ethers";
+import {
+  messageHashFromUnsignedTx,
+  type pvmSerial,
+  TypeSymbols,
+  type UnsignedTx,
+  utils as futils,
+} from "@flarenetwork/flarejs";
+import { Delegator } from "./delegator";
+import { Transfer } from "./transfer";
+import { Validator } from "./validator";
+import { QR } from "../../qrcode";
 
 export class Transactions extends NetworkBased {
+  constructor(network: NetworkCore) {
+    super(network);
+    this._transfer = new Transfer(network);
+    this._export = new Export(network);
+    this._import = new Import(network);
+    this._delegator = new Delegator(network);
+    this._validator = new Validator(network);
+  }
 
-    constructor(network: NetworkCore) {
-        super(network)
-        this._transfer = new Transfer(network)
-        this._export = new Export(network)
-        this._import = new Import(network)
-        this._delegator = new Delegator(network)
-        this._validator = new Validator(network)
+  private _transfer: Transfer;
+  private _export: Export;
+  private _import: Import;
+  private _delegator: Delegator;
+  private _validator: Validator;
+
+  async transfer(wallet: Wallet, account: Account, recipient: string, amount?: bigint): Promise<void> {
+    let unsignedTx: UnsignedTx;
+    if (amount !== undefined && amount !== null) {
+      unsignedTx = await this._transfer.getTx(account.pAddress, recipient, amount);
+    } else {
+      const response = await this._core.flarejs.pvmApi.getBalance({ addresses: [`P-${account.pAddress}`] });
+      const balance = response.balance * BigInt(1e9);
+      const fee = this._core.const.pvmAllocatedFee;
+      const amountToTransfer = balance - fee;
+      if (amountToTransfer <= BigInt(0)) {
+        throw new Error("The balance on the P-chain is too low to cover the transaction fee");
+      }
+      unsignedTx = await this._transfer.getTx(account.pAddress, recipient, amountToTransfer);
+    }
+    await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.TRANSFER_PASSET);
+  }
+
+  async exportFromP(wallet: Wallet, account: Account, amount: bigint): Promise<boolean> {
+    const unsignedTx = await this._export.getTx(account.pAddress, amount);
+    return this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.EXPORT_P);
+  }
+
+  async importToP(wallet: Wallet, account: Account): Promise<boolean> {
+    const unsignedTx = await this._import.getTx(account.pAddress);
+    return this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.IMPORT_P);
+  }
+
+  async delegateOnP(
+    wallet: Wallet,
+    account: Account,
+    amount: bigint,
+    nodeId: string,
+    startTime: bigint,
+    endTime: bigint
+  ): Promise<void> {
+    const unsignedTx = await this._delegator.getTx(account.pAddress, amount, nodeId, startTime, endTime);
+    await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.ADD_DELEGATOR_P);
+  }
+
+  async addValidatorOnP(
+    wallet: Wallet,
+    account: Account,
+    amount: bigint,
+    nodeId: string,
+    startTime: bigint,
+    endTime: bigint,
+    delegationFee: bigint,
+    popBLSPublicKey: string,
+    popBLSSignature: string
+  ): Promise<void> {
+    const unsignedTx = await this._validator.getTx(
+      account.pAddress,
+      amount,
+      nodeId,
+      startTime,
+      endTime,
+      delegationFee,
+      popBLSPublicKey,
+      popBLSSignature
+    );
+    await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.ADD_VALIDATOR_P);
+  }
+
+  async getBaseTxFee(): Promise<bigint> {
+    return this._core.flarejs.getBaseTxFee();
+  }
+
+  async getStakeTx(
+    txId: string
+  ): Promise<
+    | pvmSerial.AddDelegatorTx
+    | pvmSerial.AddValidatorTx
+    | pvmSerial.AddPermissionlessDelegatorTx
+    | pvmSerial.AddPermissionlessValidatorTx
+  > {
+    const tx = await this._core.flarejs.pvmApi.getTx({ txID: txId });
+    const utx = tx.unsignedTx;
+    let stx:
+      | pvmSerial.AddDelegatorTx
+      | pvmSerial.AddValidatorTx
+      | pvmSerial.AddPermissionlessDelegatorTx
+      | pvmSerial.AddPermissionlessValidatorTx;
+    if (utx._type === TypeSymbols.AddDelegatorTx) {
+      stx = utx as pvmSerial.AddDelegatorTx;
+    } else if (utx._type === TypeSymbols.AddValidatorTx) {
+      stx = utx as pvmSerial.AddValidatorTx;
+    } else if (utx._type === TypeSymbols.AddPermissionlessDelegatorTx) {
+      stx = utx as pvmSerial.AddPermissionlessDelegatorTx;
+    } else if (utx._type === TypeSymbols.AddPermissionlessValidatorTx) {
+      stx = utx as pvmSerial.AddPermissionlessValidatorTx;
+    } else {
+      throw new Error(`Transaction ${txId} is of type ${utx._type} (not a stake transaction)`);
+    }
+    return stx;
+  }
+
+  private async _signAndSubmitAvaxTx(
+    wallet: Wallet,
+    account: Account,
+    unsignedTx: UnsignedTx,
+    txType: string
+  ): Promise<boolean> {
+    const unsignedTxHex = ethers.hexlify(unsignedTx.toBytes());
+
+    if (this._core.beforeTxSignature) {
+      const verificationQRCode = await QR.generateCodeForTxVerification(unsignedTxHex);
+      const proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex, verificationQRCode });
+      if (!proceed) {
+        return false;
+      }
     }
 
-    private _transfer: Transfer
-    private _export: Export
-    private _import: Import
-    private _delegator: Delegator
-    private _validator: Validator
+    const digest = ethers.hexlify(messageHashFromUnsignedTx(unsignedTx));
+    const signature = await Signature.signAvaxTx(wallet, unsignedTxHex, digest, account.publicKey);
 
-    async transfer(
-        wallet: Wallet, account: Account, recipient: string, amount?: bigint
-    ): Promise<void> {
-        let unsignedTx: UnsignedTx
-        if (amount !== undefined && amount !== null) {
-            unsignedTx = await this._transfer.getTx(account.pAddress, recipient, amount)
-        } else {
-            let response = await this._core.flarejs.pvmApi.getBalance({ addresses: [`P-${account.pAddress}`] })
-            let balance = response.balance * BigInt(1e9)
-            let fee = this._core.const.pvmAllocatedFee
-            let amountToTransfer = balance - fee
-            if (amountToTransfer <= BigInt(0)) {
-                throw new Error("The balance on the P-chain is too low to cover the transaction fee")
-            }
-            unsignedTx = await this._transfer.getTx(account.pAddress, recipient, amountToTransfer)
+    const compressedPublicKey = Account.getPublicKey(account.publicKey, true);
+    const coordinates = unsignedTx.getSigIndicesForPubKey(ethers.getBytes(compressedPublicKey));
+    if (coordinates) {
+      const sig = ethers.Signature.from(signature);
+      const sigBytes = ethers.getBytes(ethers.concat([sig.r, sig.s, `0x0${sig.yParity}`]));
+      coordinates.forEach(([index, subIndex]) => {
+        unsignedTx.addSignatureAt(sigBytes, index, subIndex);
+      });
+    }
+    const tx = unsignedTx.getSignedTx().toBytes();
+
+    if (this._core.beforeTxSubmission) {
+      const signedTxHex = ethers.hexlify(tx);
+      const txHash = ethers.sha256(signedTxHex);
+      const txId = futils.base58.encode(futils.addChecksum(ethers.getBytes(txHash)));
+      const proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId });
+      if (!proceed) {
+        return false;
+      }
+    }
+
+    const txIssueResponse = await this._core.flarejs.pvmApi.issueTx({ tx: ethers.hexlify(futils.addChecksum(tx)) });
+    const txId = txIssueResponse.txID;
+
+    if (this._core.afterTxSubmission) {
+      const proceed = await this._core.afterTxSubmission({ txType, txId });
+      if (!proceed) {
+        return false;
+      }
+    }
+
+    let status = "Unknown";
+    const start = Date.now();
+    while (Date.now() - start < this._core.const.txConfirmationTimeout) {
+      const statusResponse = await this._core.flarejs.pvmApi.getTxStatus({ txID: txId });
+      status = statusResponse.status;
+      await Utils.sleep(this._core.const.txConfirmationCheckout);
+      if (status === "Committed" || status === "Rejected") {
+        if (this._core.afterTxConfirmation) {
+          const txStatus = status === "Committed";
+          await this._core.afterTxConfirmation({ txType, txId, txStatus });
         }
-        await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.TRANSFER_PASSET)
+        break;
+      }
     }
-
-    async exportFromP(wallet: Wallet, account: Account, amount: bigint): Promise<boolean> {
-        let unsignedTx = await this._export.getTx(account.pAddress, amount)
-        return this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.EXPORT_P)
+    if (status !== "Committed") {
+      throw new Error(`Transaction ${txType} with id ${txId} not confirmed (status is ${status})`);
     }
-
-    async importToP(wallet: Wallet, account: Account): Promise<boolean> {
-        let unsignedTx = await this._import.getTx(account.pAddress)
-        return this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.IMPORT_P)
-    }
-
-    async delegateOnP(
-        wallet: Wallet,
-        account: Account,
-        amount: bigint,
-        nodeId: string,
-        startTime: bigint,
-        endTime: bigint
-    ): Promise<void> {
-        let unsignedTx = await this._delegator.getTx(account.pAddress, amount, nodeId, startTime, endTime)
-        await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.ADD_DELEGATOR_P)
-    }
-
-    async addValidatorOnP(
-        wallet: Wallet,
-        account: Account,
-        amount: bigint,
-        nodeId: string,
-        startTime: bigint,
-        endTime: bigint,
-        delegationFee: bigint,
-        popBLSPublicKey: string,
-        popBLSSignature: string
-    ): Promise<void> {
-        let unsignedTx = await this._validator.getTx(
-            account.pAddress, amount, nodeId, startTime, endTime, delegationFee, popBLSPublicKey, popBLSSignature)
-        await this._signAndSubmitAvaxTx(wallet, account, unsignedTx, TxType.ADD_VALIDATOR_P)
-    }
-
-    async getBaseTxFee(): Promise<bigint> {
-        return this._core.flarejs.getBaseTxFee()
-    }
-
-    async getStakeTx(
-        txId: string
-    ): Promise<pvmSerial.AddDelegatorTx | pvmSerial.AddValidatorTx | pvmSerial.AddPermissionlessDelegatorTx | pvmSerial.AddPermissionlessValidatorTx> {
-        let tx = await this._core.flarejs.pvmApi.getTx({ txID: txId })
-        let utx = tx.unsignedTx
-        let stx: pvmSerial.AddDelegatorTx | pvmSerial.AddValidatorTx | pvmSerial.AddPermissionlessDelegatorTx | pvmSerial.AddPermissionlessValidatorTx
-        if (utx._type === TypeSymbols.AddDelegatorTx) {
-            stx = utx as pvmSerial.AddDelegatorTx
-        } else if (utx._type === TypeSymbols.AddValidatorTx) {
-            stx = utx as pvmSerial.AddValidatorTx
-        } else if (utx._type === TypeSymbols.AddPermissionlessDelegatorTx) {
-            stx = utx as pvmSerial.AddPermissionlessDelegatorTx
-        } else if (utx._type === TypeSymbols.AddPermissionlessValidatorTx) {
-            stx = utx as pvmSerial.AddPermissionlessValidatorTx
-        } else {
-            throw new Error(`Transaction ${txId} is of type ${utx._type} (not a stake transaction)`)
-        }
-        return stx
-    }
-
-    private async _signAndSubmitAvaxTx(
-        wallet: Wallet,
-        account: Account,
-        unsignedTx: UnsignedTx,
-        txType: string
-    ): Promise<boolean> {
-        let unsignedTxHex = ethers.hexlify(unsignedTx.toBytes())
-
-        if (this._core.beforeTxSignature) {
-            let verificationQRCode = await QR.generateCodeForTxVerification(unsignedTxHex)
-            let proceed = await this._core.beforeTxSignature({ txType, unsignedTxHex, verificationQRCode })
-            if (!proceed) {
-                return false
-            }
-        }
-
-        let digest = ethers.hexlify(messageHashFromUnsignedTx(unsignedTx))
-        let signature = await Signature.signAvaxTx(wallet, unsignedTxHex, digest, account.publicKey)
-
-        let compressedPublicKey = Account.getPublicKey(account.publicKey, true)
-        let coordinates = unsignedTx.getSigIndicesForPubKey(ethers.getBytes(compressedPublicKey))
-        if (coordinates) {
-            let sig = ethers.Signature.from(signature)
-            let sigBytes = ethers.getBytes(ethers.concat([sig.r, sig.s, `0x0${sig.yParity}`]))
-            coordinates.forEach(([index, subIndex]) => {
-                unsignedTx.addSignatureAt(sigBytes, index, subIndex)
-            })
-        }
-        let tx = unsignedTx.getSignedTx().toBytes()
-
-        if (this._core.beforeTxSubmission) {
-            let signedTxHex = ethers.hexlify(tx)
-            let txHash = ethers.sha256(signedTxHex)
-            let txId = futils.base58.encode(futils.addChecksum(ethers.getBytes(txHash)))
-            let proceed = await this._core.beforeTxSubmission({ txType, signedTxHex, txId })
-            if (!proceed) {
-                return false
-            }
-        }
-
-        let txIssueResponse = await this._core.flarejs.pvmApi.issueTx({ tx: ethers.hexlify(futils.addChecksum(tx)) })
-        let txId = txIssueResponse.txID
-
-        if (this._core.afterTxSubmission) {
-            let proceed = await this._core.afterTxSubmission({ txType, txId })
-            if (!proceed) {
-                return false
-            }
-        }
-
-        let status = "Unknown"
-        let start = Date.now()
-        while (Date.now() - start < this._core.const.txConfirmationTimeout) {
-            let statusResponse = await this._core.flarejs.pvmApi.getTxStatus({ txID: txId })
-            status = statusResponse.status
-            await Utils.sleep(this._core.const.txConfirmationCheckout)
-            if (status === "Committed" || status === "Rejected") {
-                if (this._core.afterTxConfirmation) {
-                    let txStatus = status === "Committed" ? true : false
-                    await this._core.afterTxConfirmation({ txType, txId, txStatus })
-                }
-                break
-            }
-        }
-        if (status !== "Committed") {
-            throw new Error(`Transaction ${txType} with id ${txId} not confirmed (status is ${status})`)
-        }
-        return true
-    }
-
+    return true;
+  }
 }
